@@ -160,71 +160,115 @@ class _KidneyCanvasState extends State<KidneyCanvas> {
     return Positioned(
       left: screenX - screenSize,
       top: screenY - screenSize,
-      child: Column(
-        children: [
-          // MARKER - Keep the same structure as original but without number label
-          GestureDetector(
-            onTap: () {
-              widget.onMarkerSelected(index);
-              print('Selected marker $index');
-            },
-            onPanStart: (details) {
-              widget.onMarkerSelected(index);
-              print('Started dragging marker $index');
-            },
-            onPanUpdate: (details) {
-              // Convert local pan delta to canvas coordinates
-              final canvasDelta = details.delta / widget.zoom;
-              final newCanvasX = marker.x + canvasDelta.dx;
-              final newCanvasY = marker.y + canvasDelta.dy;
+      child: GestureDetector(
+        onTap: () {
+          widget.onMarkerSelected(index);
+          print('Selected marker $index');
+        },
+        onPanStart: (details) {
+          widget.onMarkerSelected(index);
+          print('Started dragging marker $index');
+        },
+        onPanUpdate: (details) {
+          // Convert local pan delta to canvas coordinates
+          final canvasDelta = details.delta / widget.zoom;
+          final newCanvasX = marker.x + canvasDelta.dx;
+          final newCanvasY = marker.y + canvasDelta.dy;
 
-              widget.onMarkerMoved(index, Offset(newCanvasX, newCanvasY));
-            },
-            onPanEnd: (details) {
-              print('Finished dragging marker $index to: (${marker.x}, ${marker.y})');
-            },
-            child: _buildMarkerShape(
-              marker,
-              screenSize,
-              marker.type == 'cyst' ? Colors.black : tool.color.withOpacity(0.8),
-              isSelected ? Colors.black : (marker.type == 'cyst' ? Colors.pink : tool.color),
-              false,
+          widget.onMarkerMoved(index, Offset(newCanvasX, newCanvasY));
+        },
+        onPanEnd: (details) {
+          print('Finished dragging marker $index to: (${marker.x}, ${marker.y})');
+        },
+        child: _buildMarkerWidget(marker, tool, screenSize, isSelected, false),
+      ),
+    );
+  }
+
+  Widget _buildMarkerWidget(Marker marker, ConditionTool tool, double size, bool isSelected, bool isDragging) {
+    // Get marker number based on its position in the list
+    final markerNumber = widget.markers.indexOf(marker) + 1;
+
+    return Container(
+      width: size * 2,
+      height: size * 2,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Shadow
+          if (!isDragging)
+            Positioned(
+              left: 2,
+              top: 2,
+              child: Container(
+                width: size * 2,
+                height: size * 2,
+                child: marker.type == 'calculi'
+                    ? CustomPaint(
+                  painter: IrregularCalculiPainter(
+                    color: Colors.black.withOpacity(0.3),
+                    size: size,
+                    isOutline: false,
+                    seed: marker.id.hashCode, // Use same seed for consistent shadow
+                  ),
+                )
+                    : Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withOpacity(0.3),
+                  ),
+                ),
+              ),
+            ),
+
+          // Main marker
+          Container(
+            width: size * 2,
+            height: size * 2,
+            child: marker.type == 'calculi'
+                ? CustomPaint(
+              painter: IrregularCalculiPainter(
+                color: tool.color.withOpacity(0.8),
+                size: size,
+                isOutline: false,
+                borderColor: isSelected ? Colors.black : tool.color,
+                seed: marker.id.hashCode, // Use marker ID as seed for unique shapes
+              ),
+            )
+                : Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: tool.color.withOpacity(0.8),
+                border: Border.all(
+                  color: isSelected ? Colors.black : tool.color,
+                  width: 1,
+                ),
+              ),
+            ),
+          ),
+
+          // Number label (instead of name)
+          Positioned(
+            top: -20 * widget.zoom,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 4 * widget.zoom, vertical: 2 * widget.zoom),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(4 * widget.zoom),
+              ),
+              child: Text(
+                markerNumber.toString(), // Show number instead of name
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 6 * widget.zoom,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
         ],
       ),
     );
-  }
-
-  Widget _buildMarkerShape(Marker marker, double size, Color fillColor, Color? borderColor, bool isShadow) {
-    if (marker.type == 'calculi') {
-      return CustomPaint(
-        painter: IrregularCalculiPainter(
-          color: fillColor,
-          size: size,
-          isOutline: false,
-          borderColor: borderColor,
-          seed: marker.id.hashCode,
-        ),
-      );
-    } else if (marker.type == 'cyst') {
-      return CustomPaint(
-        painter: OvoidCystPainter(
-          fillColor: fillColor,
-          borderColor: borderColor ?? Colors.pink,
-          size: size,
-        ),
-      );
-    } else {
-      // Regular circular markers
-      return Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: fillColor,
-          border: borderColor != null ? Border.all(color: borderColor, width: 1) : null,
-        ),
-      );
-    }
   }
 
   void _handleTapDown(TapDownDetails details) {
@@ -274,14 +318,14 @@ class IrregularCalculiPainter extends CustomPainter {
   final double size;
   final bool isOutline;
   final Color? borderColor;
-  final int seed;
+  final int? seed; // Add seed for unique shapes
 
   IrregularCalculiPainter({
     required this.color,
     required this.size,
     required this.isOutline,
     this.borderColor,
-    required this.seed,
+    this.seed,
   });
 
   @override
@@ -295,13 +339,16 @@ class IrregularCalculiPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
-    // Create irregular, jagged calculi shape using seed for variation
+    // Create irregular, jagged calculi shape with unique variations
     final path = Path();
     final center = Offset(canvasSize.width / 2, canvasSize.height / 2);
 
+    // Use seed to create unique variations
+    final uniqueSeed = seed ?? 0;
+
     // Generate irregular points around center with sharp edges
     final points = <Offset>[];
-    final numPoints = 10 + (seed % 6); // 10-15 points for variety
+    final numPoints = 10 + (uniqueSeed % 6); // Vary number of points (10-15)
 
     for (int i = 0; i < numPoints; i++) {
       final angle = (i * math.pi * 2) / numPoints;
@@ -310,15 +357,16 @@ class IrregularCalculiPainter extends CustomPainter {
       final baseRadius = size * 0.8;
       final variation = size * 0.6;
 
-      // Use seed to create different patterns for each marker
-      final seedFactor1 = (seed * 1.618 + i * 2.718) % 1000 / 1000; // Golden ratio variation
-      final seedFactor2 = (seed * 0.577 + i * 1.414) % 1000 / 1000; // Different ratio
-      final seedFactor3 = (seed * 2.236 + i * 3.162) % 1000 / 1000; // Another variation
+      // Use seed to create unique trigonometric variations
+      final seedOffset1 = (uniqueSeed % 100) / 100.0;
+      final seedOffset2 = ((uniqueSeed * 7) % 100) / 100.0;
+      final seedOffset3 = ((uniqueSeed * 13) % 100) / 100.0;
 
-      // Create unique jagged effect for each marker
-      final radiusVariation = math.sin(i * (2.0 + seedFactor1)) * variation * 0.5 +
-          math.cos(i * (3.0 + seedFactor2)) * variation * 0.3 +
-          math.sin(i * (1.5 + seedFactor3)) * variation * 0.2;
+      // Create unique jagged patterns for each calculi
+      final radiusVariation =
+          math.sin(i * 2.5 + seedOffset1 * math.pi) * variation * 0.5 +
+              math.cos(i * 3.2 + seedOffset2 * math.pi) * variation * 0.3 +
+              math.sin(i * 1.8 + seedOffset3 * math.pi) * variation * 0.2;
 
       final radius = baseRadius + radiusVariation;
 
@@ -347,40 +395,6 @@ class IrregularCalculiPainter extends CustomPainter {
     if (borderColor != null) {
       canvas.drawPath(path, borderPaint);
     }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class OvoidCystPainter extends CustomPainter {
-  final Color fillColor;
-  final Color borderColor;
-  final double size;
-
-  OvoidCystPainter({
-    required this.fillColor,
-    required this.borderColor,
-    required this.size,
-  });
-
-  @override
-  void paint(Canvas canvas, Size canvasSize) {
-    final fillPaint = Paint()
-      ..color = fillColor
-      ..style = PaintingStyle.fill;
-
-    final borderPaint = Paint()
-      ..color = borderColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-
-    // Create round shape (same width and height)
-    final center = Offset(canvasSize.width / 2, canvasSize.height / 2);
-    final radius = size; // Make it perfectly round
-
-    canvas.drawCircle(center, radius, fillPaint);
-    canvas.drawCircle(center, radius, borderPaint);
   }
 
   @override
