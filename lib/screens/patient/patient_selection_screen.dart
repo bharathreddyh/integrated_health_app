@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../models/patient.dart';
-import '../../models/medical_condition.dart';
+import '../../widgets/patient_filter_widget.dart';
+import '../patient/patient_registration_screen.dart';
+import 'patient_data_edit_screen.dart';
 
 class PatientSelectionScreen extends StatefulWidget {
   const PatientSelectionScreen({super.key});
@@ -10,128 +12,181 @@ class PatientSelectionScreen extends StatefulWidget {
 }
 
 class _PatientSelectionScreenState extends State<PatientSelectionScreen> {
+  List<Patient> _patients = [];
+  List<Patient> _filteredPatients = [];
+  bool _isLoading = true;
+  bool _showFilters = false;
+
   final _searchController = TextEditingController();
-  final _nameController = TextEditingController();
-  final _ageController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _notesController = TextEditingController();
 
-  // Selected conditions for new patient
-  final Set<String> _selectedConditions = {};
+  Set<String> _selectedConditions = {};
+  SortOption _sortOption = SortOption.dateDesc;
+  DateTimeRange? _dateRange;
 
-  // Common preexisting conditions
-  final List<String> _commonConditions = [
-    'Diabetes',
-    'Hypertension',
-    'Asthma',
-    'Arthritis',
-    'GERD',
-    'Migraine',
-    'Depression',
-    'Anxiety',
-    'Thyroid Disorder',
-    'Heart Disease',
-    'Kidney Disease',
-    'Chronic Pain',
-  ];
-
-  List<Patient> _patients = [
-    Patient(
-      id: 'P001',
-      name: 'Rajesh Kumar',
-      age: 45,
-      phone: '9876543210',
-      date: '2025-09-28',
-      conditions: ['Diabetes', 'Hypertension'],
-      visits: 12,
-    ),
-    Patient(
-      id: 'P002',
-      name: 'Priya Sharma',
-      age: 32,
-      phone: '9876543211',
-      date: '2025-09-29',
-      conditions: ['Asthma'],
-      visits: 8,
-    ),
-    Patient(
-      id: 'P003',
-      name: 'Amit Patel',
-      age: 58,
-      phone: '9876543212',
-      date: '2025-09-25',
-      conditions: ['GERD', 'Arthritis'],
-      visits: 15,
-    ),
-  ];
-
-  List<Patient> get _filteredPatients {
-    final query = _searchController.text.toLowerCase();
-    if (query.isEmpty) return _patients;
-
-    return _patients.where((patient) {
-      return patient.name.toLowerCase().contains(query) ||
-          patient.id.toLowerCase().contains(query) ||
-          patient.phone.contains(query);
-    }).toList();
+  @override
+  void initState() {
+    super.initState();
+    _loadPatients();
   }
 
-  bool _showNewPatientModal = false;
+  Future<void> _loadPatients() async {
+    setState(() => _isLoading = true);
+    try {
+      final patients = await PatientStore.getPatients();
+      if (mounted) {
+        setState(() {
+          _patients = patients;
+          _isLoading = false;
+        });
+        _applyFiltersAndSort();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading patients: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _applyFiltersAndSort() {
+    setState(() {
+      var filtered = List<Patient>.from(_patients);
+
+      if (_searchController.text.isNotEmpty) {
+        final query = _searchController.text.toLowerCase();
+        filtered = filtered.where((patient) {
+          return patient.name.toLowerCase().contains(query) ||
+              patient.id.toLowerCase().contains(query) ||
+              patient.phone.contains(query);
+        }).toList();
+      }
+
+      if (_selectedConditions.isNotEmpty) {
+        filtered = filtered.where((patient) {
+          return patient.conditions.any((c) => _selectedConditions.contains(c));
+        }).toList();
+      }
+
+      if (_dateRange != null) {
+        filtered = filtered.where((patient) {
+          final patientDate = DateTime.parse(patient.date);
+          return patientDate.isAfter(_dateRange!.start.subtract(const Duration(days: 1))) &&
+              patientDate.isBefore(_dateRange!.end.add(const Duration(days: 1)));
+        }).toList();
+      }
+
+      switch (_sortOption) {
+        case SortOption.nameAsc:
+          filtered.sort((a, b) => a.name.compareTo(b.name));
+          break;
+        case SortOption.nameDesc:
+          filtered.sort((a, b) => b.name.compareTo(a.name));
+          break;
+        case SortOption.dateAsc:
+          filtered.sort((a, b) => a.date.compareTo(b.date));
+          break;
+        case SortOption.dateDesc:
+          filtered.sort((a, b) => b.date.compareTo(a.date));
+          break;
+        case SortOption.ageAsc:
+          filtered.sort((a, b) => a.age.compareTo(b.age));
+          break;
+        case SortOption.ageDesc:
+          filtered.sort((a, b) => b.age.compareTo(a.age));
+          break;
+      }
+
+      _filteredPatients = filtered;
+    });
+  }
+
+  void _clearFilters() {
+    setState(() {
+      _selectedConditions.clear();
+      _dateRange = null;
+      _sortOption = SortOption.dateDesc;
+      _applyFiltersAndSort();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      body: Stack(
+      appBar: AppBar(
+        title: const Text('Select Patient'),
+        backgroundColor: Colors.white,
+        elevation: 1,
+        actions: [
+          IconButton(
+            icon: Icon(_showFilters ? Icons.filter_list_off : Icons.filter_list),
+            onPressed: () {
+              setState(() {
+                _showFilters = !_showFilters;
+              });
+            },
+            tooltip: 'Toggle Filters',
+          ),
+        ],
+      ),
+      body: Row(
         children: [
-          SafeArea(
+          Expanded(
             child: Column(
               children: [
-                // Header
                 Container(
+                  padding: const EdgeInsets.all(16),
                   color: Colors.white,
-                  padding: const EdgeInsets.all(24),
                   child: Row(
                     children: [
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.arrow_back),
-                      ),
-                      const SizedBox(width: 16),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Select Patient',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w600,
-                              ),
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: 'Search by name, ID, or phone...',
+                            prefixIcon: const Icon(Icons.search),
+                            suffixIcon: _searchController.text.isNotEmpty
+                                ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                _applyFiltersAndSort();
+                              },
+                            )
+                                : null,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            Text(
-                              'Search existing patient or register new patient',
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ],
+                          ),
+                          onChanged: (value) => _applyFiltersAndSort(),
                         ),
                       ),
+                      const SizedBox(width: 16),
                       ElevatedButton.icon(
-                        onPressed: () => setState(() => _showNewPatientModal = true),
+                        onPressed: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const PatientRegistrationScreen(),
+                            ),
+                          );
+                          if (result == true) {
+                            _loadPatients();
+                          }
+                        },
                         icon: const Icon(Icons.add),
                         label: const Text('New Patient'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF3B82F6),
+                          backgroundColor: const Color(0xFF10B981),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
+                            horizontal: 20,
                             vertical: 16,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                       ),
@@ -139,446 +194,245 @@ class _PatientSelectionScreenState extends State<PatientSelectionScreen> {
                   ),
                 ),
 
-                // Search Bar
-                Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (value) => setState(() {}),
-                    decoration: InputDecoration(
-                      hintText: 'Search by name, patient ID, or phone number...',
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      filled: true,
-                      fillColor: Colors.white,
-                    ),
-                  ),
-                ),
-
-                // Patient List
-                Expanded(
-                  child: _filteredPatients.isEmpty
-                      ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                if (_selectedConditions.isNotEmpty || _dateRange != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    color: Colors.blue.shade50,
+                    child: Row(
                       children: [
-                        Icon(
-                          Icons.person_outline,
-                          size: 64,
-                          color: Colors.grey.shade400,
-                        ),
-                        const SizedBox(height: 16),
+                        Icon(Icons.info_outline, size: 16, color: Colors.blue.shade700),
+                        const SizedBox(width: 8),
                         Text(
-                          'No patients found',
+                          'Showing ${_filteredPatients.length} of ${_patients.length} patients',
                           style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                            color: Colors.blue.shade700,
                           ),
                         ),
                       ],
                     ),
-                  )
-                      : GridView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 2.5,
-                      crossAxisSpacing: 20,
-                      mainAxisSpacing: 20,
+                  ),
+
+                Expanded(
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _filteredPatients.isEmpty
+                      ? _buildEmptyState()
+                      : RefreshIndicator(
+                    onRefresh: _loadPatients,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _filteredPatients.length,
+                      itemBuilder: (context, index) {
+                        return _buildPatientCard(_filteredPatients[index]);
+                      },
                     ),
-                    itemCount: _filteredPatients.length,
-                    itemBuilder: (context, index) {
-                      final patient = _filteredPatients[index];
-                      return _buildPatientCard(patient);
-                    },
                   ),
                 ),
               ],
             ),
           ),
 
-          // New Patient Modal
-          if (_showNewPatientModal)
-            GestureDetector(
-              onTap: () => setState(() => _showNewPatientModal = false),
-              child: Container(
-                color: Colors.black54,
-                child: Center(
-                  child: GestureDetector(
-                    onTap: () {}, // Prevent closing when tapping modal content
-                    child: Container(
-                      width: 680,
-                      margin: const EdgeInsets.all(32),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: SingleChildScrollView(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Modal Header
-                            Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: Row(
-                                children: [
-                                  const Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Register New Patient',
-                                          style: TextStyle(
-                                            fontSize: 22,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        SizedBox(height: 4),
-                                        Text(
-                                          'Quick patient registration',
-                                          style: TextStyle(
-                                            color: Color(0xFF64748B),
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  IconButton(
-                                    onPressed: () {
-                                      setState(() => _showNewPatientModal = false);
-                                      _clearForm();
-                                    },
-                                    icon: const Icon(Icons.close),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Divider(height: 1),
-
-                            // Form
-                            Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  TextField(
-                                    controller: _nameController,
-                                    decoration: InputDecoration(
-                                      labelText: 'Patient Name *',
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: TextField(
-                                          controller: _ageController,
-                                          keyboardType: TextInputType.number,
-                                          decoration: InputDecoration(
-                                            labelText: 'Age *',
-                                            border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: TextField(
-                                          controller: _phoneController,
-                                          keyboardType: TextInputType.phone,
-                                          decoration: InputDecoration(
-                                            labelText: 'Phone *',
-                                            border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 24),
-
-                                  // Preexisting Conditions Section
-                                  const Text(
-                                    'Preexisting Conditions (Optional)',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF1E293B),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Select all conditions that apply',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-
-                                  // Condition Chips
-                                  Wrap(
-                                    spacing: 8,
-                                    runSpacing: 8,
-                                    children: _commonConditions.map((condition) {
-                                      final isSelected = _selectedConditions.contains(condition);
-                                      return FilterChip(
-                                        label: Text(condition),
-                                        selected: isSelected,
-                                        onSelected: (selected) {
-                                          setState(() {
-                                            if (selected) {
-                                              _selectedConditions.add(condition);
-                                            } else {
-                                              _selectedConditions.remove(condition);
-                                            }
-                                          });
-                                        },
-                                        selectedColor: const Color(0xFFDCEAFE),
-                                        checkmarkColor: const Color(0xFF1E40AF),
-                                        backgroundColor: Colors.grey.shade100,
-                                        labelStyle: TextStyle(
-                                          color: isSelected
-                                              ? const Color(0xFF1E40AF)
-                                              : Colors.grey.shade700,
-                                          fontWeight: isSelected
-                                              ? FontWeight.w600
-                                              : FontWeight.normal,
-                                        ),
-                                      );
-                                    }).toList(),
-                                  ),
-
-                                  const SizedBox(height: 20),
-                                  TextField(
-                                    controller: _notesController,
-                                    maxLines: 3,
-                                    decoration: InputDecoration(
-                                      labelText: 'Additional Notes (Optional)',
-                                      hintText: 'Allergies, medications, special considerations...',
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // Footer
-                            const Divider(height: 1),
-                            Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  TextButton(
-                                    onPressed: () {
-                                      setState(() => _showNewPatientModal = false);
-                                      _clearForm();
-                                    },
-                                    child: const Text('Cancel'),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  ElevatedButton(
-                                    onPressed: _saveNewPatient,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF3B82F6),
-                                      foregroundColor: Colors.white,
-                                    ),
-                                    child: const Text('Save & Continue'),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+          if (_showFilters)
+            PatientFilterWidget(
+              selectedConditions: _selectedConditions,
+              sortOption: _sortOption,
+              dateRange: _dateRange,
+              onConditionsChanged: (conditions) {
+                setState(() {
+                  _selectedConditions = conditions;
+                });
+                _applyFiltersAndSort();
+              },
+              onSortChanged: (option) {
+                setState(() {
+                  _sortOption = option;
+                });
+                _applyFiltersAndSort();
+              },
+              onDateRangeChanged: (range) {
+                setState(() {
+                  _dateRange = range;
+                });
+                _applyFiltersAndSort();
+              },
+              onClearFilters: _clearFilters,
             ),
         ],
       ),
     );
   }
 
-  Widget _buildPatientCard(Patient patient) {
-    return InkWell(
-      onTap: () => _selectPatient(patient),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.person_search,
+            size: 80,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _searchController.text.isEmpty && _selectedConditions.isEmpty && _dateRange == null
+                ? 'No patients registered yet'
+                : 'No patients found',
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Avatar
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: const Color(0xFF3B82F6),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: Text(
-                  _getInitials(patient.name),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _searchController.text.isEmpty && _selectedConditions.isEmpty && _dateRange == null
+                ? 'Click "New Patient" to register'
+                : 'Try adjusting your filters',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade500,
             ),
-            const SizedBox(width: 16),
-
-            // Patient Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          patient.name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          patient.id,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${patient.age} years • ${patient.phone}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  if (patient.conditions.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 6,
-                      children: patient.conditions.take(3).map((condition) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFDCEAFE),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            condition,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFF1E40AF),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: Color(0xFFCBD5E1)),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  String _getInitials(String name) {
-    final parts = name.split(' ');
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  }
-
-  void _selectPatient(Patient patient) {
-    _showConditionSelectionDialog(patient);
-  }
-
-  void _showConditionSelectionDialog(Patient patient) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-          width: 700,
-          height: 500,
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildPatientCard(Patient patient) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PatientDataEditScreen(patient: patient),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
             children: [
-              Text(
-                'Select Condition for ${patient.name}',
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: const Color(0xFF3B82F6),
+                child: Text(
+                  patient.name.substring(0, 1).toUpperCase(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(width: 16),
               Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                  ),
-                  itemCount: _getConditions().length,
-                  itemBuilder: (context, index) {
-                    final condition = _getConditions()[index];
-                    return _buildConditionCard(patient, condition);
-                  },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      patient.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.badge, size: 14, color: Colors.grey.shade600),
+                        const SizedBox(width: 4),
+                        Text(
+                          patient.id,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Icon(Icons.cake, size: 14, color: Colors.grey.shade600),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${patient.age} yrs',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Icon(Icons.phone, size: 14, color: Colors.grey.shade600),
+                        const SizedBox(width: 4),
+                        Text(
+                          patient.phone,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (patient.conditions.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: patient.conditions.take(3).map((condition) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFDCEAFE),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              condition,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Color(0xFF1E40AF),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ],
                 ),
+              ),
+              Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      patient.date,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: Colors.grey,
+                  ),
+                ],
               ),
             ],
           ),
@@ -587,136 +441,9 @@ class _PatientSelectionScreenState extends State<PatientSelectionScreen> {
     );
   }
 
-  Widget _buildConditionCard(Patient patient, MedicalCondition condition) {
-    return InkWell(
-      onTap: () {
-        Navigator.pop(context); // Close condition dialog
-        Navigator.pop(context); // Close patient selection
-        Navigator.pushNamed(
-          context,
-          '/condition',
-          arguments: {
-            'condition': condition,
-            'patient': patient,
-          },
-        );
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: condition.color.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: condition.color.withOpacity(0.2)),
-        ),
-        child: Row(
-          children: [
-            Icon(condition.icon, color: condition.color, size: 32),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                condition.name,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _saveNewPatient() {
-    if (_nameController.text.isEmpty ||
-        _ageController.text.isEmpty ||
-        _phoneController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all required fields')),
-      );
-      return;
-    }
-
-    final newPatient = Patient(
-      id: 'P${(_patients.length + 1).toString().padLeft(3, '0')}',
-      name: _nameController.text,
-      age: int.parse(_ageController.text),
-      phone: _phoneController.text,
-      date: DateTime.now().toString().split(' ')[0],
-      conditions: _selectedConditions.toList(),
-      notes: _notesController.text.isEmpty ? null : _notesController.text,
-    );
-
-    setState(() {
-      _patients.insert(0, newPatient);
-      _showNewPatientModal = false;
-    });
-
-    _clearForm();
-
-    // Auto-select the new patient
-    Future.delayed(const Duration(milliseconds: 300), () {
-      _selectPatient(newPatient);
-    });
-  }
-
-  void _clearForm() {
-    _nameController.clear();
-    _ageController.clear();
-    _phoneController.clear();
-    _notesController.clear();
-    _selectedConditions.clear();
-  }
-
-  List<MedicalCondition> _getConditions() {
-    return const [
-      MedicalCondition(
-        id: 'diabetes',
-        name: 'Type 2 Diabetes',
-        description: 'Blood sugar management',
-        icon: Icons.monitor_heart,
-        color: Color(0xFFDC2626),
-        todayCount: 3,
-        totalCount: 45,
-      ),
-      MedicalCondition(
-        id: 'hypertension',
-        name: 'Hypertension',
-        description: 'High blood pressure',
-        icon: Icons.favorite,
-        color: Color(0xFFEF4444),
-        todayCount: 2,
-        totalCount: 38,
-      ),
-      MedicalCondition(
-        id: 'asthma',
-        name: 'Asthma',
-        description: 'Respiratory condition',
-        icon: Icons.air,
-        color: Color(0xFF10B981),
-        todayCount: 1,
-        totalCount: 22,
-      ),
-      MedicalCondition(
-        id: 'arthritis',
-        name: 'Arthritis',
-        description: 'Joint inflammation',
-        icon: Icons.accessibility_new,
-        color: Color(0xFFF59E0B),
-        todayCount: 2,
-        totalCount: 31,
-      ),
-    ];
-  }
-
   @override
   void dispose() {
     _searchController.dispose();
-    _nameController.dispose();
-    _ageController.dispose();
-    _phoneController.dispose();
-    _notesController.dispose();
     super.dispose();
   }
 }

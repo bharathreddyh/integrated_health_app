@@ -1,24 +1,27 @@
+import 'dart:convert';
+import 'vitals.dart';
+
 class Patient {
   final String id;
   final String name;
   final int age;
   final String phone;
-  final String? diagnosis;
   final String date;
   final List<String> conditions;
-  final int visits;
   final String? notes;
+  final int visits;
+  final Vitals? vitals;
 
   const Patient({
     required this.id,
     required this.name,
     required this.age,
     required this.phone,
-    this.diagnosis,
     required this.date,
     this.conditions = const [],
-    this.visits = 1,
     this.notes,
+    this.visits = 0,
+    this.vitals,
   });
 
   Patient copyWith({
@@ -26,22 +29,59 @@ class Patient {
     String? name,
     int? age,
     String? phone,
-    String? diagnosis,
     String? date,
     List<String>? conditions,
-    int? visits,
     String? notes,
+    int? visits,
+    Vitals? vitals,
   }) {
     return Patient(
       id: id ?? this.id,
       name: name ?? this.name,
       age: age ?? this.age,
       phone: phone ?? this.phone,
-      diagnosis: diagnosis ?? this.diagnosis,
       date: date ?? this.date,
       conditions: conditions ?? this.conditions,
-      visits: visits ?? this.visits,
       notes: notes ?? this.notes,
+      visits: visits ?? this.visits,
+      vitals: vitals ?? this.vitals,
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'age': age,
+      'phone': phone,
+      'date': date,
+      'conditions': jsonEncode(conditions),
+      'notes': notes,
+      'visits': visits,
+      'vitals': vitals?.toJson(),
+    };
+  }
+
+  factory Patient.fromMap(Map<String, dynamic> map) {
+    return Patient(
+      id: map['id'] as String,
+      name: map['name'] as String,
+      age: map['age'] as int,
+      phone: map['phone'] as String,
+      date: map['date'] as String,
+      conditions: map['conditions'] != null
+          ? List<String>.from(jsonDecode(map['conditions'] as String))
+          : [],
+      notes: map['notes'] as String?,
+      visits: map['visits'] as int? ?? 0,
+      vitals: map['vitals'] != null
+          ? Vitals.fromJson(map['vitals'] as String)
+          : null,
+    );
+  }
+
+  String toJson() => jsonEncode(toMap());
+
+  factory Patient.fromJson(String source) =>
+      Patient.fromMap(jsonDecode(source) as Map<String, dynamic>);
 }

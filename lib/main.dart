@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
+import 'screens/home/nurse_home_screen.dart';
+import 'screens/home/patient_home_screen.dart';
 import 'screens/patient/patient_selection_screen.dart';
 import 'screens/kidney/kidney_screen.dart';
 import 'models/patient.dart';
@@ -19,25 +21,21 @@ class ClinicClarityApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            foregroundColor: Colors.white,
-            backgroundColor: Colors.blue,
-          ),
-        ),
       ),
       debugShowCheckedModeBanner: false,
       initialRoute: '/login',
       routes: {
         '/login': (context) => const LoginScreen(),
-        '/home': (context) => const HomeScreen(),
+        '/doctor-home': (context) => const HomeScreen(),
+        '/nurse-home': (context) => const NurseHomeScreen(),
+        '/patient-home': (context) => const PatientHomeScreen(),
         '/patient-selection': (context) => const PatientSelectionScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/kidney') {
           final patient = settings.arguments as Patient?;
           return MaterialPageRoute(
-            builder: (context) => KidneyScreen(patient: patient),
+            builder: (context) => KidneyScreen(patient: patient!),
           );
         }
         return null;

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import '../../services/user_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final user = UserService.currentUser!;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
@@ -53,15 +56,15 @@ class HomeScreen extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    'Dr. Smith',
-                                    style: TextStyle(
+                                  Text(
+                                    user.name,
+                                    style: const TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   Text(
-                                    'General Medicine',
+                                    user.specialty ?? 'General Medicine',
                                     style: TextStyle(
                                       fontSize: 13,
                                       color: Colors.grey.shade600,
@@ -89,6 +92,13 @@ class HomeScreen extends StatelessWidget {
                         _buildSidebarAction('Recent Patients', Icons.history, Colors.indigo, () {}),
                         _buildSidebarAction('Templates', Icons.file_copy_outlined, Colors.purple, () {}),
                         _buildSidebarAction('Settings', Icons.settings_outlined, Colors.grey, () {}),
+                        const SizedBox(height: 8),
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        _buildSidebarAction('Logout', Icons.logout, Colors.red, () {
+                          UserService.logout();
+                          Navigator.pushReplacementNamed(context, '/login');
+                        }),
                       ],
                     ),
                   ),

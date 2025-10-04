@@ -9,13 +9,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
-
+  printing: ^5.11.0
+  speech_to_text: ^7.0.0
+  flutter_tts: ^4.0.2
+  sqflite: ^2.3.0
 
   # State Management
   provider: ^6.1.1
-
-
 
   # UI & Utilities
   flutter_svg: ^2.0.9
