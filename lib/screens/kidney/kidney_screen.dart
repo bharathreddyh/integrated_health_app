@@ -1,3 +1,5 @@
+// lib/screens/kidney/kidney_screen.dart - COMPLETE WITH ALL FIXES
+
 import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
@@ -8,6 +10,7 @@ import '../../models/marker.dart';
 import '../../models/visit.dart';
 import '../../models/condition_tool.dart';
 import '../../models/prescription.dart';
+import '../../models/drawing_path.dart';
 import '../../services/voice_command_service.dart';
 import '../../services/database_helper.dart';
 import '../../widgets/voice_feedback_overlay.dart';
@@ -15,7 +18,9 @@ import '../patient/visit_history_screen.dart';
 import '../prescription/prescription_management_screen.dart';
 import 'widgets/kidney_canvas.dart';
 import 'widgets/tool_panel.dart';
+import 'widgets/drawing_tool_panel.dart';
 import 'pdf_preview_screen.dart';
+import '../../services/user_service.dart';
 
 class KidneyScreen extends StatefulWidget {
   final Patient? patient;
@@ -30,7 +35,9 @@ class _KidneyScreenState extends State<KidneyScreen> {
   String selectedPreset = 'anatomical';
   String selectedTool = 'pan';
   List<Marker> markers = [];
+  List<DrawingPath> drawingPaths = [];
   int? selectedMarkerIndex;
+  int? selectedPathIndex; // NEW
   double zoom = 1.0;
   Offset pan = Offset.zero;
 
@@ -45,6 +52,12 @@ class _KidneyScreenState extends State<KidneyScreen> {
   String _voiceStatus = '';
 
   int? _currentVisitId;
+
+  // Drawing state
+  String _selectedDrawingTool = 'none';
+  Color _drawingColor = Colors.black;
+  double _strokeWidth = 3.0;
+  bool _showDrawingPanel = false;
 
   @override
   void initState() {
@@ -86,6 +99,7 @@ class _KidneyScreenState extends State<KidneyScreen> {
       if (visit != null && mounted) {
         setState(() {
           markers = List<Marker>.from(visit.markers);
+          drawingPaths = List<DrawingPath>.from(visit.drawingPaths);
           _currentVisitId = visit.id;
         });
       }
@@ -101,17 +115,21 @@ class _KidneyScreenState extends State<KidneyScreen> {
         patientId: patient.id,
         diagramType: selectedPreset,
         markers: markers,
+        drawingPaths: drawingPaths,
         notes: null,
         createdAt: DateTime.now(),
       );
 
+      // Get current doctor ID
+      final doctorId = UserService.currentUserId ?? 'USR001';
+
       if (_currentVisitId == null) {
-        final id = await DatabaseHelper.instance.createVisit(visit);
+        final id = await DatabaseHelper.instance.createVisit(visit, doctorId);
         setState(() {
           _currentVisitId = id;
         });
       } else {
-        await DatabaseHelper.instance.updateVisit(visit);
+        await DatabaseHelper.instance.updateVisit(visit, doctorId);
       }
 
       if (mounted) {
@@ -142,15 +160,19 @@ class _KidneyScreenState extends State<KidneyScreen> {
         patientId: patient.id,
         diagramType: selectedPreset,
         markers: markers,
+        drawingPaths: drawingPaths,
         notes: null,
         createdAt: DateTime.now(),
       );
 
+      // Get current doctor ID
+      final doctorId = UserService.currentUserId ?? 'USR001';
+
       if (_currentVisitId == null) {
-        final id = await DatabaseHelper.instance.createVisit(visit);
+        final id = await DatabaseHelper.instance.createVisit(visit, doctorId);
         _currentVisitId = id;
       } else {
-        await DatabaseHelper.instance.updateVisit(visit);
+        await DatabaseHelper.instance.updateVisit(visit, doctorId);
       }
     } catch (e) {
       print('Error saving: $e');
@@ -158,7 +180,7 @@ class _KidneyScreenState extends State<KidneyScreen> {
   }
 
   Future<void> _openPrescriptions() async {
-    if (_currentVisitId == null && markers.isNotEmpty) {
+    if (_currentVisitId == null && (markers.isNotEmpty || drawingPaths.isNotEmpty)) {
       await _saveSilently();
     }
 
@@ -181,6 +203,26 @@ class _KidneyScreenState extends State<KidneyScreen> {
     );
   }
 
+  // NEW: Undo last drawing
+  void _undoDrawing() {
+    if (drawingPaths.isNotEmpty) {
+      setState(() {
+        drawingPaths = List.from(drawingPaths)..removeLast(); // Create new list
+        selectedPathIndex = null;
+      });
+    }
+  }
+
+  // NEW: Delete selected drawing
+  void _deleteSelectedPath() {
+    if (selectedPathIndex != null && selectedPathIndex! < drawingPaths.length) {
+      setState(() {
+        drawingPaths = List.from(drawingPaths)..removeAt(selectedPathIndex!); // Create new list
+        selectedPathIndex = null;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _voiceService.dispose();
@@ -188,42 +230,12 @@ class _KidneyScreenState extends State<KidneyScreen> {
   }
 
   final List<ConditionTool> tools = const [
-    ConditionTool(
-      id: 'pan',
-      name: 'Pan Tool',
-      color: Colors.grey,
-      defaultSize: 0,
-    ),
-    ConditionTool(
-      id: 'calculi',
-      name: 'Calculi',
-      color: Colors.grey,
-      defaultSize: 8,
-    ),
-    ConditionTool(
-      id: 'cyst',
-      name: 'Cyst',
-      color: Color(0xFF2563EB),
-      defaultSize: 12,
-    ),
-    ConditionTool(
-      id: 'tumor',
-      name: 'Tumor',
-      color: Color(0xFF7C2D12),
-      defaultSize: 16,
-    ),
-    ConditionTool(
-      id: 'inflammation',
-      name: 'Inflammation',
-      color: Color(0xFFEA580C),
-      defaultSize: 14,
-    ),
-    ConditionTool(
-      id: 'blockage',
-      name: 'Blockage',
-      color: Color(0xFF9333EA),
-      defaultSize: 10,
-    ),
+    ConditionTool(id: 'pan', name: 'Pan Tool', color: Colors.grey, defaultSize: 0),
+    ConditionTool(id: 'calculi', name: 'Calculi', color: Colors.grey, defaultSize: 8),
+    ConditionTool(id: 'cyst', name: 'Cyst', color: Color(0xFF2563EB), defaultSize: 12),
+    ConditionTool(id: 'tumor', name: 'Tumor', color: Color(0xFF7C2D12), defaultSize: 16),
+    ConditionTool(id: 'inflammation', name: 'Inflammation', color: Color(0xFFEA580C), defaultSize: 14),
+    ConditionTool(id: 'blockage', name: 'Blockage', color: Color(0xFF9333EA), defaultSize: 10),
   ];
 
   final Map<String, String> presets = {
@@ -296,14 +308,16 @@ class _KidneyScreenState extends State<KidneyScreen> {
   void _executeNavigationCommand(VoiceCommand command) async {
     final preset = command.parameters['preset'] as String?;
     if (preset != null && presets.containsKey(preset)) {
-      if (markers.isNotEmpty) {
+      if (markers.isNotEmpty || drawingPaths.isNotEmpty) {
         await _saveAnnotations();
       }
 
       setState(() {
         selectedPreset = preset;
         markers.clear();
+        drawingPaths.clear();
         selectedMarkerIndex = null;
+        selectedPathIndex = null;
       });
 
       await _loadAnnotations();
@@ -391,7 +405,7 @@ class _KidneyScreenState extends State<KidneyScreen> {
             patient: patient,
             markers: markers,
             canvasImage: canvasImage,
-            visitId: _currentVisitId, // FIXED: Pass visit ID
+            visitId: _currentVisitId,
           ),
         ),
       );
@@ -444,63 +458,119 @@ class _KidneyScreenState extends State<KidneyScreen> {
               children: [
                 SizedBox(
                   width: 280,
-                  child: ToolPanel(
-                    tools: tools,
-                    selectedTool: selectedTool,
-                    onToolSelected: (tool) {
-                      setState(() {
-                        selectedTool = tool;
-                      });
-                    },
-                    markers: markers,
-                    selectedMarkerIndex: selectedMarkerIndex,
-                    onMarkerDeleted: () {
-                      if (selectedMarkerIndex != null) {
-                        setState(() {
-                          markers.removeAt(selectedMarkerIndex!);
-                          selectedMarkerIndex = null;
-                        });
-                      }
-                    },
-                    onMarkerLabelChanged: (newLabel) {
-                      if (selectedMarkerIndex != null) {
-                        setState(() {
-                          markers[selectedMarkerIndex!] = markers[selectedMarkerIndex!].copyWith(label: newLabel);
-                        });
-                      }
-                    },
-                    onMarkerSizeChanged: (newSize) {
-                      if (selectedMarkerIndex != null) {
-                        setState(() {
-                          markers[selectedMarkerIndex!] = markers[selectedMarkerIndex!].copyWith(size: newSize);
-                        });
-                      }
-                    },
-                    zoom: zoom,
-                    onZoomChanged: (newZoom) {
-                      setState(() {
-                        zoom = newZoom;
-                      });
-                    },
-                    onResetView: () {
-                      setState(() {
-                        zoom = 1.0;
-                        pan = Offset.zero;
-                      });
-                    },
-                    onClearAll: () {
-                      setState(() {
-                        markers.clear();
-                        selectedMarkerIndex = null;
-                      });
-                    },
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: ToolPanel(
+                          tools: tools,
+                          selectedTool: selectedTool,
+                          onToolSelected: (tool) {
+                            setState(() {
+                              selectedTool = tool;
+                              _selectedDrawingTool = 'none';
+                            });
+                          },
+                          markers: markers,
+                          selectedMarkerIndex: selectedMarkerIndex,
+                          onMarkerDeleted: () {
+                            if (selectedMarkerIndex != null) {
+                              setState(() {
+                                markers = List.from(markers); // Create new list
+                                markers.removeAt(selectedMarkerIndex!);
+                                selectedMarkerIndex = null;
+                              });
+                            }
+                          },
+                          onMarkerLabelChanged: (newLabel) {
+                            if (selectedMarkerIndex != null) {
+                              setState(() {
+                                markers = List.from(markers); // Create new list
+                                markers[selectedMarkerIndex!] = markers[selectedMarkerIndex!].copyWith(label: newLabel);
+                              });
+                            }
+                          },
+                          onMarkerSizeChanged: (newSize) {
+                            if (selectedMarkerIndex != null) {
+
+                              setState(() {
+                                markers = List.from(markers); // Create new list
+                                markers[selectedMarkerIndex!] = markers[selectedMarkerIndex!].copyWith(size: newSize);
+                              });
+                            }
+                          },
+                          zoom: zoom,
+                          onZoomChanged: (newZoom) {
+                            setState(() {
+                              zoom = newZoom;
+                            });
+                          },
+                          onResetView: () {
+                            setState(() {
+                              zoom = 1.0;
+                              pan = Offset.zero;
+                            });
+                          },
+                          onClearAll: () {
+                            setState(() {
+                              markers.clear();
+                              selectedMarkerIndex = null;
+                            });
+                          },
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border(top: BorderSide(color: Colors.grey.shade300)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _showDrawingPanel = !_showDrawingPanel;
+                                  if (_showDrawingPanel) {
+                                    _selectedDrawingTool = 'pen';
+                                    selectedTool = 'pan';
+                                  } else {
+                                    _selectedDrawingTool = 'none';
+                                    selectedPathIndex = null;
+                                  }
+                                });
+                              },
+                              icon: Icon(_showDrawingPanel ? Icons.close : Icons.draw),
+                              label: Text(_showDrawingPanel ? 'Close Drawing' : 'Free-Hand Draw'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _showDrawingPanel ? Colors.orange : Colors.blue,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                            ),
+                            if (_showDrawingPanel) ...[
+                              const SizedBox(height: 16),
+                              DrawingToolPanel(
+                                selectedColor: _drawingColor,
+                                strokeWidth: _strokeWidth,
+                                hasDrawings: drawingPaths.isNotEmpty,
+                                hasSelection: selectedPathIndex != null,
+                                onColorChanged: (color) => setState(() => _drawingColor = color),
+                                onStrokeWidthChanged: (width) => setState(() => _strokeWidth = width),
+                                onUndo: _undoDrawing,
+                                onDeleteSelected: _deleteSelectedPath,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
                 Expanded(
                   child: Column(
                     children: [
-                      // HEADER - Rx button removed from here
                       Container(
                         height: 80,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -512,7 +582,7 @@ class _KidneyScreenState extends State<KidneyScreen> {
                           children: [
                             IconButton(
                               onPressed: () async {
-                                if (markers.isNotEmpty) {
+                                if (markers.isNotEmpty || drawingPaths.isNotEmpty) {
                                   await _saveAnnotations();
                                 }
                                 if (mounted) Navigator.pop(context);
@@ -562,14 +632,16 @@ class _KidneyScreenState extends State<KidneyScreen> {
                                 }).toList(),
                                 onChanged: (value) async {
                                   if (value != null) {
-                                    if (markers.isNotEmpty) {
+                                    if (markers.isNotEmpty || drawingPaths.isNotEmpty) {
                                       await _saveAnnotations();
                                     }
 
                                     setState(() {
                                       selectedPreset = value;
                                       markers.clear();
+                                      drawingPaths.clear();
                                       selectedMarkerIndex = null;
+                                      selectedPathIndex = null;
                                     });
 
                                     await _loadAnnotations();
@@ -579,7 +651,7 @@ class _KidneyScreenState extends State<KidneyScreen> {
                             ),
                             const SizedBox(width: 16),
                             ElevatedButton.icon(
-                              onPressed: markers.isEmpty ? null : _saveAnnotations,
+                              onPressed: (markers.isEmpty && drawingPaths.isEmpty) ? null : _saveAnnotations,
                               icon: const Icon(Icons.save, size: 18),
                               label: const Text('Save', style: TextStyle(fontSize: 12)),
                               style: ElevatedButton.styleFrom(
@@ -653,7 +725,9 @@ class _KidneyScreenState extends State<KidneyScreen> {
                                   child: KidneyCanvas(
                                     selectedPreset: selectedPreset,
                                     markers: markers,
+                                    drawingPaths: drawingPaths,
                                     selectedMarkerIndex: selectedMarkerIndex,
+                                    selectedPathIndex: selectedPathIndex,
                                     selectedTool: selectedTool,
                                     tools: tools,
                                     zoom: zoom,
@@ -661,6 +735,9 @@ class _KidneyScreenState extends State<KidneyScreen> {
                                     waitingForClick: _waitingForClick,
                                     pendingToolType: _pendingToolType,
                                     pendingToolSize: _pendingToolSize,
+                                    selectedDrawingTool: _selectedDrawingTool,
+                                    drawingColor: _drawingColor,
+                                    strokeWidth: _strokeWidth,
                                     onMarkerAdded: (marker) {
                                       setState(() {
                                         markers.add(marker);
@@ -682,11 +759,13 @@ class _KidneyScreenState extends State<KidneyScreen> {
                                     },
                                     onMarkerSelected: (index) {
                                       setState(() {
+
                                         selectedMarkerIndex = index == -1 ? null : index;
                                       });
                                     },
                                     onMarkerMoved: (index, newRelativePosition) {
                                       setState(() {
+                                        markers = List.from(markers); // Create new list
                                         markers[index] = markers[index].copyWith(
                                           x: newRelativePosition.dx,
                                           y: newRelativePosition.dy,
@@ -695,12 +774,24 @@ class _KidneyScreenState extends State<KidneyScreen> {
                                     },
                                     onMarkerResized: (index, newSize) {
                                       setState(() {
+                                        markers = List.from(markers); // Create new list
                                         markers[index] = markers[index].copyWith(size: newSize);
                                       });
                                     },
                                     onPanChanged: (newPan) {
                                       setState(() {
                                         pan = newPan;
+                                      });
+                                    },
+                                    onDrawingPathAdded: (path) {
+                                      setState(() {
+                                        drawingPaths.add(path);
+                                        selectedPathIndex = null;
+                                      });
+                                    },
+                                    onDrawingPathSelected: (index) {
+                                      setState(() {
+                                        selectedPathIndex = index == -1 ? null : index;
                                       });
                                     },
                                   ),
@@ -711,7 +802,6 @@ class _KidneyScreenState extends State<KidneyScreen> {
                         ),
                       ),
 
-                      // FOOTER - FIXED: Rx button added here
                       Container(
                         height: 100,
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -757,47 +847,19 @@ class _KidneyScreenState extends State<KidneyScreen> {
                                   Row(
                                     children: [
                                       Text(
-                                        'Age: ${patient.age}',
+                                        'Markers: ${markers.length}',
                                         style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                                       ),
                                       const SizedBox(width: 24),
                                       Text(
-                                        'Phone: ${patient.phone}',
-                                        style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                                      ),
-                                      const SizedBox(width: 24),
-                                      Text(
-                                        'Date: ${patient.date}',
+                                        'Drawings: ${drawingPaths.length}',
                                         style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
                                       ),
                                     ],
                                   ),
-                                  if (patient.conditions.isNotEmpty) ...[
-                                    const SizedBox(height: 8),
-                                    Wrap(
-                                      spacing: 6,
-                                      children: patient.conditions.map((condition) {
-                                        return Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFDCEAFE),
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                          child: Text(
-                                            condition,
-                                            style: const TextStyle(
-                                              fontSize: 11,
-                                              color: Color(0xFF1E40AF),
-                                            ),
-                                          ),
-                                        );
-                                      }).toList(),
-                                    ),
-                                  ],
                                 ],
                               ),
                             ),
-                            // FIXED: Rx button moved here (footer)
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -834,16 +896,6 @@ class _KidneyScreenState extends State<KidneyScreen> {
                                     );
 
                                     final freshPatient = await DatabaseHelper.instance.getPatient(patient.id);
-
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Vitals loaded: ${freshPatient?.vitals != null ? "YES" : "NO"}'),
-                                          duration: const Duration(seconds: 2),
-                                        ),
-                                      );
-                                    }
-
                                     final canvasImage = await _captureCanvas();
 
                                     if (context.mounted) Navigator.pop(context);

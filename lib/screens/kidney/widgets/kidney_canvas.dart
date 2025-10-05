@@ -1,11 +1,16 @@
+// lib/screens/kidney/widgets/kidney_canvas.dart - COMPLETE FILE
+
 import 'package:flutter/material.dart';
 import '../../../models/marker.dart';
 import '../../../models/condition_tool.dart';
+import '../../../models/drawing_path.dart';
 
 class KidneyCanvas extends StatefulWidget {
   final String selectedPreset;
   final List<Marker> markers;
+  final List<DrawingPath> drawingPaths;
   final int? selectedMarkerIndex;
+  final int? selectedPathIndex; // NEW
   final String selectedTool;
   final List<ConditionTool> tools;
   final double zoom;
@@ -19,11 +24,19 @@ class KidneyCanvas extends StatefulWidget {
   final String? pendingToolType;
   final double? pendingToolSize;
 
+  final String selectedDrawingTool;
+  final Color drawingColor;
+  final double strokeWidth;
+  final Function(DrawingPath) onDrawingPathAdded;
+  final Function(int) onDrawingPathSelected; // NEW
+
   const KidneyCanvas({
     super.key,
     required this.selectedPreset,
     required this.markers,
+    this.drawingPaths = const [],
     required this.selectedMarkerIndex,
+    this.selectedPathIndex, // NEW
     required this.selectedTool,
     required this.tools,
     required this.zoom,
@@ -36,6 +49,11 @@ class KidneyCanvas extends StatefulWidget {
     this.waitingForClick = false,
     this.pendingToolType,
     this.pendingToolSize,
+    required this.selectedDrawingTool,
+    required this.drawingColor,
+    required this.strokeWidth,
+    required this.onDrawingPathAdded,
+    required this.onDrawingPathSelected, // NEW
   });
 
   @override
@@ -47,7 +65,7 @@ class _KidneyCanvasState extends State<KidneyCanvas> {
   Offset? _currentPan;
   int? _draggingMarkerIndex;
   bool _isResizing = false;
-  Offset? _resizeStart;
+  List<Offset> _currentDrawingPoints = [];
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +76,6 @@ class _KidneyCanvasState extends State<KidneyCanvas> {
       onPanEnd: _handlePanEnd,
       child: Stack(
         children: [
-          // Background image with zoom/pan
           Positioned.fill(
             child: Transform(
               transform: Matrix4.identity()
@@ -74,22 +91,9 @@ class _KidneyCanvasState extends State<KidneyCanvas> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.image_not_supported,
-                              size: 48,
-                              color: Colors.grey.shade400),
+                          Icon(Icons.image_not_supported, size: 48, color: Colors.grey.shade400),
                           const SizedBox(height: 8),
-                          Text(
-                            'Image not found',
-                            style: TextStyle(color: Colors.grey.shade600),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _getImagePath(widget.selectedPreset),
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
+                          Text('Image not found', style: TextStyle(color: Colors.grey.shade600)),
                         ],
                       ),
                     ),
@@ -98,12 +102,16 @@ class _KidneyCanvasState extends State<KidneyCanvas> {
               ),
             ),
           ),
-          // Markers overlay
           Positioned.fill(
             child: CustomPaint(
-              painter: MarkerPainter(
+              painter: CombinedPainter(
                 markers: widget.markers,
+                drawingPaths: widget.drawingPaths,
+                currentDrawingPoints: _currentDrawingPoints,
+                currentDrawingColor: widget.drawingColor,
+                currentStrokeWidth: widget.strokeWidth,
                 selectedMarkerIndex: widget.selectedMarkerIndex,
+                selectedPathIndex: widget.selectedPathIndex, // NEW
                 zoom: widget.zoom,
                 pan: widget.pan,
               ),
@@ -116,34 +124,39 @@ class _KidneyCanvasState extends State<KidneyCanvas> {
 
   String _getImagePath(String preset) {
     switch (preset) {
-      case 'anatomical':
-        return 'assets/images/kidney_anatomical.png';
-      case 'simple':
-        return 'assets/images/kidney_simple.png';
-      case 'crossSection':
-        return 'assets/images/kidney_cross_section.png';
-      case 'nephron':
-        return 'assets/images/kidney_nephron.png';
-      case 'polycystic':
-        return 'assets/images/kidney_polycystic.png';
-      case 'pyelonephritis':
-        return 'assets/images/kidney_pyelonephritis.png';
-      case 'glomerulonephritis':
-        return 'assets/images/kidney_glomerulonephritis.png';
-      default:
-        return 'assets/images/kidney_anatomical.png';
+      case 'anatomical': return 'assets/images/kidney_anatomical.png';
+      case 'simple': return 'assets/images/kidney_simple.png';
+      case 'crossSection': return 'assets/images/kidney_cross_section.png';
+      case 'nephron': return 'assets/images/kidney_nephron.png';
+      case 'polycystic': return 'assets/images/kidney_polycystic.png';
+      case 'pyelonephritis': return 'assets/images/kidney_pyelonephritis.png';
+      case 'glomerulonephritis': return 'assets/images/kidney_glomerulonephritis.png';
+      default: return 'assets/images/kidney_anatomical.png';
     }
   }
 
   void _handleTapDown(TapDownDetails details) {
-    // Handle voice-initiated placement
-    if (widget.waitingForClick && widget.pendingToolType != null) {
-      final tool = widget.tools.firstWhere(
-            (t) => t.id == widget.pendingToolType,
-        orElse: () => widget.tools.first,
-      );
-      final canvasSize = context.size!;
+    // Check if tapping on a drawing path first
+    if (widget.selectedDrawingTool == 'pen') {
+      for (int i = widget.drawingPaths.length - 1; i >= 0; i--) {
+        if (widget.drawingPaths[i].containsPoint(
+          details.localPosition,
+          context.size!,
+          widget.zoom,
+          widget.pan,
+        )) {
+          widget.onDrawingPathSelected(i);
+          return;
+        }
+      }
+      // Deselect if tapping empty space
+      widget.onDrawingPathSelected(-1);
+    }
 
+    // Existing marker logic
+    if (widget.waitingForClick && widget.pendingToolType != null) {
+      final tool = widget.tools.firstWhere((t) => t.id == widget.pendingToolType);
+      final canvasSize = context.size!;
       final marker = Marker.fromScreenCoordinates(
         type: tool.id,
         screenPosition: details.localPosition,
@@ -153,19 +166,16 @@ class _KidneyCanvasState extends State<KidneyCanvas> {
         size: widget.pendingToolSize ?? tool.defaultSize.toDouble(),
         color: tool.color,
       );
-
       widget.onMarkerAdded(marker);
       return;
     }
 
-    // Regular tap handling
     if (widget.selectedTool == 'pan') {
       final tappedMarkerIndex = _findMarkerAtPosition(details.localPosition);
       widget.onMarkerSelected(tappedMarkerIndex);
-    } else {
+    } else if (widget.selectedDrawingTool == 'none') {
       final tool = widget.tools.firstWhere((t) => t.id == widget.selectedTool);
       final canvasSize = context.size!;
-
       final marker = Marker.fromScreenCoordinates(
         type: tool.id,
         screenPosition: details.localPosition,
@@ -175,35 +185,56 @@ class _KidneyCanvasState extends State<KidneyCanvas> {
         size: tool.defaultSize.toDouble(),
         color: tool.color,
       );
-
       widget.onMarkerAdded(marker);
     }
   }
 
+  void _handlePanEnd(DragEndDetails details) {
+    // Finish drawing - UPDATED TO USE RELATIVE COORDINATES
+    if (_currentDrawingPoints.isNotEmpty) {
+      final path = DrawingPath.fromScreenCoordinates(
+        screenPoints: List.from(_currentDrawingPoints),
+        canvasSize: context.size!,
+        zoom: widget.zoom,
+        pan: widget.pan,
+        color: widget.drawingColor,
+        strokeWidth: widget.strokeWidth,
+      );
+      widget.onDrawingPathAdded(path);
+      setState(() => _currentDrawingPoints = []);
+      return;
+    }
+
+    setState(() {
+      _draggingMarkerIndex = null;
+      _isResizing = false;
+      _panStart = null;
+      _currentPan = null;
+    });
+  }
   void _handlePanStart(DragStartDetails details) {
+    // Drawing mode
+    if (widget.selectedDrawingTool == 'pen') {
+      setState(() {
+        _currentDrawingPoints = [details.localPosition];
+      });
+      return;
+    }
+
     if (widget.selectedTool == 'pan') {
-      // Check if starting to resize a selected marker
       if (widget.selectedMarkerIndex != null) {
         final resizeHandleIndex = _findResizeHandleAtPosition(details.localPosition);
         if (resizeHandleIndex != -1) {
-          setState(() {
-            _isResizing = true;
-            _resizeStart = details.localPosition;
-          });
+          setState(() => _isResizing = true);
           return;
         }
       }
 
-      // Check if starting to drag a marker
       final tappedMarkerIndex = _findMarkerAtPosition(details.localPosition);
-
       if (tappedMarkerIndex != -1) {
-        setState(() {
-          _draggingMarkerIndex = tappedMarkerIndex;
-        });
+        setState(() => _draggingMarkerIndex = tappedMarkerIndex);
         widget.onMarkerSelected(tappedMarkerIndex);
       } else {
-        // Start panning canvas
         setState(() {
           _panStart = details.localPosition;
           _currentPan = widget.pan;
@@ -213,8 +244,15 @@ class _KidneyCanvasState extends State<KidneyCanvas> {
   }
 
   void _handlePanUpdate(DragUpdateDetails details) {
+    // Drawing mode
+    if (widget.selectedDrawingTool == 'pen') {
+      setState(() {
+        _currentDrawingPoints.add(details.localPosition);
+      });
+      return;
+    }
+
     if (_isResizing && widget.selectedMarkerIndex != null) {
-      // Resize marker by dragging the handle
       final canvasSize = context.size!;
       final marker = widget.markers[widget.selectedMarkerIndex!];
       final markerScreenPos = marker.toScreenCoordinates(
@@ -222,18 +260,12 @@ class _KidneyCanvasState extends State<KidneyCanvas> {
         zoom: widget.zoom,
         pan: widget.pan,
       );
-
-      // Calculate new size based on distance from marker center
       final distance = (details.localPosition - markerScreenPos).distance;
       final newSize = (distance * 2).clamp(8.0, 50.0);
-
       widget.onMarkerResized(widget.selectedMarkerIndex!, newSize);
-
     } else if (_draggingMarkerIndex != null) {
-      // Move marker
       final canvasSize = context.size!;
       final marker = widget.markers[_draggingMarkerIndex!];
-
       final newMarker = Marker.fromScreenCoordinates(
         type: marker.type,
         screenPosition: details.localPosition,
@@ -244,31 +276,18 @@ class _KidneyCanvasState extends State<KidneyCanvas> {
         color: marker.color,
         label: marker.label,
       );
-
       widget.onMarkerMoved(_draggingMarkerIndex!, Offset(newMarker.x, newMarker.y));
-
     } else if (_panStart != null && _currentPan != null) {
-      // Pan canvas
       final delta = details.localPosition - _panStart!;
       final newPan = _currentPan! + delta;
       widget.onPanChanged(newPan);
     }
   }
 
-  void _handlePanEnd(DragEndDetails details) {
-    setState(() {
-      _draggingMarkerIndex = null;
-      _isResizing = false;
-      _resizeStart = null;
-      _panStart = null;
-      _currentPan = null;
-    });
-  }
+
 
   int _findMarkerAtPosition(Offset position) {
     final canvasSize = context.size!;
-
-    // Check from last to first (top to bottom in z-order)
     for (int i = widget.markers.length - 1; i >= 0; i--) {
       final marker = widget.markers[i];
       final screenPos = marker.toScreenCoordinates(
@@ -277,18 +296,14 @@ class _KidneyCanvasState extends State<KidneyCanvas> {
         pan: widget.pan,
       );
       final scaledSize = marker.getScaledSize(widget.zoom);
-
       final distance = (position - screenPos).distance;
-      if (distance <= scaledSize / 2) {
-        return i;
-      }
+      if (distance <= scaledSize / 2) return i;
     }
     return -1;
   }
 
   int _findResizeHandleAtPosition(Offset position) {
     if (widget.selectedMarkerIndex == null) return -1;
-
     final canvasSize = context.size!;
     final marker = widget.markers[widget.selectedMarkerIndex!];
     final screenPos = marker.toScreenCoordinates(
@@ -297,67 +312,114 @@ class _KidneyCanvasState extends State<KidneyCanvas> {
       pan: widget.pan,
     );
     final scaledSize = marker.getScaledSize(widget.zoom);
-
-    // Resize handle position (bottom-right of marker)
-    final handlePos = Offset(
-      screenPos.dx + scaledSize / 2,
-      screenPos.dy + scaledSize / 2,
-    );
-
+    final handlePos = Offset(screenPos.dx + scaledSize / 2, screenPos.dy + scaledSize / 2);
     final distance = (position - handlePos).distance;
-    if (distance <= 12.0) { // Increased hit area for easier grabbing
-      return widget.selectedMarkerIndex!;
-    }
-
+    if (distance <= 12.0) return widget.selectedMarkerIndex!;
     return -1;
   }
 }
 
-class MarkerPainter extends CustomPainter {
+class CombinedPainter extends CustomPainter {
   final List<Marker> markers;
+  final List<DrawingPath> drawingPaths;
+  final List<Offset> currentDrawingPoints;
+  final Color currentDrawingColor;
+  final double currentStrokeWidth;
   final int? selectedMarkerIndex;
+  final int? selectedPathIndex; // NEW
   final double zoom;
   final Offset pan;
 
-  MarkerPainter({
+  CombinedPainter({
     required this.markers,
+    required this.drawingPaths,
+    required this.currentDrawingPoints,
+    required this.currentDrawingColor,
+    required this.currentStrokeWidth,
     required this.selectedMarkerIndex,
+    required this.selectedPathIndex, // NEW
     required this.zoom,
     required this.pan,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    for (int i = 0; i < markers.length; i++) {
-      final marker = markers[i];
-      final isSelected = i == selectedMarkerIndex;
+    // Draw completed paths - UPDATED FOR RELATIVE COORDS
+    for (int i = 0; i < drawingPaths.length; i++) {
+      final path = drawingPaths[i];
+      final isSelected = i == selectedPathIndex;
 
-      // Convert relative coordinates to screen coordinates
-      final screenPos = marker.toScreenCoordinates(
+      final screenPoints = path.toScreenCoordinates(
         canvasSize: size,
         zoom: zoom,
         pan: pan,
       );
 
-      // Get scaled size based on zoom
+      if (screenPoints.length > 1) {
+        final paint = Paint()
+          ..color = path.color
+          ..strokeWidth = path.strokeWidth * zoom // Scale with zoom
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round
+          ..style = PaintingStyle.stroke;
+
+        final drawPath = Path();
+        drawPath.moveTo(screenPoints[0].dx, screenPoints[0].dy);
+        for (int j = 1; j < screenPoints.length; j++) {
+          drawPath.lineTo(screenPoints[j].dx, screenPoints[j].dy);
+        }
+        canvas.drawPath(drawPath, paint);
+
+        // Highlight selected path
+        if (isSelected) {
+          final highlightPaint = Paint()
+            ..color = Colors.blue.withOpacity(0.3)
+            ..strokeWidth = (path.strokeWidth + 4) * zoom
+            ..strokeCap = StrokeCap.round
+            ..strokeJoin = StrokeJoin.round
+            ..style = PaintingStyle.stroke;
+          canvas.drawPath(drawPath, highlightPaint);
+        }
+      }
+    }
+
+    // Draw current path being drawn
+    if (currentDrawingPoints.length > 1) {
+      final paint = Paint()
+        ..color = currentDrawingColor
+        ..strokeWidth = currentStrokeWidth
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..style = PaintingStyle.stroke;
+
+      final drawPath = Path();
+      drawPath.moveTo(currentDrawingPoints[0].dx, currentDrawingPoints[0].dy);
+      for (int i = 1; i < currentDrawingPoints.length; i++) {
+        drawPath.lineTo(currentDrawingPoints[i].dx, currentDrawingPoints[i].dy);
+      }
+      canvas.drawPath(drawPath, paint);
+    }
+
+    // Draw markers
+    for (int i = 0; i < markers.length; i++) {
+      final marker = markers[i];
+      final isSelected = i == selectedMarkerIndex;
+      final screenPos = marker.toScreenCoordinates(
+        canvasSize: size,
+        zoom: zoom,
+        pan: pan,
+      );
       final scaledSize = marker.getScaledSize(zoom);
 
-      // Draw marker circle
-      final paint = Paint()
-        ..color = marker.color
-        ..style = PaintingStyle.fill;
-
+      final paint = Paint()..color = marker.color..style = PaintingStyle.fill;
       canvas.drawCircle(screenPos, scaledSize / 2, paint);
 
-      // Draw outline
       final outlinePaint = Paint()
         ..color = isSelected ? Colors.blue : Colors.white
         ..style = PaintingStyle.stroke
         ..strokeWidth = isSelected ? 3.0 : 2.0;
-
       canvas.drawCircle(screenPos, scaledSize / 2, outlinePaint);
 
-      // Draw number label (marker index)
       final numberPainter = TextPainter(
         text: TextSpan(
           text: '${i + 1}',
@@ -378,13 +440,8 @@ class MarkerPainter extends CustomPainter {
         ),
       );
 
-      // Draw selection handles for selected marker
       if (isSelected) {
-        // Resize handle (bottom-right)
-        final handlePaint = Paint()
-          ..color = Colors.blue
-          ..style = PaintingStyle.fill;
-
+        final handlePaint = Paint()..color = Colors.blue..style = PaintingStyle.fill;
         final handleOutlinePaint = Paint()
           ..color = Colors.white
           ..style = PaintingStyle.stroke
@@ -395,11 +452,9 @@ class MarkerPainter extends CustomPainter {
           screenPos.dy + scaledSize / 2,
         );
 
-        // Draw resize handle
         canvas.drawCircle(handlePos, 8.0, handlePaint);
         canvas.drawCircle(handlePos, 8.0, handleOutlinePaint);
 
-        // Draw resize icon
         final iconPainter = TextPainter(
           text: const TextSpan(
             text: '⇲',
@@ -420,26 +475,22 @@ class MarkerPainter extends CustomPainter {
           ),
         );
 
-        // Optional: Draw selection box around marker
-        final selectionRect = Rect.fromCircle(
-          center: screenPos,
-          radius: scaledSize / 2 + 5,
-        );
         final selectionPaint = Paint()
           ..color = Colors.blue.withOpacity(0.3)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.0
-          ..strokeCap = StrokeCap.round;
-
+          ..strokeWidth = 2.0;
         canvas.drawCircle(screenPos, scaledSize / 2 + 5, selectionPaint);
       }
     }
   }
 
   @override
-  bool shouldRepaint(MarkerPainter oldDelegate) {
+  bool shouldRepaint(CombinedPainter oldDelegate) {
     return oldDelegate.markers != markers ||
+        oldDelegate.drawingPaths != drawingPaths ||
+        oldDelegate.currentDrawingPoints != currentDrawingPoints ||
         oldDelegate.selectedMarkerIndex != selectedMarkerIndex ||
+        oldDelegate.selectedPathIndex != selectedPathIndex ||
         oldDelegate.zoom != zoom ||
         oldDelegate.pan != pan;
   }

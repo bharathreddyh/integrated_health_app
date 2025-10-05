@@ -1,8 +1,101 @@
 import 'package:flutter/material.dart';
 import '../../services/user_service.dart';
+import '../../services/database_helper.dart';
+import '../../models/patient.dart';
+import '../patient/patient_data_edit_screen.dart';
+import '../../models/visit.dart';  // ADD THIS
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final _searchController = TextEditingController();
+  List<Patient> _searchResults = [];
+  bool _isSearching = false;
+  final _searchFocusNode = FocusNode();
+
+
+  // Add to home_screen.dart:
+  Future<List<Visit>> _getMyVisits() async {
+    final db = await DatabaseHelper.instance.database;  // FIXED
+    final maps = await db.query(
+      'visits',
+      where: 'doctor_id = ?',
+      whereArgs: [UserService.currentUserId],
+      orderBy: 'created_at DESC',
+    );
+    return maps.map((m) => Visit.fromMap(m)).toList();
+  }
+
+  Future<Map<String, int>> _getMyStats() async {
+    final visits = await _getMyVisits();
+    final today = DateTime.now();
+    final todayStart = DateTime(today.year, today.month, today.day);
+
+    final todayVisits = visits.where((v) =>
+        v.createdAt.isAfter(todayStart)
+    ).length;
+
+    final weekStart = today.subtract(Duration(days: 7));
+    final weekVisits = visits.where((v) =>
+        v.createdAt.isAfter(weekStart)
+    ).length;
+
+    return {
+      'today': todayVisits,
+      'week': weekVisits,
+      'total': visits.length,
+    };
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
+
+
+
+  Future<void> _performSearch(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() => _isSearching = true);
+
+    try {
+      final results = await DatabaseHelper.instance.searchPatients(query);
+      setState(() {
+        _searchResults = results;
+        _isSearching = false;
+      });
+    } catch (e) {
+      setState(() => _isSearching = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Search error: $e')),
+        );
+      }
+    }
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {
+      _searchResults = [];
+      _isSearching = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,11 +169,21 @@ class HomeScreen extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 24),
-                        _buildQuickStat('Today', '12 patients', Icons.people_outline, Colors.blue),
-                        const SizedBox(height: 12),
-                        _buildQuickStat('This Week', '8 consultations', Icons.medical_services_outlined, Colors.green),
-                        const SizedBox(height: 12),
-                        _buildQuickStat('Total', '245 summaries', Icons.description_outlined, Colors.orange),
+                        FutureBuilder<Map<String, int>>(
+                          future: _getMyStats(),
+                          builder: (context, snapshot) {
+                            final stats = snapshot.data ?? {'today': 0, 'week': 0, 'total': 0};
+                            return Column(
+                              children: [
+                                _buildQuickStat('Today', '${stats['today']} visits', Icons.people_outline, Colors.blue),
+                                const SizedBox(height: 12),
+                                _buildQuickStat('This Week', '${stats['week']} consultations', Icons.medical_services_outlined, Colors.green),
+                                const SizedBox(height: 12),
+                                _buildQuickStat('Total', '${stats['total']} summaries', Icons.description_outlined, Colors.orange),
+                              ],
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -110,7 +213,7 @@ class HomeScreen extends StatelessWidget {
             Expanded(
               child: Column(
                 children: [
-                  // Top Bar
+                  // Top Bar with FUNCTIONAL SEARCH
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: const BoxDecoration(
@@ -128,10 +231,19 @@ class HomeScreen extends StatelessWidget {
                               border: Border.all(color: Colors.grey.shade300),
                             ),
                             child: TextField(
+                              controller: _searchController,
+                              focusNode: _searchFocusNode,
+                              onChanged: (value) => _performSearch(value),
                               decoration: InputDecoration(
                                 hintText: 'Search patients, conditions, or summaries...',
                                 hintStyle: TextStyle(fontSize: 15, color: Colors.grey.shade500),
                                 prefixIcon: Icon(Icons.search, size: 24, color: Colors.grey.shade600),
+                                suffixIcon: _searchController.text.isNotEmpty
+                                    ? IconButton(
+                                  icon: Icon(Icons.clear, color: Colors.grey.shade600),
+                                  onPressed: _clearSearch,
+                                )
+                                    : null,
                                 border: InputBorder.none,
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                               ),
@@ -156,58 +268,201 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
 
-                  // Content Grid
+                  // Content Grid OR Search Results
                   Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(32),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Clinic Dashboard',
-                            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                          ),
-                          const SizedBox(height: 8),
-                          Text('Select an action to begin consultation', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
-                          const SizedBox(height: 32),
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              final cardWidth = (constraints.maxWidth - 48) / 3;
-                              return Wrap(
-                                spacing: 24,
-                                runSpacing: 24,
-                                children: [
-                                  SizedBox(
-                                    width: cardWidth * 2 + 24,
-                                    child: _buildLargeActionCard(
-                                      context: context,
-                                      icon: Icons.play_circle_outline,
-                                      title: 'Start Consultation',
-                                      subtitle: 'Begin new patient session',
-                                      color: Colors.blue,
-                                      onTap: () => Navigator.pushNamed(context, '/patient-selection'),
-                                    ),
-                                  ),
-                                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.library_books_outlined, 'Library', 'Medical diagrams', '45', Colors.purple, () {})),
-                                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.history, 'Past Summaries', 'Patient records', '24', Colors.orange, () {})),
-                                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.star_outline, 'Quick Access', 'Favorites', '8', Colors.green, () {})),
-                                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.language, 'Language', 'English', 'EN', Colors.indigo, () {})),
-                                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.share, 'WhatsApp', 'Share summaries', '', Colors.green, () {})),
-                                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.analytics_outlined, 'Analytics', 'Practice insights', '', Colors.cyan, () {})),
-                                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.admin_panel_settings_outlined, 'Admin', 'Settings', '', Colors.red, () {})),
-                                ],
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
+                    child: _searchController.text.isNotEmpty
+                        ? _buildSearchResults()
+                        : _buildDashboardContent(),
                   ),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSearchResults() {
+    if (_isSearching) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_searchResults.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.search_off, size: 64, color: Colors.grey.shade400),
+            const SizedBox(height: 16),
+            Text(
+              'No patients found for "${_searchController.text}"',
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(32),
+          child: Row(
+            children: [
+              Icon(Icons.search, color: Colors.blue.shade700),
+              const SizedBox(width: 12),
+              Text(
+                'Search Results (${_searchResults.length})',
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            itemCount: _searchResults.length,
+            itemBuilder: (context, index) {
+              final patient = _searchResults[index];
+              return Card(
+                margin: const EdgeInsets.only(bottom: 16),
+                elevation: 2,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PatientDataEditScreen(patient: patient),
+                      ),
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 32,
+                          backgroundColor: const Color(0xFF3B82F6),
+                          child: Text(
+                            patient.name[0].toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                patient.name,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Icon(Icons.badge, size: 16, color: Colors.grey.shade600),
+                                  const SizedBox(width: 4),
+                                  Text(patient.id, style: TextStyle(color: Colors.grey.shade600)),
+                                  const SizedBox(width: 20),
+                                  Icon(Icons.phone, size: 16, color: Colors.grey.shade600),
+                                  const SizedBox(width: 4),
+                                  Text(patient.phone, style: TextStyle(color: Colors.grey.shade600)),
+                                  const SizedBox(width: 20),
+                                  Icon(Icons.cake, size: 16, color: Colors.grey.shade600),
+                                  const SizedBox(width: 4),
+                                  Text('${patient.age} years', style: TextStyle(color: Colors.grey.shade600)),
+                                ],
+                              ),
+                              if (patient.conditions.isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  spacing: 6,
+                                  children: patient.conditions.take(3).map((condition) {
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFDCEAFE),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        condition,
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: Color(0xFF1E40AF),
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.arrow_forward_ios, size: 20, color: Colors.grey),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDashboardContent() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Clinic Dashboard',
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+          ),
+          const SizedBox(height: 8),
+          Text('Select an action to begin consultation', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
+          const SizedBox(height: 32),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final cardWidth = (constraints.maxWidth - 48) / 3;
+              return Wrap(
+                spacing: 24,
+                runSpacing: 24,
+                children: [
+                  SizedBox(
+                    width: cardWidth * 2 + 24,
+                    child: _buildLargeActionCard(
+                      context: context,
+                      icon: Icons.play_circle_outline,
+                      title: 'Start Consultation',
+                      subtitle: 'Begin new patient session',
+                      color: Colors.blue,
+                      onTap: () => Navigator.pushNamed(context, '/patient-selection'),
+                    ),
+                  ),
+                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.library_books_outlined, 'Library', 'Medical diagrams', '45', Colors.purple, () {})),
+                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.history, 'Past Summaries', 'Patient records', '24', Colors.orange, () {})),
+                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.star_outline, 'Quick Access', 'Favorites', '8', Colors.green, () {})),
+                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.language, 'Language', 'English', 'EN', Colors.indigo, () {})),
+                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.share, 'WhatsApp', 'Share summaries', '', Colors.green, () {})),
+                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.analytics_outlined, 'Analytics', 'Practice insights', '', Colors.cyan, () {})),
+                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.admin_panel_settings_outlined, 'Admin', 'Settings', '', Colors.red, () {})),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
