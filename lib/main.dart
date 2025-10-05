@@ -6,8 +6,13 @@ import 'screens/home/patient_home_screen.dart';
 import 'screens/patient/patient_selection_screen.dart';
 import 'screens/kidney/kidney_screen.dart';
 import 'models/patient.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+
   runApp(const ClinicClarityApp());
 }
 

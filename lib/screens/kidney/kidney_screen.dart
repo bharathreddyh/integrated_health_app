@@ -135,7 +135,6 @@ class _KidneyScreenState extends State<KidneyScreen> {
     }
   }
 
-  // FIXED: Silent save - no loading indicator
   Future<void> _saveSilently() async {
     try {
       final visit = Visit(
@@ -149,38 +148,28 @@ class _KidneyScreenState extends State<KidneyScreen> {
 
       if (_currentVisitId == null) {
         final id = await DatabaseHelper.instance.createVisit(visit);
-        setState(() {
-          _currentVisitId = id;
-        });
+        _currentVisitId = id;
       } else {
         await DatabaseHelper.instance.updateVisit(visit);
       }
     } catch (e) {
-      print('Error saving visit silently: $e');
+      print('Error saving: $e');
     }
   }
 
-  // FIXED: No loading screen when opening prescriptions
   Future<void> _openPrescriptions() async {
-    // Save silently if visit doesn't exist yet
-    if (_currentVisitId == null) {
+    if (_currentVisitId == null && markers.isNotEmpty) {
       await _saveSilently();
     }
 
     if (_currentVisitId == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please save the visit first'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Add markers first then save')),
+      );
       return;
     }
 
-    // Navigate directly - no loading screen
-    await Navigator.push(
+    Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => PrescriptionManagementScreen(
@@ -825,6 +814,17 @@ class _KidneyScreenState extends State<KidneyScreen> {
                                 const SizedBox(width: 12),
                                 ElevatedButton.icon(
                                   onPressed: () async {
+                                    if (_currentVisitId == null) {
+                                      await _saveSilently();
+                                    }
+
+                                    if (_currentVisitId == null) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Failed to create visit')),
+                                      );
+                                      return;
+                                    }
+
                                     showDialog(
                                       context: context,
                                       barrierDismissible: false,
@@ -832,6 +832,17 @@ class _KidneyScreenState extends State<KidneyScreen> {
                                         child: CircularProgressIndicator(),
                                       ),
                                     );
+
+                                    final freshPatient = await DatabaseHelper.instance.getPatient(patient.id);
+
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Vitals loaded: ${freshPatient?.vitals != null ? "YES" : "NO"}'),
+                                          duration: const Duration(seconds: 2),
+                                        ),
+                                      );
+                                    }
 
                                     final canvasImage = await _captureCanvas();
 
@@ -842,10 +853,10 @@ class _KidneyScreenState extends State<KidneyScreen> {
                                         context,
                                         MaterialPageRoute(
                                           builder: (context) => PDFPreviewScreen(
-                                            patient: patient,
+                                            patient: freshPatient ?? patient,
                                             markers: markers,
                                             canvasImage: canvasImage,
-                                            visitId: _currentVisitId, // FIXED: Pass visit ID
+                                            visitId: _currentVisitId,
                                           ),
                                         ),
                                       );
