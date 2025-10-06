@@ -1,13 +1,7 @@
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath("com.android.tools.build:gradle:8.7.3")  // Update this
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22")
-    }
+plugins {
+    id("com.android.application") apply false
+    id("org.jetbrains.kotlin.android") apply false
+    // ⚠️ Do NOT include Flutter plugin here
 }
 
 allprojects {
