@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/patient.dart';
 import '../models/marker.dart';
 import '../models/prescription.dart';
+import '../models/lab_test.dart';  // ADD THIS
 import 'pdf_generation_service.dart';
 
 class SaveExportException implements Exception {
@@ -24,6 +25,7 @@ class SaveExportService {
     required List<Marker> markers,
     required Uint8List? canvasImage,
     List<Prescription>? prescriptions,
+    List<LabTest>? labTests,  // ADD THIS
     String? doctorName,
     String? clinicName,
     String? diagnosis,
@@ -36,6 +38,7 @@ class SaveExportService {
         markers: markers,
         canvasImage: canvasImage,
         prescriptions: prescriptions,
+        labTests: labTests,  // ADD THIS
         doctorName: doctorName,
         clinicName: clinicName,
         diagnosis: diagnosis,
@@ -69,6 +72,7 @@ class SaveExportService {
     required List<Marker> markers,
     required Uint8List? canvasImage,
     List<Prescription>? prescriptions,
+    List<LabTest>? labTests,  // ADD THIS
     String? doctorName,
     String? clinicName,
     String? diagnosis,
@@ -81,6 +85,7 @@ class SaveExportService {
         markers: markers,
         canvasImage: canvasImage,
         prescriptions: prescriptions,
+        labTests: labTests,  // ADD THIS
         doctorName: doctorName,
         clinicName: clinicName,
         diagnosis: diagnosis,
@@ -137,6 +142,7 @@ Please review and keep for your records.''';
     required List<Marker> markers,
     required Uint8List? canvasImage,
     List<Prescription>? prescriptions,
+    List<LabTest>? labTests,  // ADD THIS
     String? doctorName,
     String? clinicName,
     String? diagnosis,
@@ -149,6 +155,7 @@ Please review and keep for your records.''';
         markers: markers,
         canvasImage: canvasImage,
         prescriptions: prescriptions,
+        labTests: labTests,  // ADD THIS
         doctorName: doctorName,
         clinicName: clinicName,
         diagnosis: diagnosis,

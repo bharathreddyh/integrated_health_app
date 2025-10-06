@@ -21,6 +21,8 @@ import 'widgets/tool_panel.dart';
 import 'widgets/drawing_tool_panel.dart';
 import 'pdf_preview_screen.dart';
 import '../../services/user_service.dart';
+import '../lab_test/lab_test_management_screen.dart';
+
 
 class KidneyScreen extends StatefulWidget {
   final Patient? patient;
@@ -202,7 +204,29 @@ class _KidneyScreenState extends State<KidneyScreen> {
       ),
     );
   }
+  Future<void> _openLabTests() async {
+    if (_currentVisitId == null && (markers.isNotEmpty || drawingPaths.isNotEmpty)) {
+      await _saveSilently();
+    }
 
+    if (_currentVisitId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Add markers first then save')),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LabTestManagementScreen(
+          visitId: _currentVisitId!,
+          patientId: patient.id,
+          patient: patient,
+        ),
+      ),
+    );
+  }
   // NEW: Undo last drawing
   void _undoDrawing() {
     if (drawingPaths.isNotEmpty) {
@@ -869,6 +893,18 @@ class _KidneyScreenState extends State<KidneyScreen> {
                                   label: const Text('Prescriptions'),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF14B8A6),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                // ADD THIS NEW BUTTON:
+                                ElevatedButton.icon(
+                                  onPressed: _openLabTests,
+                                  icon: const Icon(Icons.science, size: 16),
+                                  label: const Text('Lab Tests'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF06B6D4),
                                     foregroundColor: Colors.white,
                                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                                   ),
