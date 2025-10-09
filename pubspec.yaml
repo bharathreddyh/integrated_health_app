@@ -16,9 +16,6 @@ dependencies:
   url_launcher: ^6.2.1
   crypto: ^3.0.3
   intl: ^0.18.1
-  http: ^1.2.0
-  flutter_sound: ^9.2.13
-
 
   # State Management
   provider: ^6.1.1
