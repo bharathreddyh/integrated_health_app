@@ -1,9 +1,10 @@
 // lib/models/prescription.dart
+// ✅ COMPLETE FIXED VERSION
 
 class Prescription {
   final int? id;
   final int visitId;
-  final String patientId; // Changed to String to match Patient.id
+  final String patientId;
   final String medicationName;
   final String dosage;
   final String frequency;
@@ -23,6 +24,39 @@ class Prescription {
     required this.createdAt,
   });
 
+  // ✅ FIXED: toJson() for consultation draft saving
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'visitId': visitId,
+      'patientId': patientId,
+      'medicationName': medicationName,
+      'dosage': dosage,
+      'frequency': frequency,
+      'duration': duration,
+      'instructions': instructions,
+      'createdAt': createdAt.toIso8601String(),
+    };
+  }
+
+  // ✅ FIXED: fromJson() for consultation draft loading
+  factory Prescription.fromJson(Map<String, dynamic> json) {
+    return Prescription(
+      id: json['id'],
+      visitId: json['visitId'] ?? 0,
+      patientId: json['patientId'] ?? '',
+      medicationName: json['medicationName'] ?? '',
+      dosage: json['dosage'] ?? '',
+      frequency: json['frequency'] ?? '',
+      duration: json['duration'] ?? '',
+      instructions: json['instructions'],
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+    );
+  }
+
+  // toMap() for database storage
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -37,11 +71,12 @@ class Prescription {
     };
   }
 
+  // fromMap() for database retrieval
   factory Prescription.fromMap(Map<String, dynamic> map) {
     return Prescription(
       id: map['id'],
       visitId: map['visit_id'],
-      patientId: map['patient_id'].toString(), // Convert to String
+      patientId: map['patient_id'].toString(),
       medicationName: map['medication_name'],
       dosage: map['dosage'],
       frequency: map['frequency'],
@@ -51,6 +86,7 @@ class Prescription {
     );
   }
 
+  // copyWith() for creating modified copies
   Prescription copyWith({
     int? id,
     int? visitId,

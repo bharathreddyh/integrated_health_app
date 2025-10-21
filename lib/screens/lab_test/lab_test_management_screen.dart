@@ -1,12 +1,10 @@
 // lib/screens/lab_test/lab_test_management_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../models/patient.dart';
 import '../../models/lab_test.dart';
 import '../../services/database_helper.dart';
 import '../../services/user_service.dart';
-import '../../data/lab_test_templates.dart';
 
 class LabTestManagementScreen extends StatefulWidget {
   final int visitId;
@@ -25,338 +23,572 @@ class LabTestManagementScreen extends StatefulWidget {
 }
 
 class _LabTestManagementScreenState extends State<LabTestManagementScreen> {
-  List<LabTest> _labTests = [];
-  bool _loading = true;
+  String _selectedSystem = 'renal';
+  List<LabTest> _savedTests = [];
+  bool _isLoading = true;
+
+  // Controllers for each test (created dynamically)
+  final Map<String, TextEditingController> _testControllers = {};
+
+  final Map<String, List<Map<String, dynamic>>> _testsBySystem = {
+    'renal': [
+      {
+        'name': 'Serum Creatinine',
+        'category': 'renal',
+        'unit': 'mg/dL',
+        'normalMin': '0.6',
+        'normalMax': '1.2',
+      },
+      {
+        'name': 'Blood Urea Nitrogen (BUN)',
+        'category': 'renal',
+        'unit': 'mg/dL',
+        'normalMin': '7',
+        'normalMax': '20',
+      },
+      {
+        'name': 'eGFR',
+        'category': 'renal',
+        'unit': 'mL/min/1.73m²',
+        'normalMin': '90',
+        'normalMax': '120',
+      },
+      {
+        'name': 'Serum Sodium',
+        'category': 'renal',
+        'unit': 'mEq/L',
+        'normalMin': '135',
+        'normalMax': '145',
+      },
+      {
+        'name': 'Serum Potassium',
+        'category': 'renal',
+        'unit': 'mEq/L',
+        'normalMin': '3.5',
+        'normalMax': '5.0',
+      },
+      {
+        'name': 'Urine Protein',
+        'category': 'renal',
+        'unit': 'mg/dL',
+        'normalMin': '0',
+        'normalMax': '10',
+      },
+    ],
+    'endocrine': [
+      {
+        'name': 'Fasting Blood Sugar',
+        'category': 'endocrine',
+        'unit': 'mg/dL',
+        'normalMin': '70',
+        'normalMax': '100',
+      },
+      {
+        'name': 'HbA1c',
+        'category': 'endocrine',
+        'unit': '%',
+        'normalMin': '4.0',
+        'normalMax': '5.6',
+      },
+      {
+        'name': 'TSH',
+        'category': 'endocrine',
+        'unit': 'mIU/L',
+        'normalMin': '0.4',
+        'normalMax': '4.0',
+      },
+      {
+        'name': 'T4 (Free)',
+        'category': 'endocrine',
+        'unit': 'ng/dL',
+        'normalMin': '0.8',
+        'normalMax': '1.8',
+      },
+    ],
+    'hematology': [
+      {
+        'name': 'Hemoglobin',
+        'category': 'hematology',
+        'unit': 'g/dL',
+        'normalMin': '12',
+        'normalMax': '16',
+      },
+      {
+        'name': 'WBC Count',
+        'category': 'hematology',
+        'unit': 'cells/µL',
+        'normalMin': '4000',
+        'normalMax': '11000',
+      },
+      {
+        'name': 'Platelet Count',
+        'category': 'hematology',
+        'unit': 'cells/µL',
+        'normalMin': '150000',
+        'normalMax': '400000',
+      },
+      {
+        'name': 'Hematocrit',
+        'category': 'hematology',
+        'unit': '%',
+        'normalMin': '36',
+        'normalMax': '46',
+      },
+    ],
+    'biochemistry': [
+      {
+        'name': 'Total Cholesterol',
+        'category': 'biochemistry',
+        'unit': 'mg/dL',
+        'normalMin': '0',
+        'normalMax': '200',
+      },
+      {
+        'name': 'LDL Cholesterol',
+        'category': 'biochemistry',
+        'unit': 'mg/dL',
+        'normalMin': '0',
+        'normalMax': '100',
+      },
+      {
+        'name': 'HDL Cholesterol',
+        'category': 'biochemistry',
+        'unit': 'mg/dL',
+        'normalMin': '40',
+        'normalMax': '60',
+      },
+      {
+        'name': 'Triglycerides',
+        'category': 'biochemistry',
+        'unit': 'mg/dL',
+        'normalMin': '0',
+        'normalMax': '150',
+      },
+      {
+        'name': 'ALT',
+        'category': 'biochemistry',
+        'unit': 'U/L',
+        'normalMin': '7',
+        'normalMax': '56',
+      },
+      {
+        'name': 'AST',
+        'category': 'biochemistry',
+        'unit': 'U/L',
+        'normalMin': '10',
+        'normalMax': '40',
+      },
+    ],
+    'cardiac': [
+      {
+        'name': 'Troponin I',
+        'category': 'cardiac',
+        'unit': 'ng/mL',
+        'normalMin': '0',
+        'normalMax': '0.04',
+      },
+      {
+        'name': 'CK-MB',
+        'category': 'cardiac',
+        'unit': 'ng/mL',
+        'normalMin': '0',
+        'normalMax': '5',
+      },
+      {
+        'name': 'BNP',
+        'category': 'cardiac',
+        'unit': 'pg/mL',
+        'normalMin': '0',
+        'normalMax': '100',
+      },
+    ],
+  };
 
   @override
   void initState() {
     super.initState();
-    _loadLabTests();
+    _loadSavedTests();
+    _initializeControllers();
   }
 
-  Future<void> _loadLabTests() async {
+  void _initializeControllers() {
+    for (var system in _testsBySystem.keys) {
+      for (var test in _testsBySystem[system]!) {
+        _testControllers[test['name']] = TextEditingController();
+      }
+    }
+  }
+
+  Future<void> _loadSavedTests() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
       final tests = await DatabaseHelper.instance.getLabTestsByVisit(widget.visitId);
-      print('Loaded ${tests.length} lab tests'); // DEBUG
       setState(() {
-        _labTests = tests;
-        _loading = false;
+        _savedTests = tests;
+        _isLoading = false;
       });
+
+      // Pre-fill controllers with existing values
+      for (var test in tests) {
+        if (_testControllers.containsKey(test.testName)) {
+          _testControllers[test.testName]!.text = test.resultValue ?? '';
+        }
+      }
     } catch (e) {
-      print('Error loading lab tests: $e'); // DEBUG
       setState(() {
-        _loading = false;
+        _isLoading = false;
       });
+      print('Error loading tests: $e');
+    }
+  }
+
+  Future<void> _saveAllTests() async {
+    final doctorId = UserService.currentUserId ?? 'USR001';
+    int savedCount = 0;
+
+    try {
+      for (var testDef in _testsBySystem[_selectedSystem]!) {
+        final controller = _testControllers[testDef['name']]!;
+
+        if (controller.text.isNotEmpty) {
+          final value = double.tryParse(controller.text);
+          if (value != null) {
+            final normalMin = double.tryParse(testDef['normalMin']) ?? 0;
+            final normalMax = double.tryParse(testDef['normalMax']) ?? 0;
+            final isAbnormal = value < normalMin || value > normalMax;
+
+            final labTest = LabTest(
+              visitId: widget.visitId,
+              patientId: widget.patientId,
+              testName: testDef['name'],
+              testCategory: testDef['category'],
+              orderedDate: DateTime.now(),
+              resultDate: DateTime.now(),
+              resultValue: controller.text,
+              resultUnit: testDef['unit'],
+              normalRangeMin: testDef['normalMin'],
+              normalRangeMax: testDef['normalMax'],
+              isAbnormal: isAbnormal,
+              status: 'completed',
+              createdAt: DateTime.now(),
+            );
+
+            // Check if test already exists
+            final existing = _savedTests.firstWhere(
+                  (t) => t.testName == testDef['name'],
+              orElse: () => LabTest(
+                visitId: widget.visitId,
+                patientId: widget.patientId,
+                testName: '',
+                testCategory: '',
+                orderedDate: DateTime.now(),
+                status: 'pending',
+                createdAt: DateTime.now(),
+              ),
+            );
+
+            if (existing.testName.isNotEmpty) {
+              // Update existing
+              final updated = labTest.copyWith(id: existing.id);
+              await DatabaseHelper.instance.updateLabTest(updated, doctorId);
+            } else {
+              // Create new
+              await DatabaseHelper.instance.insertLabTest(labTest, doctorId);
+            }
+            savedCount++;
+          }
+        }
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error loading lab tests: $e'),
+            content: Text('✅ Saved $savedCount test result${savedCount != 1 ? 's' : ''}'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        await _loadSavedTests();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving tests: $e'),
             backgroundColor: Colors.red,
           ),
         );
       }
     }
   }
-  Future<void> _orderTest() async {
-    final result = await showDialog<LabTest>(
-      context: context,
-      builder: (context) => OrderLabTestDialog(
-        visitId: widget.visitId,
-        patientId: widget.patientId,
-      ),
-    );
 
-    if (result != null) {
-      final doctorId = UserService.currentUserId ?? 'USR001';
-      await DatabaseHelper.instance.insertLabTest(result, doctorId);
-      _loadLabTests();
-    }
-  }
-
-  Future<void> _enterResult(LabTest test) async {
-    final result = await showDialog<LabTest>(
-      context: context,
-      builder: (context) => EnterResultDialog(labTest: test),
-    );
-
-    if (result != null) {
-      final doctorId = UserService.currentUserId ?? 'USR001';
-      await DatabaseHelper.instance.updateLabTest(result, doctorId);
-      _loadLabTests();
-    }
-  }
-
-  Future<void> _deleteTest(int id) async {
+  Future<void> _clearSystem() async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Test'),
-        content: const Text('Are you sure you want to delete this lab test?'),
+        title: const Text('Clear All Values'),
+        content: Text('Clear all entered values for ${_getSystemName(_selectedSystem)}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancel'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Clear'),
           ),
         ],
       ),
     );
 
     if (confirm == true) {
-      await DatabaseHelper.instance.deleteLabTest(id);
-      _loadLabTests();
+      setState(() {
+        for (var testDef in _testsBySystem[_selectedSystem]!) {
+          _testControllers[testDef['name']]!.clear();
+        }
+      });
+    }
+  }
+
+  String _getSystemName(String key) {
+    switch (key) {
+      case 'renal':
+        return 'Renal Function Tests';
+      case 'endocrine':
+        return 'Endocrine Tests';
+      case 'hematology':
+        return 'Hematology';
+      case 'biochemistry':
+        return 'Biochemistry';
+      case 'cardiac':
+        return 'Cardiac Markers';
+      default:
+        return key;
+    }
+  }
+
+  String _getSystemIcon(String key) {
+    switch (key) {
+      case 'renal':
+        return '🫘';
+      case 'endocrine':
+        return '📊';
+      case 'hematology':
+        return '🩸';
+      case 'biochemistry':
+        return '🧪';
+      case 'cardiac':
+        return '❤️';
+      default:
+        return '🔬';
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text('Lab Tests'),
-        backgroundColor: Colors.white,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Lab Test Results', style: TextStyle(fontSize: 18)),
+            Text(
+              widget.patient.name,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.cyan.shade700,
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.clear_all),
+            onPressed: _clearSystem,
+            tooltip: 'Clear All',
+          ),
+        ],
       ),
       body: Column(
         children: [
-          // Patient Header
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.cyan.shade50,
-            child: Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: Colors.cyan,
-                  child: const Icon(Icons.science, color: Colors.white),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.patient.name,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'ID: ${widget.patient.id} | Age: ${widget.patient.age}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // System Selector
+          _buildSystemSelector(),
 
-          // Stats
-          if (_labTests.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(16),
-              color: Colors.grey.shade50,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildStatChip(
-                    'Total Tests',
-                    _labTests.length.toString(),
-                    Colors.blue,
-                  ),
-                  _buildStatChip(
-                    'Pending',
-                    _labTests.where((t) => t.status == LabTestStatus.pending).length.toString(),
-                    Colors.orange,
-                  ),
-                  _buildStatChip(
-                    'Abnormal',
-                    _labTests.where((t) => t.isAbnormal).length.toString(),
-                    Colors.red,
-                  ),
-                ],
-              ),
-            ),
-
-          // Test List
+          // Test Entry Form
           Expanded(
-            child: _loading
+            child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _labTests.isEmpty
-                ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.science_outlined,
-                      size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No lab tests ordered yet',
-                    style: TextStyle(
-                        fontSize: 16, color: Colors.grey.shade600),
-                  ),
-                ],
-              ),
-            )
-                : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _labTests.length,
-              itemBuilder: (context, index) {
-                final test = _labTests[index];
-                return _buildLabTestCard(test);
-              },
-            ),
+                : _buildTestEntryForm(),
           ),
+
+          // Bottom Actions
+          _buildBottomActions(),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _orderTest,
-        backgroundColor: Colors.cyan,
-        icon: const Icon(Icons.add),
-        label: const Text('Order Test'),
       ),
     );
   }
 
-  Widget _buildStatChip(String label, String value, Color color) {
+  Widget _buildSystemSelector() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          Text(
-            label,
-            style: TextStyle(fontSize: 12, color: color),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: _testsBySystem.keys.map((system) {
+            final isSelected = _selectedSystem == system;
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_getSystemIcon(system)),
+                    const SizedBox(width: 6),
+                    Text(_getSystemName(system)),
+                  ],
+                ),
+                selected: isSelected,
+                onSelected: (selected) {
+                  if (selected) {
+                    setState(() {
+                      _selectedSystem = system;
+                    });
+                  }
+                },
+                selectedColor: Colors.cyan.shade100,
+                backgroundColor: Colors.grey.shade200,
+                labelStyle: TextStyle(
+                  color: isSelected ? Colors.cyan.shade900 : Colors.grey.shade700,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
 
-  Widget _buildLabTestCard(LabTest test) {
-    final isPending = test.status == LabTestStatus.pending;
-    final isAbnormal = test.isAbnormal && !isPending;
+  Widget _buildTestEntryForm() {
+    final tests = _testsBySystem[_selectedSystem]!;
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: tests.length,
+      itemBuilder: (context, index) {
+        final testDef = tests[index];
+        final controller = _testControllers[testDef['name']]!;
+
+        return _buildTestField(testDef, controller);
+      },
+    );
+  }
+
+  Widget _buildTestField(Map<String, dynamic> testDef, TextEditingController controller) {
+    final normalMin = testDef['normalMin'];
+    final normalMax = testDef['normalMax'];
+    final unit = testDef['unit'];
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: ExpansionTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: isAbnormal
-                ? Colors.red.shade100
-                : isPending
-                ? Colors.orange.shade100
-                : Colors.green.shade100,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            isAbnormal
-                ? Icons.warning
-                : isPending
-                ? Icons.pending
-                : Icons.check_circle,
-            color: isAbnormal
-                ? Colors.red.shade700
-                : isPending
-                ? Colors.orange.shade700
-                : Colors.green.shade700,
-          ),
-        ),
-        title: Text(
-          test.testName,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 4),
-            Text(
-              'Ordered: ${DateFormat('MMM dd, yyyy').format(test.orderedDate)}',
-              style: const TextStyle(fontSize: 12),
-            ),
-            if (test.status == LabTestStatus.completed && test.resultValue != null)
-              Text(
-                'Result: ${test.resultValue} ${test.resultUnit ?? ""}',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: isAbnormal ? Colors.red.shade700 : Colors.green.shade700,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    testDef['name'],
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
+                if (controller.text.isNotEmpty)
+                  _buildResultStatus(controller.text, normalMin, normalMax),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Normal Range: $normalMin - $normalMax $unit',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
               ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                hintText: 'Enter result value',
+                suffixText: unit,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              onChanged: (value) => setState(() {}),
+            ),
           ],
         ),
-        trailing: test.status == LabTestStatus.pending
-            ? ElevatedButton.icon(
-          onPressed: () => _enterResult(test),
-          icon: const Icon(Icons.edit, size: 16),
-          label: const Text('Result'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.cyan,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-          ),
-        )
-            : null,
+      ),
+    );
+  }
+
+  Widget _buildResultStatus(String value, String normalMin, String normalMax) {
+    final numValue = double.tryParse(value);
+    final min = double.tryParse(normalMin);
+    final max = double.tryParse(normalMax);
+
+    if (numValue == null || min == null || max == null) {
+      return const SizedBox.shrink();
+    }
+
+    final isNormal = numValue >= min && numValue <= max;
+    final isLow = numValue < min;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isNormal
+            ? Colors.green.shade100
+            : Colors.red.shade100,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildDetailRow('Category', test.testCategory.displayName),
-                const SizedBox(height: 8),
-                _buildDetailRow('Status', test.status.name.toUpperCase()),
-                if (test.resultValue != null) ...[
-                  const SizedBox(height: 8),
-                  _buildDetailRow('Result Value', '${test.resultValue} ${test.resultUnit ?? ""}'),
-                  const SizedBox(height: 8),
-                  _buildDetailRow('Normal Range', test.normalRangeDisplay),
-                  if (test.resultDate != null) ...[
-                    const SizedBox(height: 8),
-                    _buildDetailRow(
-                      'Result Date',
-                      DateFormat('MMM dd, yyyy').format(test.resultDate!),
-                    ),
-                  ],
-                ],
-                if (test.notes != null && test.notes!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  _buildDetailRow('Notes', test.notes!),
-                ],
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (test.status == LabTestStatus.completed)
-                      TextButton.icon(
-                        onPressed: () => _enterResult(test),
-                        icon: const Icon(Icons.edit, size: 16),
-                        label: const Text('Edit Result'),
-                      ),
-                    TextButton.icon(
-                      onPressed: () => _deleteTest(test.id!),
-                      icon: const Icon(Icons.delete, size: 16),
-                      label: const Text('Delete'),
-                      style: TextButton.styleFrom(foregroundColor: Colors.red),
-                    ),
-                  ],
-                ),
-              ],
+          Icon(
+            isNormal ? Icons.check_circle : Icons.warning,
+            size: 14,
+            color: isNormal ? Colors.green.shade700 : Colors.red.shade700,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            isNormal ? 'Normal' : (isLow ? 'Low' : 'High'),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: isNormal ? Colors.green.shade700 : Colors.red.shade700,
             ),
           ),
         ],
@@ -364,281 +596,60 @@ class _LabTestManagementScreenState extends State<LabTestManagementScreen> {
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 120,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey.shade600,
-            ),
+  Widget _buildBottomActions() {
+    final hasValues = _testControllers.values.any((c) => c.text.isNotEmpty);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
           ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ORDER LAB TEST DIALOG
-class OrderLabTestDialog extends StatefulWidget {
-  final int visitId;
-  final String patientId;
-
-  const OrderLabTestDialog({
-    super.key,
-    required this.visitId,
-    required this.patientId,
-  });
-
-  @override
-  State<OrderLabTestDialog> createState() => _OrderLabTestDialogState();
-}
-
-class _OrderLabTestDialogState extends State<OrderLabTestDialog> {
-  final _searchController = TextEditingController();
-  LabTestTemplate? _selectedTemplate;
-  final _notesController = TextEditingController();
-
-  List<LabTestTemplate> _filteredTemplates = LabTestTemplates.flatList;
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  void _filterTemplates(String query) {
-    setState(() {
-      _filteredTemplates = query.isEmpty
-          ? LabTestTemplates.flatList
-          : LabTestTemplates.search(query);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Order Lab Test'),
-      content: SizedBox(
-        width: 500,
-        height: 500,
-        child: Column(
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
           children: [
-            TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                labelText: 'Search Tests',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onChanged: _filterTemplates,
-            ),
-            const SizedBox(height: 16),
             Expanded(
-              child: ListView.builder(
-                itemCount: _filteredTemplates.length,
-                itemBuilder: (context, index) {
-                  final template = _filteredTemplates[index];
-                  final isSelected = _selectedTemplate == template;
-                  return ListTile(
-                    selected: isSelected,
-                    selectedTileColor: Colors.cyan.shade50,
-                    leading: CircleAvatar(
-                      backgroundColor: isSelected ? Colors.cyan : Colors.grey.shade300,
-                      child: Icon(
-                        Icons.science,
-                        color: isSelected ? Colors.white : Colors.grey.shade600,
-                        size: 20,
-                      ),
-                    ),
-                    title: Text(template.name),
-                    subtitle: Text(
-                      '${template.category.displayName} • ${template.unit}',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    trailing: isSelected
-                        ? const Icon(Icons.check_circle, color: Colors.cyan)
-                        : null,
-                    onTap: () {
-                      setState(() {
-                        _selectedTemplate = template;
-                      });
-                    },
-                  );
-                },
+              child: OutlinedButton(
+                onPressed: () => Navigator.pop(context),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: const Text('Cancel'),
               ),
             ),
-            if (_selectedTemplate != null) ...[
-              const SizedBox(height: 16),
-              TextField(
-                controller: _notesController,
-                decoration: const InputDecoration(
-                  labelText: 'Notes (Optional)',
-                  border: OutlineInputBorder(),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 2,
+              child: ElevatedButton.icon(
+                onPressed: hasValues ? _saveAllTests : null,
+                icon: const Icon(Icons.save),
+                label: const Text('Save All Results'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.cyan.shade700,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  disabledBackgroundColor: Colors.grey.shade300,
                 ),
-                maxLines: 2,
               ),
-            ],
+            ),
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: _selectedTemplate == null
-              ? null
-              : () {
-            final test = LabTest(
-              visitId: widget.visitId,
-              patientId: widget.patientId,
-              testName: _selectedTemplate!.name,
-              testCategory: _selectedTemplate!.category,
-              orderedDate: DateTime.now(),
-              normalRangeMin: _selectedTemplate!.normalRangeMin,
-              normalRangeMax: _selectedTemplate!.normalRangeMax,
-              resultUnit: _selectedTemplate!.unit,
-              status: LabTestStatus.pending,
-              notes: _notesController.text.isEmpty ? null : _notesController.text,
-              createdAt: DateTime.now(),
-            );
-            Navigator.pop(context, test);
-          },
-          child: const Text('Order Test'),
-        ),
-      ],
     );
-  }
-}
-
-// ENTER RESULT DIALOG
-class EnterResultDialog extends StatefulWidget {
-  final LabTest labTest;
-
-  const EnterResultDialog({super.key, required this.labTest});
-
-  @override
-  State<EnterResultDialog> createState() => _EnterResultDialogState();
-}
-
-class _EnterResultDialogState extends State<EnterResultDialog> {
-  late TextEditingController _resultController;
-  late TextEditingController _notesController;
-  late DateTime _resultDate;
-
-  @override
-  void initState() {
-    super.initState();
-    _resultController = TextEditingController(text: widget.labTest.resultValue ?? '');
-    _notesController = TextEditingController(text: widget.labTest.notes ?? '');
-    _resultDate = widget.labTest.resultDate ?? DateTime.now();
   }
 
   @override
   void dispose() {
-    _resultController.dispose();
-    _notesController.dispose();
+    for (var controller in _testControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Enter Result - ${widget.labTest.testName}'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Normal Range: ${widget.labTest.normalRangeDisplay} ${widget.labTest.resultUnit ?? ""}',
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _resultController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'Result Value',
-                suffixText: widget.labTest.resultUnit,
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: () async {
-                final date = await showDatePicker(
-                  context: context,
-                  initialDate: _resultDate,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime.now(),
-                );
-                if (date != null) {
-                  setState(() => _resultDate = date);
-                }
-              },
-              icon: const Icon(Icons.calendar_today),
-              label: Text('Result Date: ${DateFormat('MMM dd, yyyy').format(_resultDate)}'),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _notesController,
-              decoration: const InputDecoration(
-                labelText: 'Notes (Optional)',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            if (_resultController.text.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Please enter result value')),
-              );
-              return;
-            }
-
-            final updatedTest = widget.labTest.copyWith(
-              resultValue: _resultController.text,
-              resultDate: _resultDate,
-              status: LabTestStatus.completed,
-              notes: _notesController.text.isEmpty ? null : _notesController.text,
-              isAbnormal: widget.labTest.copyWith(
-                resultValue: _resultController.text,
-              ).checkIfAbnormal(),
-            );
-
-            Navigator.pop(context, updatedTest);
-          },
-          child: const Text('Save Result'),
-        ),
-      ],
-    );
   }
 }

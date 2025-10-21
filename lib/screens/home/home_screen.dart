@@ -3,7 +3,13 @@ import '../../services/user_service.dart';
 import '../../services/database_helper.dart';
 import '../../models/patient.dart';
 import '../patient/patient_data_edit_screen.dart';
-import '../../models/visit.dart';  // ADD THIS
+import '../../models/visit.dart';
+import '../canvas/canvas_screen.dart';
+import '../patient/patient_registration_screen.dart';
+import 'package:intl/intl.dart';
+import '../medical_templates/patient_selection_dialog.dart';
+
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,10 +24,8 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isSearching = false;
   final _searchFocusNode = FocusNode();
 
-
-  // Add to home_screen.dart:
   Future<List<Visit>> _getMyVisits() async {
-    final db = await DatabaseHelper.instance.database;  // FIXED
+    final db = await DatabaseHelper.instance.database;
     final maps = await db.query(
       'visits',
       where: 'doctor_id = ?',
@@ -36,14 +40,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final today = DateTime.now();
     final todayStart = DateTime(today.year, today.month, today.day);
 
-    final todayVisits = visits.where((v) =>
-        v.createdAt.isAfter(todayStart)
-    ).length;
+    final todayVisits = visits.where((v) => v.createdAt.isAfter(todayStart)).length;
 
     final weekStart = today.subtract(Duration(days: 7));
-    final weekVisits = visits.where((v) =>
-        v.createdAt.isAfter(weekStart)
-    ).length;
+    final weekVisits = visits.where((v) => v.createdAt.isAfter(weekStart)).length;
 
     return {
       'today': todayVisits,
@@ -58,9 +58,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _searchFocusNode.dispose();
     super.dispose();
   }
-
-
-
 
   Future<void> _performSearch(String query) async {
     if (query.isEmpty) {
@@ -213,7 +210,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: Column(
                 children: [
-                  // Top Bar with FUNCTIONAL SEARCH
+                  // Top Bar with Search
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: const BoxDecoration(
@@ -420,6 +417,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ✅ UPDATED: 3x3 Grid Dashboard
   Widget _buildDashboardContent() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(32),
@@ -431,38 +429,491 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
           ),
           const SizedBox(height: 8),
-          Text('Select an action to begin consultation', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
+          Text('Select an action to begin', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
           const SizedBox(height: 32),
+
+          // ✅ UPDATED: 3x3 GRID LAYOUT
           LayoutBuilder(
             builder: (context, constraints) {
               final cardWidth = (constraints.maxWidth - 48) / 3;
+
               return Wrap(
                 spacing: 24,
                 runSpacing: 24,
                 children: [
+                  // ROW 1
                   SizedBox(
-                    width: cardWidth * 2 + 24,
-                    child: _buildLargeActionCard(
-                      context: context,
+                    width: cardWidth,
+                    child: _buildFeatureCard(
                       icon: Icons.play_circle_outline,
                       title: 'Start Consultation',
-                      subtitle: 'Begin new patient session',
-                      color: Colors.blue,
+                      subtitle: 'Begin patient session',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF3B82F6), Color(0xFF1E40AF)],
+                      ),
                       onTap: () => Navigator.pushNamed(context, '/patient-selection'),
                     ),
                   ),
-                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.library_books_outlined, 'Library', 'Medical diagrams', '45', Colors.purple, () {})),
-                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.history, 'Past Summaries', 'Patient records', '24', Colors.orange, () {})),
-                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.star_outline, 'Quick Access', 'Favorites', '8', Colors.green, () {})),
-                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.language, 'Language', 'English', 'EN', Colors.indigo, () {})),
-                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.share, 'WhatsApp', 'Share summaries', '', Colors.green, () {})),
-                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.analytics_outlined, 'Analytics', 'Practice insights', '', Colors.cyan, () {})),
-                  SizedBox(width: cardWidth, child: _buildMediumActionCard(Icons.admin_panel_settings_outlined, 'Admin', 'Settings', '', Colors.red, () {})),
+                  SizedBox(
+                    width: cardWidth,
+                    child: _buildFeatureCard(
+                      icon: Icons.draw,
+                      title: 'Canvas',
+                      subtitle: 'Annotate diagrams',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF97316), Color(0xFFEA580C)],
+                      ),
+                      onTap: () => _openCanvasWithPatientSelection(),
+                    ),
+                  ),
+                  // ✅ CHANGED: Medical Templates (was Library)
+                  SizedBox(
+                    width: cardWidth,
+                    child: _buildFeatureCard(
+                      icon: Icons.healing, // ✅ CHANGED from Icons.description_outlined
+                      title: 'Medical Templates',
+                      subtitle: 'Disease assessment & tracking', // ✅ CHANGED subtitle
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF9333EA), Color(0xFF7E22CE)], // Purple
+                      ),
+                      onTap: () async {
+                        // ✅ NEW: Show patient selection dialog
+                        final result = await showDialog<Map<String, dynamic>>(
+                          context: context,
+                          builder: (context) => const MedicalTemplatePatientSelectionDialog(),
+                        );
+
+                        if (result != null && mounted) {
+                          final patient = result['patient'] as Patient?;
+                          final isQuickMode = result['quickMode'] as bool? ?? false;
+
+                          if (patient != null) {
+                            // Navigate to Medical Systems Screen
+                            Navigator.pushNamed(
+                              context,
+                              '/medical-systems',
+                              arguments: {
+                                'patient': patient,
+                                'isQuickMode': isQuickMode,
+                              },
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  ),
+
+                  // ROW 2
+                  SizedBox(
+                    width: cardWidth,
+                    child: _buildFeatureCard(
+                      icon: Icons.history,
+                      title: 'Past Summaries',
+                      subtitle: 'Patient records',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF14B8A6), Color(0xFF0D9488)],
+                      ),
+                      onTap: () {
+                        // TODO: Navigate to past summaries
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Past Summaries - Coming Soon'),
+                            backgroundColor: Colors.teal,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  // ✅ CHANGED: Library (was Quick Access)
+                  SizedBox(
+                    width: cardWidth,
+                    child: _buildFeatureCard(
+                      icon: Icons.local_library_outlined,
+                      title: 'Library',
+                      subtitle: 'Medical resources',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF10B981), Color(0xFF059669)],
+                      ),
+                      onTap: () {
+                        // TODO: Navigate to library screen
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Library - Coming Soon'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: cardWidth,
+                    child: _buildFeatureCard(
+                      icon: Icons.language,
+                      title: 'Language',
+                      subtitle: 'Change language',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                      ),
+                      onTap: () {
+                        // TODO: Open language selector
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Language Settings - Coming Soon'),
+                            backgroundColor: Colors.indigo,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // ROW 3
+                  SizedBox(
+                    width: cardWidth,
+                    child: _buildFeatureCard(
+                      icon: Icons.chat_bubble_outline,
+                      title: 'WhatsApp',
+                      subtitle: 'Share summaries',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF16A34A), Color(0xFF15803D)],
+                      ),
+                      onTap: () {
+                        // TODO: Open WhatsApp integration
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('WhatsApp Integration - Coming Soon'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: cardWidth,
+                    child: _buildFeatureCard(
+                      icon: Icons.analytics_outlined,
+                      title: 'Analytics',
+                      subtitle: 'Practice insights',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF06B6D4), Color(0xFF0891B2)],
+                      ),
+                      onTap: () {
+                        // TODO: Navigate to analytics
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Analytics - Coming Soon'),
+                            backgroundColor: Colors.cyan,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: cardWidth,
+                    child: _buildFeatureCard(
+                      icon: Icons.admin_panel_settings_outlined,
+                      title: 'Admin',
+                      subtitle: 'System settings',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+                      ),
+                      onTap: () {
+                        // TODO: Navigate to admin panel
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Admin Panel - Coming Soon'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 ],
               );
             },
           ),
         ],
+      ),
+    );
+  }
+
+  // ✅ NEW: Unified Feature Card Widget
+  Widget _buildFeatureCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Gradient gradient,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          height: 180,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: gradient,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: Colors.white, size: 28),
+              ),
+              const Spacer(),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white.withOpacity(0.9),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ✅ Canvas with Patient Selection
+// In home_screen.dart - Replace the _openCanvasWithPatientSelection method
+
+  Future<void> _openCanvasWithPatientSelection() async {
+    final patients = await DatabaseHelper.instance.getAllPatients();
+
+    if (!mounted) return;
+
+    // ✅ NEW: Handle empty patient list with better options
+    if (patients.isEmpty) {
+      _showEmptyPatientsDialog();
+      return;
+    }
+
+    // Show normal patient selection dialog
+    final selectedPatient = await showDialog<Patient>(
+      context: context,
+      builder: (context) => _buildPatientSelectionDialog(patients),
+    );
+
+    if (selectedPatient != null && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CanvasScreen(patient: selectedPatient),
+        ),
+      );
+    }
+  }
+
+// ✅ NEW: Empty patients dialog with 3 options
+  void _showEmptyPatientsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          width: 500,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icon
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade100,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.person_off,
+                  size: 40,
+                  color: Colors.orange.shade700,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Title
+              const Text(
+                'No Patients Found',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Description
+              Text(
+                'You haven\'t registered any patients yet.\nChoose an option below to get started.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.grey.shade600,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Option 1: Add New Patient
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    Navigator.pop(context); // Close dialog
+
+                    // Navigate to registration
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PatientRegistrationScreen(),
+                        settings: RouteSettings(
+                          arguments: {'returnTo': 'canvas'},
+                        ),
+                      ),
+                    );
+
+                    // Handle result
+                    if (result != null && mounted) {
+                      if (result is Map && result['patient'] != null) {
+                        final patient = result['patient'] as Patient;
+                        if (result['action'] == 'annotate') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CanvasScreen(patient: patient),
+                            ),
+                          );
+                        }
+                      } else if (result is Patient) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CanvasScreen(patient: result),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.person_add, size: 20),
+                  label: const Text(
+                    'Add New Patient',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange.shade700,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Option 2: Open Blank Canvas
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context); // Close dialog
+
+                    // Open blank canvas
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CanvasScreen(
+                          patient: Patient(
+                            id: 'TEMP_${DateTime.now().millisecondsSinceEpoch}',
+                            name: 'Quick Canvas',
+                            age: 0,
+                            phone: '',
+                            date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+                            conditions: [],
+                            visits: 0,
+                          ),
+                        ),
+                      ),
+                    );
+
+                    // Show info
+                    Future.delayed(const Duration(milliseconds: 500), () {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                Icon(Icons.info_outline, color: Colors.white),
+                                SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Quick Canvas mode - Add patient later to save',
+                                    style: TextStyle(fontSize: 14),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            backgroundColor: Colors.blue.shade700,
+                            duration: Duration(seconds: 4),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    });
+                  },
+                  icon: const Icon(Icons.flash_on, size: 20),
+                  label: const Text(
+                    'Open Blank Canvas',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.orange.shade700,
+                    side: BorderSide(color: Colors.orange.shade700, width: 2),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Option 3: Cancel
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(fontSize: 15),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -510,89 +961,298 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildLargeActionCard({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          height: 200,
-          padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.grey.shade200),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 4))],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
-                child: Icon(icon, color: color, size: 36),
+  Widget _buildPatientSelectionDialog(List<Patient> patients) {
+    return Dialog(
+      child: Container(
+        width: 600,
+        height: 650, // Increased height for skip button
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFF97316), Color(0xFFEA580C)],
+                ),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
               ),
-              const Spacer(),
-              Text(title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-              const SizedBox(height: 8),
-              Text(subtitle, style: const TextStyle(fontSize: 15, color: Color(0xFF64748B))),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMediumActionCard(IconData icon, String title, String subtitle, String count, Color color, VoidCallback onTap) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          height: 160,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+              child: Row(
                 children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                    child: Icon(icon, color: color, size: 24),
-                  ),
-                  const Spacer(),
-                  if (count.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                      child: Text(count, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: color)),
+                  const Icon(Icons.draw, color: Colors.white, size: 28),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Select Patient for Canvas',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Choose a patient or open blank canvas',
+                          style: TextStyle(fontSize: 14, color: Colors.white70),
+                        ),
+                      ],
                     ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, color: Colors.white),
+                  ),
                 ],
               ),
-              const Spacer(),
-              Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
-              const SizedBox(height: 4),
-              Text(subtitle, style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
-            ],
-          ),
+            ),
+
+            // Action Buttons Section
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                border: Border(
+                  bottom: BorderSide(color: Colors.orange.shade200),
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Add New Patient Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        Navigator.pop(context);
+
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PatientRegistrationScreen(),
+                            settings: RouteSettings(
+                              arguments: {'returnTo': 'canvas'},
+                            ),
+                          ),
+                        );
+
+                        if (result != null && mounted) {
+                          if (result is Map && result['patient'] != null) {
+                            final patient = result['patient'] as Patient;
+                            if (result['action'] == 'annotate') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CanvasScreen(patient: patient),
+                                ),
+                              );
+                            }
+                          } else if (result is Patient) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CanvasScreen(patient: result),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.person_add, size: 20),
+                      label: const Text(
+                        'Add New Patient',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange.shade700,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // ✅ NEW: Skip - Open Blank Canvas Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(context); // Close dialog
+
+                        // Open canvas without patient
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CanvasScreen(
+                              patient: Patient(
+                                id: 'TEMP_${DateTime.now().millisecondsSinceEpoch}',
+                                name: 'Quick Canvas',
+                                age: 0,
+                                phone: '',
+                                date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+                                conditions: [],
+                                visits: 0,
+                              ),
+                            ),
+                          ),
+                        );
+
+                        // Show info message
+                        Future.delayed(const Duration(milliseconds: 500), () {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    Icon(Icons.info_outline, color: Colors.white),
+                                    SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        'Quick Canvas mode - Diagrams can be saved later',
+                                        style: TextStyle(fontSize: 14),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: Colors.blue.shade700,
+                                duration: Duration(seconds: 3),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        });
+                      },
+                      icon: const Icon(Icons.flash_on, size: 20),
+                      label: const Text(
+                        'Skip - Open Blank Canvas',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.orange.shade700,
+                        side: BorderSide(color: Colors.orange.shade700, width: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Divider with "OR" text
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                children: [
+                  Expanded(child: Divider(color: Colors.grey.shade300)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'OR SELECT EXISTING PATIENT',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ),
+                  Expanded(child: Divider(color: Colors.grey.shade300)),
+                ],
+              ),
+            ),
+
+            // Patient List
+            Expanded(
+              child: patients.isEmpty
+                  ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.person_off,
+                      size: 64,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No patients found',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Add a patient or use quick canvas',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+                  : ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: patients.length,
+                itemBuilder: (context, index) {
+                  final patient = patients[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 1,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(16),
+                      leading: CircleAvatar(
+                        radius: 28,
+                        backgroundColor: const Color(0xFFF97316),
+                        child: Text(
+                          patient.name[0].toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        patient.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Row(
+                          children: [
+                            Icon(Icons.badge, size: 14, color: Colors.grey.shade600),
+                            const SizedBox(width: 4),
+                            Text(patient.id, style: const TextStyle(fontSize: 12)),
+                            const SizedBox(width: 16),
+                            Icon(Icons.cake, size: 14, color: Colors.grey.shade600),
+                            const SizedBox(width: 4),
+                            Text('${patient.age} years', style: const TextStyle(fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      trailing: ElevatedButton.icon(
+                        onPressed: () => Navigator.pop(context, patient),
+                        icon: const Icon(Icons.draw, size: 18),
+                        label: const Text('Open Canvas'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF97316),
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 12),
+          ],
         ),
       ),
     );

@@ -7,6 +7,7 @@ import '../models/user.dart';
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import '../models/lab_test.dart';
+import '../models/endocrine/endocrine_condition.dart'; // ✅ ADD THIS LINE
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -23,10 +24,16 @@ class DatabaseHelper {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
-    return await openDatabase(path, version: 7, onCreate: _createDB, onUpgrade: _onUpgrade);  }
+    return await openDatabase(
+      path,
+      version: 11, // UPDATED: Increment version for canvas_image column
+      onCreate: _createDB,
+      onUpgrade: _onUpgrade,
+    );
+  }
 
   Future<void> _createDB(Database db, int version) async {
-    // Users table - NEW
+    // Users table
     await db.execute('''
       CREATE TABLE users (
         id TEXT PRIMARY KEY,
@@ -38,7 +45,51 @@ class DatabaseHelper {
         created_at TEXT NOT NULL
       )
     ''');
+    await db.execute('''
+  CREATE TABLE patient_data_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patientId TEXT NOT NULL,
+    chiefComplaint TEXT,
+    historyOfPresentIllness TEXT,
+    pastMedicalHistory TEXT,
+    familyHistory TEXT,
+    allergies TEXT,
+    vitals TEXT,
+    height TEXT,
+    weight TEXT,
+    bmi TEXT,
+    lastUpdated TEXT NOT NULL,
+    updatedFrom TEXT NOT NULL,
+    FOREIGN KEY (patientId) REFERENCES patients (id) ON DELETE CASCADE
+  )
+''');
 
+    await db.execute('''
+  CREATE TABLE consultation_drafts(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patientId TEXT NOT NULL UNIQUE,
+    chiefComplaint TEXT,
+    historyOfPresentIllness TEXT,
+    pastMedicalHistory TEXT,
+    familyHistory TEXT,
+    allergies TEXT,
+    bloodPressure TEXT,
+    heartRate TEXT,
+    temperature TEXT,
+    spo2 TEXT,
+    respiratoryRate TEXT,
+    height TEXT,
+    weight TEXT,
+    diagnosis TEXT,
+    dietPlan TEXT,
+    lifestylePlan TEXT,
+    prescriptionsJson TEXT,
+    labResultsJson TEXT,
+    isDraft INTEGER DEFAULT 1,
+    lastSaved TEXT,
+    updatedAt TEXT
+  )
+''');
     await db.execute('''
       CREATE TABLE patients (
         id TEXT PRIMARY KEY,
@@ -54,15 +105,45 @@ class DatabaseHelper {
     ''');
 
     await db.execute('''
+    CREATE TABLE endocrine_conditions (
+        id TEXT PRIMARY KEY,
+        patientId TEXT NOT NULL,
+        gland TEXT NOT NULL,
+        category TEXT NOT NULL,
+        diseaseId TEXT NOT NULL,
+        diseaseName TEXT NOT NULL,
+        status TEXT NOT NULL,
+        diagnosisDate TEXT,
+        severity TEXT,
+        labReadings TEXT,
+        clinicalFeatures TEXT,
+        complications TEXT,
+        medications TEXT,
+        images TEXT,
+        notes TEXT,
+        treatmentPlan TEXT,
+        nextVisit TEXT,
+        followUpPlan TEXT,
+        createdAt TEXT NOT NULL,
+        lastUpdated TEXT NOT NULL,
+        isActive INTEGER NOT NULL DEFAULT 1,
+        FOREIGN KEY (patientId) REFERENCES patients (id)
+    )
+    
+        ''');
+    // UPDATED: Visits table with canvas_image column
+    await db.execute('''
       CREATE TABLE visits (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         patient_id TEXT NOT NULL,
         doctor_id TEXT NOT NULL,
+        system TEXT DEFAULT 'kidney',        
         diagram_type TEXT NOT NULL,
         markers TEXT NOT NULL,
         drawing_paths TEXT, 
         notes TEXT,
         created_at TEXT NOT NULL,
+        canvas_image BLOB,
         FOREIGN KEY (patient_id) REFERENCES patients (id) ON DELETE CASCADE,
         FOREIGN KEY (doctor_id) REFERENCES users (id) ON DELETE CASCADE
       )
@@ -85,29 +166,31 @@ class DatabaseHelper {
         FOREIGN KEY (doctor_id) REFERENCES users (id) ON DELETE CASCADE
       )
     ''');
+
     await db.execute('''
-  CREATE TABLE lab_tests (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    visit_id INTEGER NOT NULL,
-    patient_id TEXT NOT NULL,
-    doctor_id TEXT NOT NULL,
-    test_name TEXT NOT NULL,
-    test_category TEXT NOT NULL,
-    ordered_date TEXT NOT NULL,
-    result_date TEXT,
-    result_value TEXT,
-    result_unit TEXT,
-    normal_range_min TEXT,
-    normal_range_max TEXT,
-    is_abnormal INTEGER DEFAULT 0,
-    status TEXT NOT NULL,
-    notes TEXT,
-    created_at TEXT NOT NULL,
-    FOREIGN KEY (visit_id) REFERENCES visits (id) ON DELETE CASCADE,
-    FOREIGN KEY (patient_id) REFERENCES patients (id) ON DELETE CASCADE,
-    FOREIGN KEY (doctor_id) REFERENCES users (id) ON DELETE CASCADE
-  )
-''');
+      CREATE TABLE lab_tests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        visit_id INTEGER NOT NULL,
+        patient_id TEXT NOT NULL,
+        doctor_id TEXT NOT NULL,
+        test_name TEXT NOT NULL,
+        test_category TEXT NOT NULL,
+        ordered_date TEXT NOT NULL,
+        result_date TEXT,
+        result_value TEXT,
+        result_unit TEXT,
+        normal_range_min TEXT,
+        normal_range_max TEXT,
+        is_abnormal INTEGER DEFAULT 0,
+        status TEXT NOT NULL,
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (visit_id) REFERENCES visits (id) ON DELETE CASCADE,
+        FOREIGN KEY (patient_id) REFERENCES patients (id) ON DELETE CASCADE,
+        FOREIGN KEY (doctor_id) REFERENCES users (id) ON DELETE CASCADE
+      )
+    ''');
+
     // Create default admin user (password: "admin123")
     await db.insert('users', {
       'id': 'USR001',
@@ -118,6 +201,113 @@ class DatabaseHelper {
       'specialty': 'General Medicine',
       'created_at': DateTime.now().toIso8601String(),
     });
+  }
+
+// ✅ UPDATED savePatientData to handle JSON encoding
+  // ✅ UPDATED savePatientData to handle JSON encoding
+  Future<void> savePatientData(Map<String, dynamic> data) async {
+    final db = await database;
+
+    // Convert vitals map to JSON string for storage
+    final dataToSave = {
+      'patientId': data['patientId'],
+      'chiefComplaint': data['chiefComplaint'],
+      'historyOfPresentIllness': data['historyOfPresentIllness'],
+      'pastMedicalHistory': data['pastMedicalHistory'],
+      'familyHistory': data['familyHistory'],
+      'allergies': data['allergies'],
+      'vitals': jsonEncode(data['vitals']), // ✅ Encode to JSON string
+      'height': data['height'],
+      'weight': data['weight'],
+      'bmi': data['bmi'],
+      'lastUpdated': data['lastUpdated'],
+      'updatedFrom': data['updatedFrom'],
+    };
+
+    await db.insert(
+      'patient_data_snapshots',
+      dataToSave,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Get latest patient data
+  Future<Map<String, dynamic>?> getLatestPatientData(String patientId) async {
+    final db = await database;
+
+    final List<Map<String, dynamic>> results = await db.query(
+      'patient_data_snapshots',
+      where: 'patientId = ?',
+      whereArgs: [patientId],
+      orderBy: 'lastUpdated DESC',
+      limit: 1,
+    );
+
+    if (results.isNotEmpty) {
+      final data = results.first;
+      // ✅ Decode vitals from JSON string
+      data['vitals'] = data['vitals'] != null
+          ? jsonDecode(data['vitals'] as String)
+          : {};
+      return data;
+    }
+    return null;
+  }
+
+  /// Get patient data history (for tracking changes over time)
+  Future<List<Map<String, dynamic>>> getPatientDataHistory(String patientId) async {
+    final db = await database;
+
+    final List<Map<String, dynamic>> results = await db.query(
+      'patient_data_snapshots',
+      where: 'patientId = ?',
+      whereArgs: [patientId],
+      orderBy: 'lastUpdated DESC',
+      limit: 10, // Last 10 entries
+    );
+
+    return results;
+  }
+
+// 1. Save draft
+  Future<void> saveDraftConsultation(String patientId, Map<String, dynamic> data) async {
+    final db = await database;
+
+    data['patientId'] = patientId;
+    data['isDraft'] = 1;
+    data['updatedAt'] = DateTime.now().toIso8601String();
+
+    await db.insert(
+      'consultation_drafts',
+      data,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<Map<String, dynamic>?> loadDraftConsultation(String patientId) async {
+    final db = await database;
+
+    final List<Map<String, dynamic>> results = await db.query(
+      'consultation_drafts',
+      where: 'patientId = ? AND isDraft = ?',
+      whereArgs: [patientId, 1],
+      orderBy: 'updatedAt DESC',
+      limit: 1,
+    );
+
+    if (results.isNotEmpty) {
+      return results.first;
+    }
+    return null;
+  }
+  Future<void> deleteDraftConsultation(String patientId) async {
+    final db = await database;
+
+    await db.delete(
+      'consultation_drafts',
+      where: 'patientId = ?',
+      whereArgs: [patientId],
+    );
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -134,31 +324,7 @@ class DatabaseHelper {
           created_at TEXT NOT NULL
         )
       ''');
-      if (oldVersion < 7) {
-        await db.execute('''
-    CREATE TABLE IF NOT EXISTS lab_tests (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      visit_id INTEGER NOT NULL,
-      patient_id TEXT NOT NULL,
-      doctor_id TEXT NOT NULL,
-      test_name TEXT NOT NULL,
-      test_category TEXT NOT NULL,
-      ordered_date TEXT NOT NULL,
-      result_date TEXT,
-      result_value TEXT,
-      result_unit TEXT,
-      normal_range_min TEXT,
-      normal_range_max TEXT,
-      is_abnormal INTEGER DEFAULT 0,
-      status TEXT NOT NULL,
-      notes TEXT,
-      created_at TEXT NOT NULL,
-      FOREIGN KEY (visit_id) REFERENCES visits (id) ON DELETE CASCADE,
-      FOREIGN KEY (patient_id) REFERENCES patients (id) ON DELETE CASCADE,
-      FOREIGN KEY (doctor_id) REFERENCES users (id) ON DELETE CASCADE
-    )
-  ''');
-      }
+
       // Add doctor_id to visits
       try {
         await db.execute('ALTER TABLE visits ADD COLUMN doctor_id TEXT DEFAULT "USR001"');
@@ -187,6 +353,104 @@ class DatabaseHelper {
         });
       }
     }
+
+    if (oldVersion < 7) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS lab_tests (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          visit_id INTEGER NOT NULL,
+          patient_id TEXT NOT NULL,
+          doctor_id TEXT NOT NULL,
+          test_name TEXT NOT NULL,
+          test_category TEXT NOT NULL,
+          ordered_date TEXT NOT NULL,
+          result_date TEXT,
+          result_value TEXT,
+          result_unit TEXT,
+          normal_range_min TEXT,
+          normal_range_max TEXT,
+          is_abnormal INTEGER DEFAULT 0,
+          status TEXT NOT NULL,
+          notes TEXT,
+          created_at TEXT NOT NULL,
+          FOREIGN KEY (visit_id) REFERENCES visits (id) ON DELETE CASCADE,
+          FOREIGN KEY (patient_id) REFERENCES patients (id) ON DELETE CASCADE,
+          FOREIGN KEY (doctor_id) REFERENCES users (id) ON DELETE CASCADE
+        )
+      ''');
+    }
+
+    // NEW: Add canvas_image column for version 8
+    if (oldVersion < 8) {
+      try {
+        await db.execute('ALTER TABLE visits ADD COLUMN canvas_image BLOB');
+        print('✅ Added canvas_image column to visits table');
+      } catch (e) {
+        print('canvas_image column may already exist: $e');
+      }
+    }
+    if (oldVersion < 9) {
+      try {
+        await db.execute('ALTER TABLE visits ADD COLUMN system TEXT DEFAULT "kidney"');
+        print('✅ Added system column to visits table');
+      } catch (e) {
+        print('system column may already exist: $e');
+      }
+    }
+    if (oldVersion < 10) {
+      await db.execute('''
+      CREATE TABLE IF NOT EXISTS consultation_drafts(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patientId TEXT NOT NULL UNIQUE,
+        chiefComplaint TEXT,
+        historyOfPresentIllness TEXT,
+        pastMedicalHistory TEXT,
+        familyHistory TEXT,
+        allergies TEXT,
+        bloodPressure TEXT,
+        heartRate TEXT,
+        temperature TEXT,
+        spo2 TEXT,
+        respiratoryRate TEXT,
+        height TEXT,
+        weight TEXT,
+        diagnosis TEXT,
+        dietPlan TEXT,
+        lifestylePlan TEXT,
+        prescriptionsJson TEXT,
+        labResultsJson TEXT,
+        isDraft INTEGER DEFAULT 1,
+        lastSaved TEXT,
+        updatedAt TEXT
+      )
+    ''');
+      print('✅ Created consultation_drafts table');
+    }
+
+    // ADD THIS in _onUpgrade method
+    if (oldVersion < 11) {
+      await db.execute('''
+    CREATE TABLE IF NOT EXISTS patient_data_snapshots (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      patientId TEXT NOT NULL,
+      chiefComplaint TEXT,
+      historyOfPresentIllness TEXT,
+      pastMedicalHistory TEXT,
+      familyHistory TEXT,
+      allergies TEXT,
+      vitals TEXT,
+      height TEXT,
+      weight TEXT,
+      bmi TEXT,
+      lastUpdated TEXT NOT NULL,
+      updatedFrom TEXT NOT NULL,
+      FOREIGN KEY (patientId) REFERENCES patients (id) ON DELETE CASCADE
+    )
+  ''');
+      print('✅ Created patient_data_snapshots table');
+    }
+
+
   }
 
   // PASSWORD HASHING
@@ -230,6 +494,7 @@ class DatabaseHelper {
     return User.fromMap(maps.first);
   }
 
+
   Future<List<User>> getAllDoctors() async {
     final db = await database;
     final maps = await db.query('users', where: 'role = ?', whereArgs: ['doctor']);
@@ -258,6 +523,18 @@ class DatabaseHelper {
     if (maps.isEmpty) return null;
     return Patient.fromMap(maps.first);
   }
+  Future<Visit?> getVisitById(int id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'visits',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (maps.isEmpty) return null;
+
+    return Visit.fromMap(maps.first);
+  }
 
   Future<int> updatePatient(Patient patient) async {
     final db = await database;
@@ -284,7 +561,7 @@ class DatabaseHelper {
     return maps.map((map) => Patient.fromMap(map)).toList();
   }
 
-  // VISIT METHODS (UPDATED)
+  // VISIT METHODS
   Future<int> insertVisit(Visit visit, String doctorId) async {
     final db = await database;
     final visitMap = visit.toMap();
@@ -323,15 +600,45 @@ class DatabaseHelper {
     return await getVisitsByPatient(patientId);
   }
 
-  Future<Visit?> getLatestVisit({
+  // NEW: Get all visits for patient (for diagram gallery)
+  Future<List<Visit>> getAllVisitsForPatient({required String patientId}) async {
+    final db = await database;
+    final maps = await db.query(
+      'visits',
+      where: 'patient_id = ?',
+      whereArgs: [patientId],
+      orderBy: 'created_at DESC',
+    );
+    return maps.map((map) => Visit.fromMap(map)).toList();
+  }
+
+
+  /// Get all visits for a patient filtered by system
+  Future<List<Visit>> getVisitsByPatientAndSystem({
     required String patientId,
+    required String system,
+  }) async {
+    final db = await database;
+    final maps = await db.query(
+      'visits',
+      where: 'patient_id = ? AND system = ?',
+      whereArgs: [patientId, system],
+      orderBy: 'created_at DESC',
+    );
+    return maps.map((map) => Visit.fromMap(map)).toList();
+  }
+
+  /// Get latest visit for specific system and diagram type
+  Future<Visit?> getLatestVisitBySystem({
+    required String patientId,
+    required String system,
     required String diagramType,
   }) async {
     final db = await database;
     final maps = await db.query(
       'visits',
-      where: 'patient_id = ? AND diagram_type = ?',
-      whereArgs: [patientId, diagramType],
+      where: 'patient_id = ? AND system = ? AND diagram_type = ?',
+      whereArgs: [patientId, system, diagramType],
       orderBy: 'created_at DESC',
       limit: 1,
     );
@@ -339,12 +646,64 @@ class DatabaseHelper {
     return Visit.fromMap(maps.first);
   }
 
+  Future<Visit?> getLatestVisit({
+    required String patientId,
+    required String diagramType,
+    String? system, // ADD this optional parameter
+  }) async {
+    final db = await database;
+
+    String whereClause;
+    List<dynamic> whereArgs;
+
+    if (system != null) {
+      whereClause = 'patient_id = ? AND diagram_type = ? AND system = ?';
+      whereArgs = [patientId, diagramType, system];
+    } else {
+      whereClause = 'patient_id = ? AND diagram_type = ?';
+      whereArgs = [patientId, diagramType];
+    }
+
+    final maps = await db.query(
+      'visits',
+      where: whereClause,
+      whereArgs: whereArgs,
+      orderBy: 'created_at DESC',
+      limit: 1,
+    );
+
+    if (maps.isEmpty) return null;
+    return Visit.fromMap(maps.first);
+  }
+  Future<Map<String, List<Visit>>> getVisitsGroupedBySystem(String patientId) async {
+    final db = await database;
+    final maps = await db.query(
+      'visits',
+      where: 'patient_id = ?',
+      whereArgs: [patientId],
+      orderBy: 'created_at DESC',
+    );
+
+    final visits = maps.map((map) => Visit.fromMap(map)).toList();
+
+    // Group by system
+    final Map<String, List<Visit>> grouped = {};
+    for (final visit in visits) {
+      if (!grouped.containsKey(visit.system)) {
+        grouped[visit.system] = [];
+      }
+      grouped[visit.system]!.add(visit);
+    }
+
+    return grouped;
+  }
+
   Future<int> deleteVisit(int id) async {
     final db = await database;
     return await db.delete('visits', where: 'id = ?', whereArgs: [id]);
   }
 
-  // PRESCRIPTION METHODS (UPDATED)
+  // PRESCRIPTION METHODS
   Future<int> insertPrescription(Prescription prescription, String doctorId) async {
     final db = await database;
     final prescMap = prescription.toMap();
@@ -390,6 +749,8 @@ class DatabaseHelper {
     );
     return maps.map((map) => Prescription.fromMap(map)).toList();
   }
+
+  // LAB TEST METHODS
   Future<int> insertLabTest(LabTest labTest, String doctorId) async {
     final db = await database;
     final testMap = labTest.toMap();
@@ -446,6 +807,30 @@ class DatabaseHelper {
     );
     return maps.map((map) => LabTest.fromMap(map)).toList();
   }
+
+  // Save endocrine condition
+  Future<int> saveEndocrineCondition(EndocrineCondition condition) async {
+    final db = await database;
+    return await db.insert(
+      'endocrine_conditions',
+      condition.toJson(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+// Get conditions for patient
+  Future<List<EndocrineCondition>> getEndocrineConditions(String patientId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'endocrine_conditions',
+      where: 'patientId = ? AND isActive = ?',
+      whereArgs: [patientId, 1],
+    );
+
+    return maps.map((map) => EndocrineCondition.fromJson(map)).toList();
+  }
+
+
   Future<void> close() async {
     final db = await database;
     db.close();

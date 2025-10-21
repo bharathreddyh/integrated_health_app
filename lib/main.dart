@@ -7,22 +7,24 @@ import 'screens/home/home_screen.dart';
 import 'screens/home/nurse_home_screen.dart';
 import 'screens/home/patient_home_screen.dart';
 import 'screens/patient/patient_selection_screen.dart';
-import 'screens/kidney/kidney_screen.dart';
+import 'screens/patient/patient_registration_screen.dart';
+import 'screens/consultation/three_page_consultation_screen.dart';
+import 'screens/canvas/canvas_screen.dart';
 import 'models/patient.dart';
 import 'services/user_service.dart';
 import 'services/whisper_voice_service.dart';
 import 'widgets/floating_voice_button.dart';
-import 'screens/patient/patient_registration_screen.dart';
+import 'screens/medical_templates/medical_systems_screen.dart';
 
-// Global navigator key for voice commands
+
+
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   print('🚀 App starting...');
 
-  // Initialize voice service
   final initialized = await WhisperVoiceService.instance.initialize();
   print('🎤 Voice service initialized: $initialized');
 
@@ -37,21 +39,19 @@ class ClinicClarityApp extends StatelessWidget {
     return ChangeNotifierProvider.value(
       value: WhisperVoiceService.instance,
       child: MaterialApp(
-        navigatorKey: navigatorKey, // ADD THIS - gives global access to navigator
-        title: 'Clinic Clarity Suite',
+        title: 'IHA',
+        navigatorKey: navigatorKey,  // ADD THIS LINE
         theme: ThemeData(
           primarySwatch: Colors.blue,
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
         debugShowCheckedModeBanner: false,
 
-        // Show floating button on ALL screens
         builder: (context, child) {
-          print('🗃️ Builder called - adding floating button');
           return Stack(
             children: [
               child!,
-              const FloatingVoiceButton(), // Always visible for testing
+              const FloatingVoiceButton(),
             ],
           );
         },
@@ -66,11 +66,37 @@ class ClinicClarityApp extends StatelessWidget {
           '/patient-registration': (context) => const PatientRegistrationScreen(),
         },
         onGenerateRoute: (settings) {
+          // Handle 3-page consultation with patient data
+          if (settings.name == '/consultation') {
+            final patient = settings.arguments as Patient?;
+            if (patient != null) {
+              return MaterialPageRoute(
+                builder: (context) => ThreePageConsultationScreen(patient: patient),
+              );
+            }
+          }
+
+          // Handle kidney annotation
           if (settings.name == '/kidney') {
             final patient = settings.arguments as Patient?;
-            return MaterialPageRoute(
-              builder: (context) => KidneyScreen(patient: patient),
-            );
+            if (patient != null) {
+              return MaterialPageRoute(
+                builder: (context) => CanvasScreen(patient: patient),
+              );
+            }
+          }
+          if (settings.name == '/medical-systems') {
+            final args = settings.arguments as Map<String, dynamic>?;
+            if (args != null) {
+              final patient = args['patient'] as Patient;
+              final isQuickMode = args['isQuickMode'] as bool? ?? false;
+              return MaterialPageRoute(
+                builder: (context) => MedicalSystemsScreen(
+                  patient: patient,
+                  isQuickMode: isQuickMode,
+                ),
+              );
+            }
           }
           return null;
         },
@@ -79,33 +105,42 @@ class ClinicClarityApp extends StatelessWidget {
   }
 }
 
-class AuthWrapper extends StatefulWidget {
+class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
   @override
-  State<AuthWrapper> createState() => _AuthWrapperState();
-}
-
-class _AuthWrapperState extends State<AuthWrapper> {
-  @override
-  void initState() {
-    super.initState();
-    _checkAuth();
-  }
-
-  Future<void> _checkAuth() async {
-    final route = await UserService.getInitialRoute();
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, route);
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(),
-      ),
+    return FutureBuilder<bool>(
+      future: UserService.isLoggedIn(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        if (snapshot.data == true) {
+          final user = UserService.currentUser;
+          if (user == null) {
+            return const LoginScreen();
+          }
+
+          switch (user.role) {
+            case 'doctor':
+              return const HomeScreen();
+            case 'nurse':
+              return const NurseHomeScreen();
+            case 'patient':
+              return const PatientHomeScreen();
+            default:
+              return const LoginScreen();
+          }
+        }
+
+        return const LoginScreen();
+      },
     );
   }
 }

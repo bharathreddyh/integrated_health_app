@@ -1,5 +1,3 @@
-// lib/screens/canvas/canvas_screen.dart - WITH EDITING SUPPORT
-
 import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
@@ -23,15 +21,17 @@ import '../../services/user_service.dart';
 import '../../config/canvas_system_config.dart';
 
 class CanvasScreen extends StatefulWidget {
-  final Patient? patient;
-  final String? initialSystem;
-  final Visit? existingVisit;  // NEW - for editing existing diagrams
+  final Patient patient;
+  final Visit? existingVisit;
+  final String? preSelectedSystem;
+  final String? preSelectedDiagramType;
 
   const CanvasScreen({
     super.key,
-    this.patient,
-    this.initialSystem,
-    this.existingVisit,  // NEW
+    required this.patient,
+    this.existingVisit,
+    this.preSelectedSystem,
+    this.preSelectedDiagramType,
   });
 
   @override
@@ -60,7 +60,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
   String _voiceStatus = '';
 
   int? _currentVisitId;
-  bool _isEditingMode = false;  // NEW - track if editing existing diagram
+  bool _isEditingMode = false;
 
   String _selectedDrawingTool = 'none';
   Color _drawingColor = Colors.black;
@@ -71,27 +71,40 @@ class _CanvasScreenState extends State<CanvasScreen> {
   void initState() {
     super.initState();
 
-    patient = widget.patient ??
-        Patient(
-          id: 'TEMP001',
-          name: 'John Doe',
-          age: 45,
-          phone: '0000000000',
-          date: DateTime.now().toString().split(' ')[0],
-        );
+    patient = widget.patient;
 
-    // NEW - Check if editing existing visit
+    // PRIORITY-BASED INITIALIZATION
     if (widget.existingVisit != null) {
       _loadExistingVisit();
+    } else if (widget.preSelectedSystem != null) {
+      selectedSystem = widget.preSelectedSystem!;
+
+      if (!CanvasSystemConfig.systems.containsKey(selectedSystem)) {
+        selectedSystem = 'kidney';
+      }
+
+      if (widget.preSelectedDiagramType != null) {
+        final systemConfig = CanvasSystemConfig.systems[selectedSystem];
+        final allDiagrams = systemConfig?.allDiagrams ?? {};
+
+        if (allDiagrams.containsKey(widget.preSelectedDiagramType)) {
+          selectedPreset = widget.preSelectedDiagramType!;
+        } else {
+          selectedPreset = systemConfig?.anatomyDiagrams.keys.first ?? 'anatomical';
+        }
+      } else {
+        final systemConfig = CanvasSystemConfig.systems[selectedSystem];
+        selectedPreset = systemConfig?.anatomyDiagrams.keys.first ?? 'anatomical';
+      }
     } else {
-      selectedSystem = widget.initialSystem ?? 'kidney';
+      selectedSystem = 'kidney';
+      selectedPreset = 'anatomical';
       _loadAnnotations();
     }
 
     _initializeVoice();
   }
 
-  // NEW METHOD - Load existing visit for editing
   void _loadExistingVisit() {
     final visit = widget.existingVisit!;
     setState(() {
@@ -300,6 +313,56 @@ class _CanvasScreenState extends State<CanvasScreen> {
     }
   }
 
+  // ✅ NEW: Clear only markers
+  void _clearMarkers() {
+    setState(() {
+      markers = [];
+      selectedMarkerIndex = null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('All markers cleared'),
+        backgroundColor: Colors.orange,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  // ✅ NEW: Clear only drawings
+  void _clearDrawings() {
+    setState(() {
+      drawingPaths = [];
+      selectedPathIndex = null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('All drawings cleared'),
+        backgroundColor: Colors.blue,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  // ✅ UPDATED: Clear all (both markers and drawings)
+  void _clearAll() {
+    setState(() {
+      markers = [];
+      drawingPaths = [];
+      selectedMarkerIndex = null;
+      selectedPathIndex = null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('All markers and drawings cleared'),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _voiceService.dispose();
@@ -426,8 +489,8 @@ class _CanvasScreenState extends State<CanvasScreen> {
 
       setState(() {
         selectedPreset = preset;
-        markers.clear();
-        drawingPaths.clear();
+        markers = [];
+        drawingPaths = [];
         selectedMarkerIndex = null;
         selectedPathIndex = null;
       });
@@ -486,7 +549,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
 
     if (action == 'delete') {
       setState(() {
-        markers.removeAt(index);
+        markers = List.from(markers)..removeAt(index);
         selectedMarkerIndex = null;
       });
     } else {
@@ -573,8 +636,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                           onMarkerDeleted: () {
                             if (selectedMarkerIndex != null) {
                               setState(() {
-                                markers = List.from(markers);
-                                markers.removeAt(selectedMarkerIndex!);
+                                markers = List.from(markers)..removeAt(selectedMarkerIndex!);
                                 selectedMarkerIndex = null;
                               });
                             }
@@ -609,12 +671,11 @@ class _CanvasScreenState extends State<CanvasScreen> {
                               pan = Offset.zero;
                             });
                           },
-                          onClearAll: () {
-                            setState(() {
-                              markers.clear();
-                              selectedMarkerIndex = null;
-                            });
-                          },
+                          // ✅ UPDATED: Wire up the three clear callbacks
+                          onClearAll: _clearAll,
+                          onClearMarkers: _clearMarkers,
+                          onClearDrawings: _clearDrawings,
+                          drawingPathsCount: drawingPaths.length,
                         ),
                       ),
 
@@ -731,7 +792,6 @@ class _CanvasScreenState extends State<CanvasScreen> {
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                      // NEW - Editing indicator badge
                                       if (_isEditingMode) ...[
                                         const SizedBox(width: 8),
                                         Container(
@@ -815,8 +875,8 @@ class _CanvasScreenState extends State<CanvasScreen> {
                                       selectedPreset = CanvasSystemConfig
                                           .systems[value]?.anatomyDiagrams.keys.first ??
                                           'anatomical';
-                                      markers.clear();
-                                      drawingPaths.clear();
+                                      markers = [];
+                                      drawingPaths = [];
                                       selectedMarkerIndex = null;
                                       selectedPathIndex = null;
                                       selectedTool = 'pan';
@@ -830,7 +890,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                             ),
                             const SizedBox(width: 12),
 
-                            // DIAGRAM SELECTOR WITH SECTIONS
+                            // DIAGRAM SELECTOR
                             SizedBox(
                               width: 220,
                               child: _buildDiagramDropdown(),
@@ -918,7 +978,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                                     strokeWidth: _strokeWidth,
                                     onMarkerAdded: (marker) {
                                       setState(() {
-                                        markers.add(marker);
+                                        markers = List.from(markers)..add(marker);
                                         selectedMarkerIndex = markers.length - 1;
                                         selectedTool = 'pan';
                                         _waitingForClick = false;
@@ -962,7 +1022,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                                     },
                                     onDrawingPathAdded: (path) {
                                       setState(() {
-                                        drawingPaths.add(path);
+                                        drawingPaths = List.from(drawingPaths)..add(path);
                                         selectedPathIndex = null;
                                       });
                                     },
@@ -1107,6 +1167,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
     );
   }
 
+  // DIAGRAM DROPDOWN WITH SECTIONS
   Widget _buildDiagramDropdown() {
     final diagrams = _currentDiagrams;
     final anatomyDiagrams = diagrams['anatomy'] ?? {};
@@ -1211,8 +1272,8 @@ class _CanvasScreenState extends State<CanvasScreen> {
 
           setState(() {
             selectedPreset = value;
-            markers.clear();
-            drawingPaths.clear();
+            markers = [];
+            drawingPaths = [];
             selectedMarkerIndex = null;
             selectedPathIndex = null;
             _currentVisitId = null;

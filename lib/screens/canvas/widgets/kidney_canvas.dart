@@ -1,6 +1,7 @@
-// lib/screens/kidney/widgets/kidney_canvas.dart - COMPLETE FILE
+// lib/screens/kidney/widgets/kidney_canvas.dart - UPDATED WITH CUSTOM SHAPES
 
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import '../../../models/marker.dart';
 import '../../../models/condition_tool.dart';
 import '../../../models/drawing_path.dart';
@@ -10,7 +11,7 @@ class KidneyCanvas extends StatefulWidget {
   final List<Marker> markers;
   final List<DrawingPath> drawingPaths;
   final int? selectedMarkerIndex;
-  final int? selectedPathIndex; // NEW
+  final int? selectedPathIndex;
   final String selectedTool;
   final List<ConditionTool> tools;
   final double zoom;
@@ -28,7 +29,7 @@ class KidneyCanvas extends StatefulWidget {
   final Color drawingColor;
   final double strokeWidth;
   final Function(DrawingPath) onDrawingPathAdded;
-  final Function(int) onDrawingPathSelected; // NEW
+  final Function(int) onDrawingPathSelected;
 
   const KidneyCanvas({
     super.key,
@@ -36,7 +37,7 @@ class KidneyCanvas extends StatefulWidget {
     required this.markers,
     this.drawingPaths = const [],
     required this.selectedMarkerIndex,
-    this.selectedPathIndex, // NEW
+    this.selectedPathIndex,
     required this.selectedTool,
     required this.tools,
     required this.zoom,
@@ -53,7 +54,7 @@ class KidneyCanvas extends StatefulWidget {
     required this.drawingColor,
     required this.strokeWidth,
     required this.onDrawingPathAdded,
-    required this.onDrawingPathSelected, // NEW
+    required this.onDrawingPathSelected,
   });
 
   @override
@@ -111,7 +112,7 @@ class _KidneyCanvasState extends State<KidneyCanvas> {
                 currentDrawingColor: widget.drawingColor,
                 currentStrokeWidth: widget.strokeWidth,
                 selectedMarkerIndex: widget.selectedMarkerIndex,
-                selectedPathIndex: widget.selectedPathIndex, // NEW
+                selectedPathIndex: widget.selectedPathIndex,
                 zoom: widget.zoom,
                 pan: widget.pan,
               ),
@@ -136,7 +137,6 @@ class _KidneyCanvasState extends State<KidneyCanvas> {
   }
 
   void _handleTapDown(TapDownDetails details) {
-    // Check if tapping on a drawing path first
     if (widget.selectedDrawingTool == 'pen') {
       for (int i = widget.drawingPaths.length - 1; i >= 0; i--) {
         if (widget.drawingPaths[i].containsPoint(
@@ -149,11 +149,9 @@ class _KidneyCanvasState extends State<KidneyCanvas> {
           return;
         }
       }
-      // Deselect if tapping empty space
       widget.onDrawingPathSelected(-1);
     }
 
-    // Existing marker logic
     if (widget.waitingForClick && widget.pendingToolType != null) {
       final tool = widget.tools.firstWhere((t) => t.id == widget.pendingToolType);
       final canvasSize = context.size!;
@@ -190,7 +188,6 @@ class _KidneyCanvasState extends State<KidneyCanvas> {
   }
 
   void _handlePanEnd(DragEndDetails details) {
-    // Finish drawing - UPDATED TO USE RELATIVE COORDINATES
     if (_currentDrawingPoints.isNotEmpty) {
       final path = DrawingPath.fromScreenCoordinates(
         screenPoints: List.from(_currentDrawingPoints),
@@ -212,8 +209,8 @@ class _KidneyCanvasState extends State<KidneyCanvas> {
       _currentPan = null;
     });
   }
+
   void _handlePanStart(DragStartDetails details) {
-    // Drawing mode
     if (widget.selectedDrawingTool == 'pen') {
       setState(() {
         _currentDrawingPoints = [details.localPosition];
@@ -244,7 +241,6 @@ class _KidneyCanvasState extends State<KidneyCanvas> {
   }
 
   void _handlePanUpdate(DragUpdateDetails details) {
-    // Drawing mode
     if (widget.selectedDrawingTool == 'pen') {
       setState(() {
         _currentDrawingPoints.add(details.localPosition);
@@ -283,8 +279,6 @@ class _KidneyCanvasState extends State<KidneyCanvas> {
       widget.onPanChanged(newPan);
     }
   }
-
-
 
   int _findMarkerAtPosition(Offset position) {
     final canvasSize = context.size!;
@@ -326,7 +320,7 @@ class CombinedPainter extends CustomPainter {
   final Color currentDrawingColor;
   final double currentStrokeWidth;
   final int? selectedMarkerIndex;
-  final int? selectedPathIndex; // NEW
+  final int? selectedPathIndex;
   final double zoom;
   final Offset pan;
 
@@ -337,14 +331,14 @@ class CombinedPainter extends CustomPainter {
     required this.currentDrawingColor,
     required this.currentStrokeWidth,
     required this.selectedMarkerIndex,
-    required this.selectedPathIndex, // NEW
+    required this.selectedPathIndex,
     required this.zoom,
     required this.pan,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Draw completed paths - UPDATED FOR RELATIVE COORDS
+    // Draw completed paths
     for (int i = 0; i < drawingPaths.length; i++) {
       final path = drawingPaths[i];
       final isSelected = i == selectedPathIndex;
@@ -358,7 +352,7 @@ class CombinedPainter extends CustomPainter {
       if (screenPoints.length > 1) {
         final paint = Paint()
           ..color = path.color
-          ..strokeWidth = path.strokeWidth * zoom // Scale with zoom
+          ..strokeWidth = path.strokeWidth * zoom
           ..strokeCap = StrokeCap.round
           ..strokeJoin = StrokeJoin.round
           ..style = PaintingStyle.stroke;
@@ -370,7 +364,6 @@ class CombinedPainter extends CustomPainter {
         }
         canvas.drawPath(drawPath, paint);
 
-        // Highlight selected path
         if (isSelected) {
           final highlightPaint = Paint()
             ..color = Colors.blue.withOpacity(0.3)
@@ -400,7 +393,7 @@ class CombinedPainter extends CustomPainter {
       canvas.drawPath(drawPath, paint);
     }
 
-    // Draw markers
+    // Draw markers with custom shapes
     for (int i = 0; i < markers.length; i++) {
       final marker = markers[i];
       final isSelected = i == selectedMarkerIndex;
@@ -411,35 +404,17 @@ class CombinedPainter extends CustomPainter {
       );
       final scaledSize = marker.getScaledSize(zoom);
 
-      final paint = Paint()..color = marker.color..style = PaintingStyle.fill;
-      canvas.drawCircle(screenPos, scaledSize / 2, paint);
+      // ✅ CUSTOM SHAPES BASED ON MARKER TYPE
+      if (marker.type == 'calculi') {
+        _drawRuggedCalculi(canvas, screenPos, scaledSize, marker.color, isSelected, i);
+      } else if (marker.type == 'tumor') {
+        _drawBumpyTumor(canvas, screenPos, scaledSize, marker.color, isSelected, i);
+      } else {
+        // Default circular shape for other markers (cyst, etc.)
+        _drawCircularMarker(canvas, screenPos, scaledSize, marker.color, isSelected, i);
+      }
 
-      final outlinePaint = Paint()
-        ..color = isSelected ? Colors.blue : Colors.white
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = isSelected ? 3.0 : 2.0;
-      canvas.drawCircle(screenPos, scaledSize / 2, outlinePaint);
-
-      final numberPainter = TextPainter(
-        text: TextSpan(
-          text: '${i + 1}',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: (scaledSize * 0.5).clamp(10.0, 16.0),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      numberPainter.layout();
-      numberPainter.paint(
-        canvas,
-        Offset(
-          screenPos.dx - numberPainter.width / 2,
-          screenPos.dy - numberPainter.height / 2,
-        ),
-      );
-
+      // Draw resize handle if selected
       if (isSelected) {
         final handlePaint = Paint()..color = Colors.blue..style = PaintingStyle.fill;
         final handleOutlinePaint = Paint()
@@ -474,14 +449,150 @@ class CombinedPainter extends CustomPainter {
             handlePos.dy - iconPainter.height / 2,
           ),
         );
-
-        final selectionPaint = Paint()
-          ..color = Colors.blue.withOpacity(0.3)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.0;
-        canvas.drawCircle(screenPos, scaledSize / 2 + 5, selectionPaint);
       }
     }
+  }
+
+  // ✅ RUGGED/JAGGED SHAPE FOR CALCULI (kidney stones)
+  void _drawRuggedCalculi(Canvas canvas, Offset center, double size, Color color, bool isSelected, int index) {
+    final paint = Paint()..color = color..style = PaintingStyle.fill;
+    final path = Path();
+
+    // Create irregular jagged star shape
+    final numPoints = 8;
+    final radius = size / 2;
+
+    for (int i = 0; i < numPoints; i++) {
+      final angle = (i * 2 * math.pi / numPoints) - math.pi / 2;
+      // Alternate between outer and inner points with random variation
+      final r = (i % 2 == 0)
+          ? radius * (0.9 + math.sin(i * 1.5) * 0.1)  // Outer points
+          : radius * (0.6 + math.sin(i * 2.3) * 0.15); // Inner points
+
+      final x = center.dx + r * math.cos(angle);
+      final y = center.dy + r * math.sin(angle);
+
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+
+    canvas.drawPath(path, paint);
+
+    // Outline
+    final outlinePaint = Paint()
+      ..color = isSelected ? Colors.blue : Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = isSelected ? 3.0 : 2.0;
+    canvas.drawPath(path, outlinePaint);
+
+    // Number label
+    _drawMarkerNumber(canvas, center, size, index);
+
+    // Selection indicator
+    if (isSelected) {
+      final selectionPaint = Paint()
+        ..color = Colors.blue.withOpacity(0.3)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0;
+      canvas.drawCircle(center, size / 2 + 5, selectionPaint);
+    }
+  }
+
+  // ✅ BUMPY/IRREGULAR SHAPE FOR TUMOR
+  void _drawBumpyTumor(Canvas canvas, Offset center, double size, Color color, bool isSelected, int index) {
+    final paint = Paint()..color = color..style = PaintingStyle.fill;
+    final path = Path();
+
+    // Create irregular bumpy circle
+    final numBumps = 12;
+    final baseRadius = size / 2;
+
+    for (int i = 0; i <= numBumps; i++) {
+      final angle = (i * 2 * math.pi / numBumps) - math.pi / 2;
+      // Add bumps with varying amplitudes
+      final bumpSize = 0.15 + math.sin(i * 3.7) * 0.1;
+      final r = baseRadius * (1.0 + math.sin(i * 2.1) * bumpSize);
+
+      final x = center.dx + r * math.cos(angle);
+      final y = center.dy + r * math.sin(angle);
+
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+
+    canvas.drawPath(path, paint);
+
+    // Outline
+    final outlinePaint = Paint()
+      ..color = isSelected ? Colors.blue : Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = isSelected ? 3.0 : 2.0;
+    canvas.drawPath(path, outlinePaint);
+
+    // Number label
+    _drawMarkerNumber(canvas, center, size, index);
+
+    // Selection indicator
+    if (isSelected) {
+      final selectionPaint = Paint()
+        ..color = Colors.blue.withOpacity(0.3)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0;
+      canvas.drawCircle(center, size / 2 + 8, selectionPaint);
+    }
+  }
+
+  // Default circular marker for other types (cyst, etc.)
+  void _drawCircularMarker(Canvas canvas, Offset center, double size, Color color, bool isSelected, int index) {
+    final paint = Paint()..color = color..style = PaintingStyle.fill;
+    canvas.drawCircle(center, size / 2, paint);
+
+    final outlinePaint = Paint()
+      ..color = isSelected ? Colors.blue : Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = isSelected ? 3.0 : 2.0;
+    canvas.drawCircle(center, size / 2, outlinePaint);
+
+    _drawMarkerNumber(canvas, center, size, index);
+
+    if (isSelected) {
+      final selectionPaint = Paint()
+        ..color = Colors.blue.withOpacity(0.3)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0;
+      canvas.drawCircle(center, size / 2 + 5, selectionPaint);
+    }
+  }
+
+  // Helper to draw marker number
+  void _drawMarkerNumber(Canvas canvas, Offset center, double size, int index) {
+    final numberPainter = TextPainter(
+      text: TextSpan(
+        text: '${index + 1}',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: (size * 0.5).clamp(10.0, 16.0),
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    numberPainter.layout();
+    numberPainter.paint(
+      canvas,
+      Offset(
+        center.dx - numberPainter.width / 2,
+        center.dy - numberPainter.height / 2,
+      ),
+    );
   }
 
   @override

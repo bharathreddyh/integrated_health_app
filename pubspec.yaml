@@ -16,6 +16,9 @@ dependencies:
   url_launcher: ^6.2.1
   crypto: ^3.0.3
   intl: ^0.18.1
+  vector_math: ^2.1.4
+  syncfusion_flutter_charts: ^24.1.41
+
 
   # State Management
   provider: ^6.1.1

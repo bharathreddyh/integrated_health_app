@@ -1,7 +1,7 @@
 // lib/services/global_voice_navigation.dart
 
 import 'package:flutter/material.dart';
-import '../main.dart'; // Import to access navigatorKey
+import '../main.dart' as main_app;  // Import to access navigatorKey
 
 class GlobalVoiceNavigation {
   static void handleCommand(BuildContext context, String command) {
@@ -9,8 +9,7 @@ class GlobalVoiceNavigation {
     print('🎯 Heard: "$lowercaseCommand"');
 
     // Get navigator from global key - this works from anywhere!
-    final navigator = navigatorKey.currentState;
-
+    final navigator = main_app.navigatorKey.currentState;
     if (navigator == null) {
       print('❌ Navigator not available');
       _showFeedback(context, '❌ Navigation not ready');

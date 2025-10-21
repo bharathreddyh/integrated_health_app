@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/patient.dart';
 import '../../models/vitals.dart';
 import '../../services/database_helper.dart';
-import '../kidney/kidney_screen.dart';
+import '../canvas/canvas_screen.dart';
 
 class PatientDataEditScreen extends StatefulWidget {
   final Patient patient;
@@ -651,7 +651,7 @@ class _PatientDataEditScreenState extends State<PatientDataEditScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => KidneyScreen(patient: updatedPatient),
+            builder: (context) => CanvasScreen(patient: updatedPatient),
           ),
         );
       }

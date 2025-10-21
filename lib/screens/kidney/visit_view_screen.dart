@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/patient.dart';
 import '../../models/visit.dart';
 import '../../models/condition_tool.dart';
-import 'widgets/kidney_canvas.dart';
+import '../canvas/widgets/kidney_canvas.dart';
 
 class VisitViewScreen extends StatelessWidget {
   final Visit visit;

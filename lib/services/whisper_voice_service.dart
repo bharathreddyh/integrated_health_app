@@ -1,12 +1,9 @@
-import 'dart:io';
+// lib/services/whisper_voice_service.dart
+
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:flutter_sound/flutter_sound.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../config/api_keys.dart';
 
 enum VoiceState {
   idle,
@@ -19,15 +16,11 @@ class WhisperVoiceService extends ChangeNotifier {
   static final WhisperVoiceService instance = WhisperVoiceService._();
   WhisperVoiceService._();
 
-  static final String _apiKey = ApiKeys.openAiApiKey;
-  static const String _whisperEndpoint = 'https://api.openai.com/v1/audio/transcriptions';
-
-  final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
-  bool _isRecorderInitialized = false;
+  final SpeechToText _speechToText = SpeechToText();
+  bool _isInitialized = false;
 
   VoiceState _state = VoiceState.idle;
   String _transcription = '';
-  String? _recordingPath;
   Timer? _recordingTimer;
   final int _maxRecordingSeconds = 5;
 
@@ -42,9 +35,12 @@ class WhisperVoiceService extends ChangeNotifier {
       final micPermission = await Permission.microphone.request();
       if (!micPermission.isGranted) return false;
 
-      await _recorder.openRecorder();
-      _isRecorderInitialized = true;
-      return true;
+      _isInitialized = await _speechToText.initialize(
+        onError: (error) => print('Error: $error'),
+        onStatus: (status) => print('Status: $status'),
+      );
+
+      return _isInitialized;
     } catch (e) {
       return false;
     }
@@ -52,21 +48,29 @@ class WhisperVoiceService extends ChangeNotifier {
 
   Future<void> startListening() async {
     try {
-      if (!_isRecorderInitialized) {
-        throw Exception('Recorder not initialized');
+      if (!_isInitialized) {
+        throw Exception('Not initialized');
       }
 
       _setState(VoiceState.listening);
       _transcription = 'Listening...';
 
-      final tempDir = await getTemporaryDirectory();
-      _recordingPath = '${tempDir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      await _speechToText.listen(
+        onResult: (result) {
+          if (result.finalResult) {
+            _transcription = result.recognizedWords;
+            _setState(VoiceState.idle);
 
-      await _recorder.startRecorder(
-        toFile: _recordingPath,
-        codec: Codec.aacMP4,
-        bitRate: 128000,
-        sampleRate: 16000,
+            if (onTranscription != null) {
+              onTranscription!(result.recognizedWords);
+            }
+          } else {
+            _transcription = result.recognizedWords;
+            notifyListeners();
+          }
+        },
+        listenFor: Duration(seconds: _maxRecordingSeconds),
+        pauseFor: const Duration(seconds: 3),
       );
 
       _recordingTimer = Timer(Duration(seconds: _maxRecordingSeconds), () {
@@ -82,32 +86,10 @@ class WhisperVoiceService extends ChangeNotifier {
     _recordingTimer?.cancel();
 
     try {
-      _setState(VoiceState.processing);
-      _transcription = 'Processing...';
+      await _speechToText.stop();
 
-      await _recorder.stopRecorder();
-
-      if (_recordingPath == null) {
-        throw Exception('No recording');
-      }
-
-      final file = File(_recordingPath!);
-      if (!await file.exists()) {
-        throw Exception('File not found');
-      }
-
-      final fileSize = await file.length();
-      if (fileSize < 1000) {
-        throw Exception('Too short');
-      }
-
-      final transcription = await _transcribeWithWhisper(_recordingPath!);
-
-      _transcription = transcription;
-      _setState(VoiceState.idle);
-
-      if (onTranscription != null) {
-        onTranscription!(transcription);
+      if (_state != VoiceState.error) {
+        _setState(VoiceState.idle);
       }
     } catch (e) {
       _setState(VoiceState.error);
@@ -116,33 +98,6 @@ class WhisperVoiceService extends ChangeNotifier {
       Future.delayed(Duration(seconds: 3), () {
         if (_state == VoiceState.error) reset();
       });
-    }
-  }
-
-  Future<String> _transcribeWithWhisper(String audioPath) async {
-    try {
-      final request = http.MultipartRequest('POST', Uri.parse(_whisperEndpoint));
-      request.headers['Authorization'] = 'Bearer $_apiKey';
-      request.fields['model'] = 'whisper-1';
-      request.fields['language'] = 'en';
-
-      request.files.add(await http.MultipartFile.fromPath('file', audioPath, filename: 'audio.m4a'));
-
-      final response = await request.send();
-      final responseBody = await response.stream.bytesToString();
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(responseBody);
-        return json['text'] as String;
-      } else if (response.statusCode == 400) {
-        throw Exception('Bad Request');
-      } else if (response.statusCode == 401) {
-        throw Exception('Invalid API Key');
-      } else {
-        throw Exception('API Error ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('$e');
     }
   }
 
@@ -160,9 +115,7 @@ class WhisperVoiceService extends ChangeNotifier {
   @override
   void dispose() {
     _recordingTimer?.cancel();
-    if (_isRecorderInitialized) {
-      _recorder.closeRecorder();
-    }
+    _speechToText.stop();
     super.dispose();
   }
 }

@@ -1,31 +1,12 @@
+// lib/screens/patient/patient_registration_screen.dart
+
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../models/patient.dart';
-import '../../services/database_helper.dart';
 import '../../models/vitals.dart';
-
-class PatientStore {
-  static final _db = DatabaseHelper.instance;
-
-  static Future<List<Patient>> getPatients() async {
-    return await _db.getAllPatients();
-  }
-
-  static Future<void> addPatient(Patient patient) async {
-    await _db.createPatient(patient);
-  }
-
-  static Future<void> updatePatient(Patient patient) async {
-    await _db.updatePatient(patient);
-  }
-
-  static Future<void> deletePatient(String id) async {
-    await _db.deletePatient(id);
-  }
-
-  static Future<List<Patient>> searchPatients(String query) async {
-    return await _db.searchPatients(query);
-  }
-}
+import '../../services/database_helper.dart';
+import '../../services/whisper_voice_service.dart';
+import '../canvas/canvas_screen.dart'; // ✅ ADD THIS IMPORT
 
 class PatientRegistrationScreen extends StatefulWidget {
   const PatientRegistrationScreen({super.key});
@@ -35,510 +16,344 @@ class PatientRegistrationScreen extends StatefulWidget {
 }
 
 class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
+  final _formKey = GlobalKey<FormState>();
+
+  // Basic Info Controllers
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _clinicalHistoryController = TextEditingController();
+  final _notesController = TextEditingController();
 
+  // Vitals Controllers
   final _bpSystolicController = TextEditingController();
   final _bpDiastolicController = TextEditingController();
   final _pulseController = TextEditingController();
   final _temperatureController = TextEditingController();
   final _spo2Controller = TextEditingController();
-  final _respiratoryRateController = TextEditingController();
   final _heightController = TextEditingController();
   final _weightController = TextEditingController();
-  final _fbsController = TextEditingController();
-  final _ppbsController = TextEditingController();
-  final _hba1cController = TextEditingController();
 
-  final Set<String> _selectedConditions = {};
-  bool _isSaving = false;
-
-  final List<String> _commonConditions = [
+  // Conditions
+  final List<String> _availableConditions = [
     'Diabetes',
     'Hypertension',
     'Asthma',
-    'Arthritis',
-    'GERD',
-    'Migraine',
-    'Depression',
-    'Anxiety',
-    'Thyroid Disorder',
     'Heart Disease',
     'Kidney Disease',
-    'Chronic Pain',
+    'Thyroid Disorder',
+    'Arthritis',
+    'Allergies',
   ];
+  final List<String> _selectedConditions = [];
 
-  String get _calculatedBMI {
+  String? _activeVoiceField;
+  bool _isExpanded = false;
+  bool _isSaving = false;
+  String? _returnTo; // ✅ NEW: Track where to return
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Get the returnTo parameter if passed from canvas dialog
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    _returnTo = args?['returnTo'] as String?;
+  }
+
+  void _startVoiceDictation(String fieldName, TextEditingController controller) {
+    setState(() {
+      _activeVoiceField = fieldName;
+    });
+
+    final voiceService = WhisperVoiceService.instance;
+    voiceService.onTranscription = (transcription) {
+      if (_activeVoiceField == fieldName && mounted) {
+        setState(() {
+          controller.text = transcription;
+          _activeVoiceField = null;
+        });
+      }
+    };
+
+    voiceService.startListening();
+  }
+
+  double? get _calculatedBMI {
     final height = double.tryParse(_heightController.text);
     final weight = double.tryParse(_weightController.text);
+
     if (height != null && weight != null && height > 0) {
       final heightInMeters = height / 100;
-      final bmi = weight / (heightInMeters * heightInMeters);
-      return bmi.toStringAsFixed(1);
+      return weight / (heightInMeters * heightInMeters);
     }
-    return '--';
+    return null;
+  }
+
+  String get _bmiCategory {
+    final bmi = _calculatedBMI;
+    if (bmi == null) return '';
+
+    if (bmi < 18.5) return 'Underweight';
+    if (bmi < 25) return 'Normal';
+    if (bmi < 30) return 'Overweight';
+    return 'Obese';
+  }
+
+  // ✅ NEW: Create and save patient (shared logic)
+  Future<Patient?> _createAndSavePatient() async {
+    // Validate form first
+    if (!_formKey.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in all required fields'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return null;
+    }
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      print('📵 Starting patient registration...');
+
+      // Create Vitals object if any vitals entered
+      Vitals? vitals;
+      if (_bpSystolicController.text.isNotEmpty ||
+          _heightController.text.isNotEmpty ||
+          _weightController.text.isNotEmpty) {
+        vitals = Vitals(
+          bpSystolic: int.tryParse(_bpSystolicController.text),
+          bpDiastolic: int.tryParse(_bpDiastolicController.text),
+          pulse: int.tryParse(_pulseController.text),
+          temperature: double.tryParse(_temperatureController.text),
+          spo2: int.tryParse(_spo2Controller.text),
+          height: double.tryParse(_heightController.text),
+          weight: double.tryParse(_weightController.text),
+        );
+      }
+
+      // Create Patient object
+      final newPatient = Patient(
+        id: 'P${DateTime.now().millisecondsSinceEpoch}',
+        name: _nameController.text.trim(),
+        age: int.parse(_ageController.text),
+        phone: _phoneController.text.trim(),
+        date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+        conditions: List.from(_selectedConditions),
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
+        visits: 0,
+        vitals: vitals,
+      );
+
+      // Save to database
+      await DatabaseHelper.instance.createPatient(newPatient);
+      print('✅ Patient saved to database successfully');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Patient ${newPatient.name} registered successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+
+      return newPatient;
+
+    } catch (e, stackTrace) {
+      print('❌ Error during patient registration: $e');
+      print('❌ Stack trace: $stackTrace');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving patient: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+      return null;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
+
+  // ✅ NEW: Save and go to Consultation
+  Future<void> _saveAndStartConsultation() async {
+    final patient = await _createAndSavePatient();
+
+    if (patient != null && mounted) {
+      print('📵 Navigating to consultation screen...');
+
+      // Navigate to 3-page consultation screen
+      final result = await Navigator.pushNamed(
+        context,
+        '/consultation',
+        arguments: patient,
+      );
+
+      print('📵 Returned from consultation screen');
+
+      // Pop back to previous screen after consultation
+      if (mounted) {
+        Navigator.pop(context, patient);
+      }
+    }
+  }
+
+  // ✅ NEW: Save and go to Canvas/Annotate
+  Future<void> _saveAndAnnotate() async {
+    final patient = await _createAndSavePatient();
+
+    if (patient != null && mounted) {
+      if (_returnTo == 'canvas') {
+        // Return to canvas dialog with patient data
+        Navigator.pop(context, {
+          'patient': patient,
+          'action': 'annotate',
+        });
+      } else {
+        // Navigate directly to canvas screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CanvasScreen(patient: patient),
+          ),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
-        appBar: AppBar(
-          title: const Text('Register New Patient'),
-          backgroundColor: Colors.white,
-          elevation: 1,
-        ),
-        body: Row(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Register New Patient'),
+        backgroundColor: Colors.blue.shade700,
+      ),
+      body: Form(
+        key: _formKey,
+        child: Column(
           children: [
+            // ✅ Scrollable Content
             Expanded(
-              flex: 3,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(32),
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildSection(
-                      title: 'Patient Information',
-                      child: Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: TextField(
-                              controller: _nameController,
-                              decoration: InputDecoration(
-                                labelText: 'Patient Name *',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: TextField(
-                              controller: _ageController,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                labelText: 'Age *',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: TextField(
-                              controller: _phoneController,
-                              keyboardType: TextInputType.phone,
-                              decoration: InputDecoration(
-                                labelText: 'Phone *',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    // Header Card
+                    _buildHeaderCard(),
                     const SizedBox(height: 24),
-                    _buildSection(
-                      title: 'Vitals & Measurements',
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: TextField(
-                                        controller: _bpSystolicController,
-                                        keyboardType: TextInputType.number,
-                                        decoration: InputDecoration(
-                                          labelText: 'BP Systolic',
-                                          suffixText: 'mmHg',
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const Padding(
-                                      padding: EdgeInsets.symmetric(horizontal: 8),
-                                      child: Text('/', style: TextStyle(fontSize: 24)),
-                                    ),
-                                    Expanded(
-                                      child: TextField(
-                                        controller: _bpDiastolicController,
-                                        keyboardType: TextInputType.number,
-                                        decoration: InputDecoration(
-                                          labelText: 'Diastolic',
-                                          suffixText: 'mmHg',
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: TextField(
-                                  controller: _pulseController,
-                                  keyboardType: TextInputType.number,
-                                  decoration: InputDecoration(
-                                    labelText: 'Pulse Rate',
-                                    suffixText: 'bpm',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: TextField(
-                                  controller: _temperatureController,
-                                  keyboardType: TextInputType.number,
-                                  decoration: InputDecoration(
-                                    labelText: 'Temperature',
-                                    suffixText: '°F',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: _spo2Controller,
-                                  keyboardType: TextInputType.number,
-                                  decoration: InputDecoration(
-                                    labelText: 'SpO2',
-                                    suffixText: '%',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: TextField(
-                                  controller: _respiratoryRateController,
-                                  keyboardType: TextInputType.number,
-                                  decoration: InputDecoration(
-                                    labelText: 'Respiratory Rate',
-                                    suffixText: '/min',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: TextField(
-                                  controller: _heightController,
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (_) => setState(() {}),
-                                  decoration: InputDecoration(
-                                    labelText: 'Height',
-                                    suffixText: 'cm',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: _weightController,
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (_) => setState(() {}),
-                                  decoration: InputDecoration(
-                                    labelText: 'Weight',
-                                    suffixText: 'kg',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue.shade50,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: Colors.blue.shade200),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'BMI (Calculated)',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey.shade600,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        _calculatedBMI,
-                                        style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF1E40AF),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              const Expanded(child: SizedBox()),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
+
+                    // Basic Information
+                    _buildSectionTitle('Basic Information', Icons.person),
+                    const SizedBox(height: 16),
+                    _buildBasicInfoFields(),
                     const SizedBox(height: 24),
-                    _buildSection(
-                      title: 'Blood Sugar Levels',
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _fbsController,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                labelText: 'FBS (Fasting)',
-                                suffixText: 'mg/dL',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: TextField(
-                              controller: _ppbsController,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                labelText: 'PPBS (Post-Prandial)',
-                                suffixText: 'mg/dL',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: TextField(
-                              controller: _hba1cController,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                labelText: 'HbA1c',
-                                suffixText: '%',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+
+                    // Pre-existing Conditions
+                    _buildSectionTitle('Pre-existing Conditions', Icons.medical_information),
+                    const SizedBox(height: 12),
+                    _buildConditionsSection(),
                     const SizedBox(height: 24),
-                    _buildSection(
-                      title: 'Preexisting Conditions',
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _commonConditions.map((condition) {
-                          final isSelected = _selectedConditions.contains(condition);
-                          return FilterChip(
-                            label: Text(condition),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              setState(() {
-                                if (selected) {
-                                  _selectedConditions.add(condition);
-                                } else {
-                                  _selectedConditions.remove(condition);
-                                }
-                              });
-                            },
-                            selectedColor: const Color(0xFFDCEAFE),
-                            checkmarkColor: const Color(0xFF1E40AF),
-                          );
-                        }).toList(),
-                      ),
-                    ),
+
+                    // Quick Vitals (Optional - Expandable)
+                    _buildVitalsSection(),
                     const SizedBox(height: 24),
-                    _buildSection(
-                      title: 'Clinical History',
-                      child: TextField(
-                        controller: _clinicalHistoryController,
-                        maxLines: 4,
-                        decoration: InputDecoration(
-                          hintText: 'Chief complaint, symptoms, medical history, allergies...',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
+
+                    // Clinical Notes
+                    _buildSectionTitle('Clinical Notes', Icons.notes),
+                    const SizedBox(height: 12),
+                    _buildNotesField(),
+                    const SizedBox(height: 24),
                   ],
                 ),
               ),
             ),
+
+            // ✅ NEW: Bottom Action Bar with Two Save Buttons
             Container(
-              width: 320,
-              decoration: const BoxDecoration(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Color(0x0F000000),
-                    blurRadius: 4,
-                    offset: Offset(-2, 0),
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, -2),
                   ),
                 ],
               ),
-              child: Column(
+              child: Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      border: Border(
-                        bottom: BorderSide(color: Colors.green.shade200),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.person_add,
-                          size: 48,
-                          color: Colors.green.shade700,
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'New Patient Registration',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
+                  // Save & Consultation Button
                   Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSummaryItem('Required Fields', '3', Icons.star, Colors.red),
-                          _buildSummaryItem('Vitals Entered', '${_countFilledVitals()}', Icons.favorite, Colors.blue),
-                          _buildSummaryItem('Conditions', '${_selectedConditions.length}', Icons.medical_services, Colors.orange),
-                          const SizedBox(height: 24),
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
-                                    const SizedBox(width: 8),
-                                    const Text(
-                                      'Quick Tips',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                _buildTip('All vitals are optional'),
-                                _buildTip('BMI auto-calculates'),
-                                _buildTip('Only name, age & phone required'),
-                              ],
-                            ),
-                          ),
-                        ],
+                    child: ElevatedButton.icon(
+                      onPressed: _isSaving ? null : _saveAndStartConsultation,
+                      icon: _isSaving
+                          ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                          : const Icon(Icons.medical_services, size: 20),
+                      label: const Text(
+                        'Save & Consultation',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade700,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        disabledBackgroundColor: Colors.grey.shade400,
                       ),
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        top: BorderSide(color: Colors.grey.shade200),
+                  const SizedBox(width: 12),
+
+                  // Save & Annotate Button
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _isSaving ? null : _saveAndAnnotate,
+                      icon: _isSaving
+                          ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                          : const Icon(Icons.draw, size: 20),
+                      label: const Text(
+                        'Save & Annotate',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                       ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        ElevatedButton(
-                          onPressed: _isSaving ? null : _savePatient,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF10B981),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                          child: _isSaving
-                              ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                              : const Text(
-                            'Register Patient',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF97316), // Orange
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        const SizedBox(height: 12),
-                        OutlinedButton(
-                          onPressed: _isSaving ? null : () => Navigator.pop(context),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                          child: const Text('Cancel'),
-                        ),
-                      ],
+                        disabledBackgroundColor: Colors.grey.shade400,
+                      ),
                     ),
                   ),
                 ],
@@ -550,207 +365,452 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
     );
   }
 
-  Widget _buildSection({required String title, required Widget child}) {
+  Widget _buildHeaderCard() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.blue.shade700, Colors.blue.shade500],
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              color: Colors.white24,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.person_add, color: Colors.white, size: 32),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'New Patient Registration',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Fill basic details to start',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.blue.shade700, size: 24),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey.shade800,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBasicInfoFields() {
+    return Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        children: [
+          // Name with voice
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Patient Name *',
+                    prefixIcon: const Icon(Icons.person_outline),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  textCapitalization: TextCapitalization.words,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter patient name';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              IconButton(
+                onPressed: () => _startVoiceDictation('name', _nameController),
+                icon: Icon(
+                  _activeVoiceField == 'name' ? Icons.mic : Icons.mic_none,
+                  color: _activeVoiceField == 'name' ? Colors.red : Colors.blue,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Age and Phone
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _ageController,
+                  decoration: InputDecoration(
+                    labelText: 'Age *',
+                    prefixIcon: const Icon(Icons.cake),
+                    suffixText: 'years',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Required';
+                    }
+                    final age = int.tryParse(value);
+                    if (age == null || age < 0 || age > 150) {
+                      return 'Invalid age';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: TextFormField(
+                  controller: _phoneController,
+                  decoration: InputDecoration(
+                    labelText: 'Phone *',
+                    prefixIcon: const Icon(Icons.phone),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  keyboardType: TextInputType.phone,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Required';
+                    }
+                    if (value.length < 10) {
+                      return 'Invalid';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConditionsSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+          const Text(
+            'Select any pre-existing conditions:',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
           ),
-          const SizedBox(height: 20),
-          child,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryItem(String label, String value, IconData icon, Color color) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 20),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _availableConditions.map((condition) {
+              final isSelected = _selectedConditions.contains(condition);
+              return FilterChip(
+                label: Text(condition),
+                selected: isSelected,
+                onSelected: (selected) {
+                  setState(() {
+                    if (selected) {
+                      _selectedConditions.add(condition);
+                    } else {
+                      _selectedConditions.remove(condition);
+                    }
+                  });
+                },
+                selectedColor: Colors.blue.shade100,
+                checkmarkColor: Colors.blue.shade700,
+              );
+            }).toList(),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 14),
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTip(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('• ', style: TextStyle(fontSize: 14)),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  int _countFilledVitals() {
-    int count = 0;
-    if (_bpSystolicController.text.isNotEmpty) count++;
-    if (_pulseController.text.isNotEmpty) count++;
-    if (_temperatureController.text.isNotEmpty) count++;
-    if (_spo2Controller.text.isNotEmpty) count++;
-    if (_heightController.text.isNotEmpty) count++;
-    if (_weightController.text.isNotEmpty) count++;
-    return count;
-  }
-
-  Future<void> _savePatient() async {
-    if (_nameController.text.isEmpty ||
-        _ageController.text.isEmpty ||
-        _phoneController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all required fields (Name, Age, Phone)')),
-      );
-      return;
-    }
-
-    setState(() => _isSaving = true);
-
-    try {
-      final hasVitals = _bpSystolicController.text.isNotEmpty ||
-          _bpDiastolicController.text.isNotEmpty ||
-          _pulseController.text.isNotEmpty ||
-          _temperatureController.text.isNotEmpty ||
-          _spo2Controller.text.isNotEmpty ||
-          _respiratoryRateController.text.isNotEmpty ||
-          _heightController.text.isNotEmpty ||
-          _weightController.text.isNotEmpty ||
-          _fbsController.text.isNotEmpty ||
-          _ppbsController.text.isNotEmpty ||
-          _hba1cController.text.isNotEmpty;
-
-      final vitals = hasVitals ? Vitals(
-        bpSystolic: _bpSystolicController.text.isEmpty ? null : int.tryParse(_bpSystolicController.text),
-        bpDiastolic: _bpDiastolicController.text.isEmpty ? null : int.tryParse(_bpDiastolicController.text),
-        pulse: _pulseController.text.isEmpty ? null : int.tryParse(_pulseController.text),
-        temperature: _temperatureController.text.isEmpty ? null : double.tryParse(_temperatureController.text),
-        spo2: _spo2Controller.text.isEmpty ? null : int.tryParse(_spo2Controller.text),
-        respiratoryRate: _respiratoryRateController.text.isEmpty ? null : int.tryParse(_respiratoryRateController.text),
-        height: _heightController.text.isEmpty ? null : double.tryParse(_heightController.text),
-        weight: _weightController.text.isEmpty ? null : double.tryParse(_weightController.text),
-        fbs: _fbsController.text.isEmpty ? null : int.tryParse(_fbsController.text),
-        ppbs: _ppbsController.text.isEmpty ? null : int.tryParse(_ppbsController.text),
-        hba1c: _hba1cController.text.isEmpty ? null : double.tryParse(_hba1cController.text),
-      ) : null;
-
-      final newPatient = Patient(
-        id: 'P${DateTime.now().millisecondsSinceEpoch}',
-        name: _nameController.text,
-        age: int.parse(_ageController.text),
-        phone: _phoneController.text,
-        date: DateTime.now().toString().split(' ')[0],
-        conditions: _selectedConditions.toList(),
-        notes: _clinicalHistoryController.text.isEmpty ? null : _clinicalHistoryController.text,
-        vitals: vitals,
-      );
-
-      await PatientStore.addPatient(newPatient);
-
-      if (mounted) {
-        final saved = await DatabaseHelper.instance.getPatient(newPatient.id);
-
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Patient Saved'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Name: ${saved?.name}'),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Vitals saved: ${saved?.vitals != null ? "YES" : "NO"}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: saved?.vitals != null ? Colors.green : Colors.red,
-                    ),
-                  ),
-                  if (saved?.vitals != null) ...[
-                    const Divider(height: 24),
-                    Text('BP: ${saved!.vitals!.bpSystolic ?? "--"}/${saved.vitals!.bpDiastolic ?? "--"}'),
-                    Text('Pulse: ${saved.vitals!.pulse ?? "--"}'),
-                    Text('Temp: ${saved.vitals!.temperature ?? "--"}'),
-                    Text('SpO2: ${saved.vitals!.spo2 ?? "--"}'),
-                    Text('Height: ${saved.vitals!.height ?? "--"}'),
-                    Text('Weight: ${saved.vitals!.weight ?? "--"}'),
-                    Text('FBS: ${saved.vitals!.fbs ?? "--"}'),
-                    Text('PPBS: ${saved.vitals!.ppbs ?? "--"}'),
-                    Text('HbA1c: ${saved.vitals!.hba1c ?? "--"}'),
-                  ],
-                ],
+          if (_selectedConditions.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'No conditions selected',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pop(context, true);
-                },
-                child: const Text('OK'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVitalsSection() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: ExpansionTile(
+        title: Row(
+          children: [
+            Icon(Icons.favorite, color: Colors.red.shade700),
+            const SizedBox(width: 8),
+            const Text(
+              'Quick Vitals',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        subtitle: Text(
+          _isExpanded ? 'Tap to collapse' : 'Optional - Can be added later in consultation',
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        ),
+        onExpansionChanged: (expanded) {
+          setState(() {
+            _isExpanded = expanded;
+          });
+        },
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Blood Pressure and Pulse
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _bpSystolicController,
+                        decoration: InputDecoration(
+                          labelText: 'BP Systolic',
+                          suffixText: 'mmHg',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text('/', style: TextStyle(fontSize: 24)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _bpDiastolicController,
+                        decoration: InputDecoration(
+                          labelText: 'Diastolic',
+                          suffixText: 'mmHg',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Pulse, Temp, SpO2
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _pulseController,
+                        decoration: InputDecoration(
+                          labelText: 'Pulse',
+                          suffixText: 'bpm',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _temperatureController,
+                        decoration: InputDecoration(
+                          labelText: 'Temp',
+                          suffixText: '°F',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _spo2Controller,
+                        decoration: InputDecoration(
+                          labelText: 'SpO2',
+                          suffixText: '%',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Height and Weight
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _heightController,
+                        decoration: InputDecoration(
+                          labelText: 'Height',
+                          suffixText: 'cm',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (value) => setState(() {}),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _weightController,
+                        decoration: InputDecoration(
+                          labelText: 'Weight',
+                          suffixText: 'kg',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (value) => setState(() {}),
+                      ),
+                    ),
+                  ],
+                ),
+
+                // BMI Display
+                if (_calculatedBMI != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.analytics, color: Colors.blue),
+                        const SizedBox(width: 8),
+                        Text(
+                          'BMI: ${_calculatedBMI!.toStringAsFixed(1)} - $_bmiCategory',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotesField() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Chief Complaint / Additional Notes',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+              ),
+              IconButton(
+                onPressed: () => _startVoiceDictation('notes', _notesController),
+                icon: Icon(
+                  _activeVoiceField == 'notes' ? Icons.mic : Icons.mic_none,
+                  color: _activeVoiceField == 'notes' ? Colors.red : Colors.blue,
+                ),
               ),
             ],
           ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
+          const SizedBox(height: 8),
+          TextField(
+            controller: _notesController,
+            maxLines: 4,
+            decoration: InputDecoration(
+              hintText: 'Optional: Chief complaint, reason for visit, or any additional notes...',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+            ),
           ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
-    }
+        ],
+      ),
+    );
   }
 
   @override
@@ -758,18 +818,14 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
     _nameController.dispose();
     _ageController.dispose();
     _phoneController.dispose();
-    _clinicalHistoryController.dispose();
+    _notesController.dispose();
     _bpSystolicController.dispose();
     _bpDiastolicController.dispose();
     _pulseController.dispose();
     _temperatureController.dispose();
     _spo2Controller.dispose();
-    _respiratoryRateController.dispose();
     _heightController.dispose();
     _weightController.dispose();
-    _fbsController.dispose();
-    _ppbsController.dispose();
-    _hba1cController.dispose();
     super.dispose();
   }
 }
