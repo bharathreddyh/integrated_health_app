@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import '../../../models/endocrine/endocrine_condition.dart';
 import '../../../config/thyroid_disease_config.dart';
 
-
 class ClinicalFeaturesTab extends StatefulWidget {
   final EndocrineCondition condition;
   final ThyroidDiseaseConfig diseaseConfig;
@@ -23,6 +22,9 @@ class ClinicalFeaturesTab extends StatefulWidget {
 }
 
 class _ClinicalFeaturesTabState extends State<ClinicalFeaturesTab> {
+  // Selected symptoms tracking
+  Set<String> selectedSymptoms = {};
+
   // Thyroid-specific examination data
   bool _goiterPresent = false;
   String _goiterGrade = '1a';
@@ -32,14 +34,7 @@ class _ClinicalFeaturesTabState extends State<ClinicalFeaturesTab> {
   final _widthController = TextEditingController();
   final _heightController = TextEditingController();
 
-  // Vitals
-  final _bpSystolicController = TextEditingController();
-  final _bpDiastolicController = TextEditingController();
-  final _hrController = TextEditingController();
-  final _tempController = TextEditingController();
-  final _weightController = TextEditingController();
-
-  // Graves' specific (if applicable)
+// Graves' specific (if applicable)
   bool _tedPresent = false;
   final _proptosisController = TextEditingController();
   bool _lidRetraction = false;
@@ -47,14 +42,16 @@ class _ClinicalFeaturesTabState extends State<ClinicalFeaturesTab> {
   bool _diplopia = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Initialize from condition if data exists
+    selectedSymptoms = Set<String>.from(widget.condition.selectedSymptoms ?? []);
+  }
+
+  @override
   void dispose() {
     _widthController.dispose();
     _heightController.dispose();
-    _bpSystolicController.dispose();
-    _bpDiastolicController.dispose();
-    _hrController.dispose();
-    _tempController.dispose();
-    _weightController.dispose();
     _proptosisController.dispose();
     super.dispose();
   }
@@ -87,10 +84,6 @@ class _ClinicalFeaturesTabState extends State<ClinicalFeaturesTab> {
             _buildGravesSpecificCard(),
             const SizedBox(height: 20),
           ],
-
-          // Vitals Card
-          _buildVitalsCard(),
-          const SizedBox(height: 20),
 
           // Clinical Photos Section
           _buildClinicalPhotosCard(),
@@ -309,8 +302,7 @@ class _ClinicalFeaturesTabState extends State<ClinicalFeaturesTab> {
   }
 
   Widget _buildSymptomsCard() {
-    final symptoms = widget.diseaseConfig.symptoms;
-    if (symptoms == null || symptoms.isEmpty) return const SizedBox();
+    final symptoms = _getSymptoms();
 
     return Card(
       elevation: 2,
@@ -320,27 +312,117 @@ class _ClinicalFeaturesTabState extends State<ClinicalFeaturesTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.psychology, color: Color(0xFF2563EB), size: 20),
-                SizedBox(width: 8),
-                Text(
+                const Icon(Icons.healing, color: Color(0xFFDC2626), size: 24),
+                const SizedBox(width: 12),
+                const Text(
                   'SYMPTOMS',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Color(0xFFDC2626),
                   ),
+                ),
+                const Spacer(),
+                Chip(
+                  label: Text(
+                    '${ selectedSymptoms.length}/${symptoms.length} selected',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  backgroundColor: const Color(0xFFDC2626).withOpacity(0.1),
                 ),
               ],
             ),
             const SizedBox(height: 16),
 
-            ...symptoms.map((symptom) => _buildFeatureCheckbox(
-              symptom as String,
-              FeatureType.symptom,
-            )),
+            Text(
+              'Select symptoms present in this patient:',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade800,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            if (symptoms.isNotEmpty)
+              ...symptoms.map((symptom) => _buildSymptomCheckbox(symptom))
+            else
+              Text(
+                'No symptoms defined for this condition',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSymptomCheckbox(String symptom) {
+    final isSelected = selectedSymptoms.contains(symptom);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            if (isSelected) {
+              selectedSymptoms.remove(symptom);
+            } else {
+              selectedSymptoms.add(symptom);
+            }
+          });
+          _updateConditionSymptoms();
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFFDC2626).withOpacity(0.05) : null,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected ? const Color(0xFFDC2626).withOpacity(0.3) : Colors.grey.shade300,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                _getSymptomIcon(symptom),
+                size: 20,
+                color: isSelected ? const Color(0xFFDC2626) : Colors.grey.shade600,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  symptom,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: isSelected ? const Color(0xFFDC2626) : Colors.grey.shade800,
+                  ),
+                ),
+              ),
+              Checkbox(
+                value: isSelected,
+                onChanged: (value) {
+                  setState(() {
+                    if (value == true) {
+                      selectedSymptoms.add(symptom);
+                    } else {
+                      selectedSymptoms.remove(symptom);
+                    }
+                  });
+                  _updateConditionSymptoms();
+                },
+                activeColor: const Color(0xFFDC2626),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -558,106 +640,6 @@ class _ClinicalFeaturesTabState extends State<ClinicalFeaturesTab> {
     );
   }
 
-  Widget _buildVitalsCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'VITALS',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _bpSystolicController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'BP Systolic',
-                      suffixText: 'mmHg',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Text('/', style: TextStyle(fontSize: 20)),
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: _bpDiastolicController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'BP Diastolic',
-                      suffixText: 'mmHg',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _hrController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Heart Rate',
-                      suffixText: 'bpm',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _tempController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Temperature',
-                      suffixText: '°C',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            TextField(
-              controller: _weightController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Weight',
-                suffixText: 'kg',
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildClinicalPhotosCard() {
     return Card(
       elevation: 2,
@@ -752,6 +734,98 @@ class _ClinicalFeaturesTabState extends State<ClinicalFeaturesTab> {
         ),
       ),
     );
+  }
+
+
+  List<String> _getSymptoms() {
+    final diseaseId = widget.condition.diseaseId;
+
+    if (diseaseId == 'graves_disease') {
+      return [
+        'Weight loss despite increased appetite',
+        'Heat intolerance and excessive sweating',
+        'Tremor (fine tremor of hands)',
+        'Palpitations and rapid heart rate',
+        'Nervousness and anxiety',
+        'Fatigue and muscle weakness',
+        'Frequent bowel movements',
+        'Goiter (enlarged thyroid)',
+        'Eye problems (Graves\' ophthalmopathy)',
+        'Sleep disturbances',
+        'Menstrual irregularities',
+        'Hair thinning',
+      ];
+    } else if (diseaseId == 'primary_hypothyroidism' || diseaseId == 'hashimotos_thyroiditis') {
+      return [
+        'Fatigue and weakness',
+        'Weight gain',
+        'Cold intolerance',
+        'Constipation',
+        'Dry skin and hair',
+        'Hair loss or thinning',
+        'Depression or mood changes',
+        'Memory problems',
+        'Muscle aches and stiffness',
+        'Joint pain',
+        'Swelling (face, hands, feet)',
+        'Slow heart rate',
+        'Menstrual irregularities',
+        'Hoarse voice',
+      ];
+    } else if (diseaseId == 'toxic_multinodular_goiter') {
+      return [
+        'Weight loss',
+        'Heat intolerance',
+        'Rapid heart rate',
+        'Tremor',
+        'Nervousness',
+        'Fatigue',
+        'Palpable thyroid nodules',
+        'Difficulty swallowing',
+        'Shortness of breath',
+      ];
+    } else if (diseaseId == 'subacute_thyroiditis') {
+      return [
+        'Neck pain (anterior neck)',
+        'Pain radiating to jaw or ears',
+        'Tender thyroid gland',
+        'Fever',
+        'Fatigue',
+        'Initial hyperthyroid symptoms',
+        'Later hypothyroid symptoms',
+        'Muscle aches',
+      ];
+    }
+
+    // Default symptoms for other conditions
+    return [
+      'Fatigue',
+      'Weight changes',
+      'Temperature intolerance',
+      'Heart rate changes',
+      'Mood changes',
+      'Sleep disturbances',
+    ];
+  }
+
+  IconData _getSymptomIcon(String symptom) {
+    if (symptom.toLowerCase().contains('weight')) return Icons.monitor_weight;
+    if (symptom.toLowerCase().contains('heart') || symptom.toLowerCase().contains('palpitation')) return Icons.favorite;
+    if (symptom.toLowerCase().contains('tremor')) return Icons.vibration;
+    if (symptom.toLowerCase().contains('eye')) return Icons.visibility;
+    if (symptom.toLowerCase().contains('pain')) return Icons.healing;
+    if (symptom.toLowerCase().contains('temperature') || symptom.toLowerCase().contains('heat') || symptom.toLowerCase().contains('cold')) return Icons.thermostat;
+    if (symptom.toLowerCase().contains('fatigue') || symptom.toLowerCase().contains('tired')) return Icons.battery_0_bar;
+    if (symptom.toLowerCase().contains('mood') || symptom.toLowerCase().contains('anxiety') || symptom.toLowerCase().contains('depression')) return Icons.psychology;
+    if (symptom.toLowerCase().contains('sleep')) return Icons.bedtime;
+    if (symptom.toLowerCase().contains('hair')) return Icons.face_retouching_natural;
+    if (symptom.toLowerCase().contains('skin')) return Icons.face;
+    if (symptom.toLowerCase().contains('goiter') || symptom.toLowerCase().contains('neck')) return Icons.face_retouching_natural;
+    return Icons.health_and_safety;
+  }
+
+  void _updateConditionSymptoms() {
+    widget.onUpdate(widget.condition.copyWith(selectedSymptoms: selectedSymptoms.toList()));
   }
 
   bool _isGravesDisease() {

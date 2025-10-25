@@ -4,6 +4,33 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 
+// ==================== ENUM DEFINITIONS ====================
+
+enum DiagnosisStatus {
+  suspected,
+  provisional,  // 🆕 ADDED
+  confirmed,
+  ruledOut,
+}
+
+enum DiseaseSeverity {
+  mild,
+  moderate,
+  severe,
+  critical,
+}
+
+enum AbnormalityType {
+  low,
+  normal,
+  high,
+}
+
+enum FeatureType {
+  symptom,
+  sign,
+}
+
 // ==================== MAIN CONDITION MODEL ====================
 class EndocrineCondition {
   final String id;
@@ -21,6 +48,15 @@ class EndocrineCondition {
   final List<Map<String, dynamic>>? orderedLabTests;
   final List<Map<String, dynamic>>? orderedInvestigations;
   final Map<String, dynamic>? additionalData;
+
+  // 🆕 NEW FIELDS - Add these to support PatientDataTab
+  final List<dynamic>? labTestResults;
+  final List<dynamic>? investigationFindings;
+
+  // 🆕 NEW FIELDS - Add these to support redesigned OverviewTab
+  final List<String>? selectedSymptoms;
+  final List<String>? selectedDiagnosticCriteria;
+  final List<String>? selectedComplications;
 
   // Hierarchy
   final String gland; // "thyroid"
@@ -42,6 +78,7 @@ class EndocrineCondition {
   // Images and notes
   final List<MedicalImage> images;
   final String notes;
+  final Map<String, dynamic>? canvasAnnotations;
 
   // Treatment plan
   final TreatmentPlan? treatmentPlan;
@@ -64,6 +101,7 @@ class EndocrineCondition {
     required this.diseaseId,
     required this.diseaseName,
     this.status = DiagnosisStatus.suspected,
+    this.canvasAnnotations,
     this.diagnosisDate,
     this.severity,
     this.chiefComplaint,
@@ -76,6 +114,13 @@ class EndocrineCondition {
     this.orderedLabTests,
     this.orderedInvestigations,
     this.additionalData,
+    this.labTestResults = const [],
+    this.investigationFindings = const [],
+    // NEW FIELDS for redesigned overview tab
+    this.selectedSymptoms = const [],
+    this.selectedDiagnosticCriteria = const [],
+    this.selectedComplications = const [],
+    // Existing fields
     this.labReadings = const [],
     this.clinicalFeatures = const [],
     this.complications = const [],
@@ -103,9 +148,13 @@ class EndocrineCondition {
         vitals!['heartRate'] != null;
   }
 
-  /// Check if Overview tab is complete
+  /// Check if Overview tab is complete (updated for redesigned tab)
   bool get isOverviewComplete {
-    return status == DiagnosisStatus.confirmed && diagnosisDate != null;
+    return selectedSymptoms != null &&
+        selectedSymptoms!.isNotEmpty &&
+        selectedDiagnosticCriteria != null &&
+        selectedDiagnosticCriteria!.isNotEmpty &&
+        severity != null;
   }
 
   /// Check if Labs tab is complete (at least 3 lab readings)
@@ -163,7 +212,7 @@ class EndocrineCondition {
       incomplete.add('Patient Data: Enter vitals and chief complaint');
     }
     if (!isOverviewComplete) {
-      incomplete.add('Overview: Confirm diagnosis and set date');
+      incomplete.add('Overview: Select symptoms, diagnostic criteria, and severity');
     }
     if (!isLabsComplete) {
       incomplete.add('Labs: Add at least 3 lab readings');
@@ -212,11 +261,19 @@ class EndocrineCondition {
     String? pastMedicalHistory,
     String? familyHistory,
     String? allergies,
+    Map<String, dynamic>? canvasAnnotations,
     Map<String, String>? vitals,
     Map<String, String>? measurements,
     List<Map<String, dynamic>>? orderedLabTests,
     List<Map<String, dynamic>>? orderedInvestigations,
     Map<String, dynamic>? additionalData,
+    List<dynamic>? labTestResults,
+    List<dynamic>? investigationFindings,
+    // NEW PARAMETERS for redesigned overview tab
+    List<String>? selectedSymptoms,
+    List<String>? selectedDiagnosticCriteria,
+    List<String>? selectedComplications,
+    // Existing parameters
     List<LabReading>? labReadings,
     List<ClinicalFeature>? clinicalFeatures,
     List<Complication>? complications,
@@ -231,6 +288,7 @@ class EndocrineCondition {
     bool? isActive,
   }) {
     return EndocrineCondition(
+      canvasAnnotations: canvasAnnotations ?? this.canvasAnnotations,
       id: id ?? this.id,
       patientId: patientId ?? this.patientId,
       patientName: patientName ?? this.patientName,
@@ -251,6 +309,13 @@ class EndocrineCondition {
       orderedLabTests: orderedLabTests ?? this.orderedLabTests,
       orderedInvestigations: orderedInvestigations ?? this.orderedInvestigations,
       additionalData: additionalData ?? this.additionalData,
+      labTestResults: labTestResults ?? this.labTestResults,
+      investigationFindings: investigationFindings ?? this.investigationFindings,
+      // NEW ASSIGNMENTS for redesigned overview tab
+      selectedSymptoms: selectedSymptoms ?? this.selectedSymptoms,
+      selectedDiagnosticCriteria: selectedDiagnosticCriteria ?? this.selectedDiagnosticCriteria,
+      selectedComplications: selectedComplications ?? this.selectedComplications,
+      // Existing assignments
       labReadings: labReadings ?? this.labReadings,
       clinicalFeatures: clinicalFeatures ?? this.clinicalFeatures,
       complications: complications ?? this.complications,
@@ -261,7 +326,7 @@ class EndocrineCondition {
       nextVisit: nextVisit ?? this.nextVisit,
       followUpPlan: followUpPlan ?? this.followUpPlan,
       createdAt: createdAt ?? this.createdAt,
-      lastUpdated: lastUpdated ?? this.lastUpdated,
+      lastUpdated: lastUpdated ?? DateTime.now(),
       isActive: isActive ?? this.isActive,
     );
   }
@@ -270,6 +335,7 @@ class EndocrineCondition {
 
   Map<String, dynamic> toJson() {
     return {
+      'canvasAnnotations': canvasAnnotations,
       'id': id,
       'patientId': patientId,
       'patientName': patientName,
@@ -277,9 +343,9 @@ class EndocrineCondition {
       'category': category,
       'diseaseId': diseaseId,
       'diseaseName': diseaseName,
-      'status': status.toString(),
+      'status': status.toString().split('.').last,
       'diagnosisDate': diagnosisDate?.toIso8601String(),
-      'severity': severity?.toString(),
+      'severity': severity?.toString().split('.').last,
       'chiefComplaint': chiefComplaint,
       'historyOfPresentIllness': historyOfPresentIllness,
       'pastMedicalHistory': pastMedicalHistory,
@@ -290,11 +356,18 @@ class EndocrineCondition {
       'orderedLabTests': orderedLabTests,
       'orderedInvestigations': orderedInvestigations,
       'additionalData': additionalData,
-      'labReadings': labReadings.map((r) => r.toJson()).toList(),
-      'clinicalFeatures': clinicalFeatures.map((f) => f.toJson()).toList(),
-      'complications': complications.map((c) => c.toJson()).toList(),
-      'medications': medications.map((m) => m.toJson()).toList(),
-      'images': images.map((i) => i.toJson()).toList(),
+      'labTestResults': labTestResults,
+      'investigationFindings': investigationFindings,
+      // NEW JSON FIELDS for redesigned overview tab
+      'selectedSymptoms': selectedSymptoms,
+      'selectedDiagnosticCriteria': selectedDiagnosticCriteria,
+      'selectedComplications': selectedComplications,
+      // Existing JSON fields
+      'labReadings': labReadings.map((x) => x.toJson()).toList(),
+      'clinicalFeatures': clinicalFeatures.map((x) => x.toJson()).toList(),
+      'complications': complications.map((x) => x.toJson()).toList(),
+      'medications': medications.map((x) => x.toJson()).toList(),
+      'images': images.map((x) => x.toJson()).toList(),
       'notes': notes,
       'treatmentPlan': treatmentPlan?.toJson(),
       'nextVisit': nextVisit?.toIso8601String(),
@@ -307,208 +380,181 @@ class EndocrineCondition {
 
   factory EndocrineCondition.fromJson(Map<String, dynamic> json) {
     return EndocrineCondition(
-      id: json['id'] as String,
-      patientId: json['patientId'] as String,
-      patientName: json['patientName'] as String? ?? 'Unknown',
-      gland: json['gland'] as String,
-      category: json['category'] as String,
-      diseaseId: json['diseaseId'] as String,
-      diseaseName: json['diseaseName'] as String,
+      canvasAnnotations: json['canvasAnnotations'] as Map<String, dynamic>?,
+      id: json['id'],
+      patientId: json['patientId'],
+      patientName: json['patientName'],
+      gland: json['gland'],
+      category: json['category'],
+      diseaseId: json['diseaseId'],
+      diseaseName: json['diseaseName'],
       status: DiagnosisStatus.values.firstWhere(
-            (e) => e.toString() == json['status'],
+            (e) => e.toString().split('.').last == json['status'],
         orElse: () => DiagnosisStatus.suspected,
       ),
-      diagnosisDate: json['diagnosisDate'] != null
-          ? DateTime.parse(json['diagnosisDate'] as String)
-          : null,
+      diagnosisDate: json['diagnosisDate'] != null ? DateTime.parse(json['diagnosisDate']) : null,
       severity: json['severity'] != null
           ? DiseaseSeverity.values.firstWhere(
-            (e) => e.toString() == json['severity'],
+            (e) => e.toString().split('.').last == json['severity'],
+        orElse: () => DiseaseSeverity.mild,
       )
           : null,
-      chiefComplaint: json['chiefComplaint'] as String?,
-      historyOfPresentIllness: json['historyOfPresentIllness'] as String?,
-      pastMedicalHistory: json['pastMedicalHistory'] as String?,
-      familyHistory: json['familyHistory'] as String?,
-      allergies: json['allergies'] as String?,
-      vitals: json['vitals'] != null
-          ? Map<String, String>.from(json['vitals'] as Map)
-          : null,
-      measurements: json['measurements'] != null
-          ? Map<String, String>.from(json['measurements'] as Map)
-          : null,
-      orderedLabTests: json['orderedLabTests'] != null
-          ? List<Map<String, dynamic>>.from(json['orderedLabTests'] as List)
-          : null,
-      orderedInvestigations: json['orderedInvestigations'] != null
-          ? List<Map<String, dynamic>>.from(json['orderedInvestigations'] as List)
-          : null,
-      additionalData: json['additionalData'] as Map<String, dynamic>?,
-      labReadings: (json['labReadings'] as List?)
-          ?.map((r) => LabReading.fromJson(r as Map<String, dynamic>))
-          .toList() ??
-          [],
-      clinicalFeatures: (json['clinicalFeatures'] as List?)
-          ?.map((f) => ClinicalFeature.fromJson(f as Map<String, dynamic>))
-          .toList() ??
-          [],
-      complications: (json['complications'] as List?)
-          ?.map((c) => Complication.fromJson(c as Map<String, dynamic>))
-          .toList() ??
-          [],
-      medications: (json['medications'] as List?)
-          ?.map((m) => Medication.fromJson(m as Map<String, dynamic>))
-          .toList() ??
-          [],
-      images: (json['images'] as List?)
-          ?.map((i) => MedicalImage.fromJson(i as Map<String, dynamic>))
-          .toList() ??
-          [],
-      notes: json['notes'] as String? ?? '',
-      treatmentPlan: json['treatmentPlan'] != null
-          ? TreatmentPlan.fromJson(json['treatmentPlan'] as Map<String, dynamic>)
-          : null,
-      nextVisit: json['nextVisit'] != null
-          ? DateTime.parse(json['nextVisit'] as String)
-          : null,
-      followUpPlan: json['followUpPlan'] as String? ?? '',
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'] as String)
-          : DateTime.now(),
-      lastUpdated: json['lastUpdated'] != null
-          ? DateTime.parse(json['lastUpdated'] as String)
-          : DateTime.now(),
-      isActive: json['isActive'] as bool? ?? true,
+      chiefComplaint: json['chiefComplaint'],
+      historyOfPresentIllness: json['historyOfPresentIllness'],
+      pastMedicalHistory: json['pastMedicalHistory'],
+      familyHistory: json['familyHistory'],
+      allergies: json['allergies'],
+      vitals: json['vitals'] != null ? Map<String, String>.from(json['vitals']) : null,
+      measurements: json['measurements'] != null ? Map<String, String>.from(json['measurements']) : null,
+      orderedLabTests: json['orderedLabTests'] != null ? List<Map<String, dynamic>>.from(json['orderedLabTests']) : null,
+      orderedInvestigations: json['orderedInvestigations'] != null ? List<Map<String, dynamic>>.from(json['orderedInvestigations']) : null,
+      additionalData: json['additionalData'] != null ? Map<String, dynamic>.from(json['additionalData']) : null,
+      labTestResults: json['labTestResults'] ?? [],
+      investigationFindings: json['investigationFindings'] ?? [],
+      // NEW JSON PARSING for redesigned overview tab
+      selectedSymptoms: json['selectedSymptoms'] != null ? List<String>.from(json['selectedSymptoms']) : [],
+      selectedDiagnosticCriteria: json['selectedDiagnosticCriteria'] != null ? List<String>.from(json['selectedDiagnosticCriteria']) : [],
+      selectedComplications: json['selectedComplications'] != null ? List<String>.from(json['selectedComplications']) : [],
+      // Existing JSON parsing
+      labReadings: json['labReadings'] != null
+          ? (json['labReadings'] as List).map((x) => LabReading.fromJson(x)).toList()
+          : [],
+      clinicalFeatures: json['clinicalFeatures'] != null
+          ? (json['clinicalFeatures'] as List).map((x) => ClinicalFeature.fromJson(x)).toList()
+          : [],
+      complications: json['complications'] != null
+          ? (json['complications'] as List).map((x) => Complication.fromJson(x)).toList()
+          : [],
+      medications: json['medications'] != null
+          ? (json['medications'] as List).map((x) => Medication.fromJson(x)).toList()
+          : [],
+      images: json['images'] != null
+          ? (json['images'] as List).map((x) => MedicalImage.fromJson(x)).toList()
+          : [],
+      notes: json['notes'] ?? '',
+      treatmentPlan: json['treatmentPlan'] != null ? TreatmentPlan.fromJson(json['treatmentPlan']) : null,
+      nextVisit: json['nextVisit'] != null ? DateTime.parse(json['nextVisit']) : null,
+      followUpPlan: json['followUpPlan'] ?? '',
+      createdAt: DateTime.parse(json['createdAt']),
+      lastUpdated: DateTime.parse(json['lastUpdated']),
+      isActive: json['isActive'] ?? true,
     );
   }
 }
 
-// ==================== ENUMS ====================
-
-enum DiagnosisStatus {
-  suspected,
-  confirmed,
-  ruledOut,
-}
-
-enum DiseaseSeverity {
-  mild,
-  moderate,
-  severe,
-  critical,
-}
-
-// ==================== LAB READING MODEL ====================
+// ==================== LAB READING MODEL (UPDATED) ====================
 
 class LabReading {
+  final String id;
   final String testName;
   final double value;
   final String unit;
-  final double? normalMin;
-  final double? normalMax;
-  final DateTime date;
-  final String notes;
+  final double normalMin;
+  final double normalMax;
+  final DateTime testDate;  // 🔧 FIXED: was named 'date' in some files
+  final String? notes;
 
   LabReading({
+    required this.id,
     required this.testName,
     required this.value,
     required this.unit,
-    this.normalMin,
-    this.normalMax,
-    required this.date,
-    this.notes = '',
+    required this.normalMin,
+    required this.normalMax,
+    required this.testDate,  // 🔧 FIXED: parameter name matches field
+    this.notes,
   });
 
-  bool get isAbnormal {
-    if (normalMin == null || normalMax == null) return false;
-    return value < normalMin! || value > normalMax!;
+  // 🆕 ADDED: Getter for backward compatibility
+  DateTime get date => testDate;
+
+  bool get isAbnormal => value < normalMin || value > normalMax;
+
+  String get status {
+    if (value < normalMin) return 'low';
+    if (value > normalMax) return 'high';
+    return 'normal';
   }
 
+  // 🆕 ADDED: AbnormalityType getter
   AbnormalityType get abnormalityType {
-    if (!isAbnormal) return AbnormalityType.normal;
-    if (value < normalMin!) return AbnormalityType.low;
-    return AbnormalityType.high;
+    if (value < normalMin) return AbnormalityType.low;
+    if (value > normalMax) return AbnormalityType.high;
+    return AbnormalityType.normal;
   }
 
   Map<String, dynamic> toJson() => {
+    'id': id,
     'testName': testName,
     'value': value,
     'unit': unit,
     'normalMin': normalMin,
     'normalMax': normalMax,
-    'date': date.toIso8601String(),
+    'testDate': testDate.toIso8601String(),
     'notes': notes,
   };
 
   factory LabReading.fromJson(Map<String, dynamic> json) {
     return LabReading(
+      id: json['id'],
       testName: json['testName'],
       value: json['value'].toDouble(),
       unit: json['unit'],
-      normalMin: json['normalMin']?.toDouble(),
-      normalMax: json['normalMax']?.toDouble(),
-      date: DateTime.parse(json['date']),
-      notes: json['notes'] ?? '',
+      normalMin: json['normalMin'].toDouble(),
+      normalMax: json['normalMax'].toDouble(),
+      testDate: DateTime.parse(json['testDate']),
+      notes: json['notes'],
     );
   }
 }
 
-enum AbnormalityType {
-  low,
-  normal,
-  high,
-}
-
-// ==================== CLINICAL FEATURE MODEL ====================
+// ==================== CLINICAL FEATURE MODEL (UPDATED) ====================
 
 class ClinicalFeature {
   final String id;
   final String name;
-  final FeatureType type;
   final bool isPresent;
-  final String? severity;
-  final String? details;
-  final DateTime recordedDate;
+  final String severity; // "mild", "moderate", "severe"
+  final String notes;
+  final DateTime? onsetDate;
+  final FeatureType type;  // 🆕 ADDED: Feature type field
 
   ClinicalFeature({
     required this.id,
     required this.name,
-    required this.type,
     required this.isPresent,
-    this.severity,
-    this.details,
-    DateTime? recordedDate,
-  }) : recordedDate = recordedDate ?? DateTime.now();
+    this.severity = 'mild',
+    this.notes = '',
+    this.onsetDate,
+    this.type = FeatureType.symptom,  // 🆕 ADDED: with default
+  });
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
-    'type': type.toString(),
     'isPresent': isPresent,
     'severity': severity,
-    'details': details,
-    'recordedDate': recordedDate.toIso8601String(),
+    'notes': notes,
+    'onsetDate': onsetDate?.toIso8601String(),
+    'type': type.toString().split('.').last,  // 🆕 ADDED
   };
 
   factory ClinicalFeature.fromJson(Map<String, dynamic> json) {
     return ClinicalFeature(
       id: json['id'],
       name: json['name'],
-      type: FeatureType.values.firstWhere(
-            (e) => e.toString() == json['type'],
-      ),
       isPresent: json['isPresent'],
-      severity: json['severity'],
-      details: json['details'],
-      recordedDate: DateTime.parse(json['recordedDate']),
+      severity: json['severity'] ?? 'mild',
+      notes: json['notes'] ?? '',
+      onsetDate: json['onsetDate'] != null ? DateTime.parse(json['onsetDate']) : null,
+      type: json['type'] != null
+          ? FeatureType.values.firstWhere(
+            (e) => e.toString().split('.').last == json['type'],
+        orElse: () => FeatureType.symptom,
+      )
+          : FeatureType.symptom,  // 🆕 ADDED
     );
   }
-}
-
-enum FeatureType {
-  symptom,
-  sign,
-  examination,
 }
 
 // ==================== COMPLICATION MODEL ====================

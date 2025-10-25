@@ -1,11 +1,11 @@
-// ==================== TAB 1: OVERVIEW ====================
+// ==================== TAB 1: OVERVIEW (REDESIGNED) ====================
 // lib/screens/endocrine/tabs/overview_tab.dart
 
 import 'package:flutter/material.dart';
 import '../../../models/endocrine/endocrine_condition.dart';
 import '../../../config/thyroid_disease_config.dart';
 
-class OverviewTab extends StatelessWidget {
+class OverviewTab extends StatefulWidget {
   final EndocrineCondition condition;
   final ThyroidDiseaseConfig diseaseConfig;
   final Function(EndocrineCondition) onUpdate;
@@ -18,41 +18,59 @@ class OverviewTab extends StatelessWidget {
   });
 
   @override
+  State<OverviewTab> createState() => _OverviewTabState();
+}
+
+class _OverviewTabState extends State<OverviewTab> {
+  // State for checkboxes
+  Set<String> selectedCriteria = {};
+  Set<String> selectedComplications = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize from condition if data exists
+    selectedCriteria = Set<String>.from(widget.condition.selectedDiagnosticCriteria ?? []);
+    selectedComplications = Set<String>.from(widget.condition.selectedComplications ?? []);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Disease Information Card
+          // 1. Disease Information Card (Keep existing with placeholder)
           _buildDiseaseInformationCard(),
           const SizedBox(height: 20),
 
-          // Diagnosis Status Card
-          _buildDiagnosisStatusCard(context),
+          // 2. Pathophysiology Card (Moved from anatomy tab)
+          _buildPathophysiologyCard(),
           const SizedBox(height: 20),
 
-          // Diagnostic Criteria Card
-          _buildDiagnosticCriteriaCard(context),
+          // 4. Diagnostic Criteria Card (Modified - removed specialist consultation)
+          _buildDiagnosticCriteriaCard(),
           const SizedBox(height: 20),
 
-          // Severity Card (if applicable)
+          // 5. Severity Card (Keep existing)
           if (_showSeverity()) ...[
-            _buildSeverityCard(context),
+            _buildSeverityCard(),
             const SizedBox(height: 20),
           ],
 
-          // Complications Card
-          _buildComplicationsCard(context),
+          // 6. Complications Card (Enhanced with functional checkboxes)
+          _buildComplicationsCard(),
           const SizedBox(height: 20),
 
-          // Clinical Notes Card
-          _buildNotesCard(context),
+          // 7. Clinical Notes Card (Keep existing)
+          _buildNotesCard(),
         ],
       ),
     );
   }
 
+  // 1. DISEASE INFORMATION (Keep existing)
   Widget _buildDiseaseInformationCard() {
     return Card(
       elevation: 2,
@@ -125,7 +143,7 @@ class OverviewTab extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              diseaseConfig.description,
+              widget.diseaseConfig.description,
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade700,
@@ -133,7 +151,7 @@ class OverviewTab extends StatelessWidget {
               ),
             ),
 
-            if (diseaseConfig.icd10 != null) ...[
+            if (widget.diseaseConfig.icd10 != null) ...[
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -142,7 +160,7 @@ class OverviewTab extends StatelessWidget {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  'ICD-10: ${diseaseConfig.icd10}',
+                  'ICD-10: ${widget.diseaseConfig.icd10}',
                   style: const TextStyle(
                     fontSize: 13,
                     color: Color(0xFF2563EB),
@@ -157,7 +175,10 @@ class OverviewTab extends StatelessWidget {
     );
   }
 
-  Widget _buildDiagnosisStatusCard(BuildContext context) {
+  // 2. PATHOPHYSIOLOGY (Moved from anatomy tab)
+  Widget _buildPathophysiologyCard() {
+    final steps = _getPathophysiologySteps();
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -166,138 +187,97 @@ class OverviewTab extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'DIAGNOSIS STATUS',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Status Radio Buttons
-            _buildStatusOption(
-              context,
-              DiagnosisStatus.suspected,
-              'Suspected',
-              'Pending confirmatory tests',
-            ),
-            const SizedBox(height: 12),
-            _buildStatusOption(
-              context,
-              DiagnosisStatus.confirmed,
-              'Confirmed',
-              'Diagnosis confirmed by investigations',
-            ),
-            const SizedBox(height: 12),
-            _buildStatusOption(
-              context,
-              DiagnosisStatus.ruledOut,
-              'Ruled Out',
-              'Diagnosis excluded',
-            ),
-            const SizedBox(height: 20),
-
-            // Diagnosis Date
-            Row(
+            const Row(
               children: [
-                const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
-                const SizedBox(width: 12),
-                const Text(
-                  'Date of Diagnosis:',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(width: 12),
+                Icon(Icons.timeline, color: Color(0xFF7C3AED), size: 24),
+                SizedBox(width: 12),
                 Text(
-                  condition.diagnosisDate != null
-                      ? _formatDate(condition.diagnosisDate!)
-                      : 'Not set',
+                  'PATHOPHYSIOLOGY',
                   style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade700,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF7C3AED),
                   ),
-                ),
-                const Spacer(),
-                TextButton(
-                  onPressed: () => _selectDiagnosisDate(context),
-                  child: const Text('Change'),
                 ),
               ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
+            const SizedBox(height: 16),
 
-  Widget _buildStatusOption(
-      BuildContext context,
-      DiagnosisStatus status,
-      String title,
-      String subtitle,
-      ) {
-    final isSelected = condition.status == status;
-
-    return InkWell(
-      onTap: () {
-        onUpdate(condition.copyWith(status: status));
-      },
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF2563EB).withOpacity(0.1) : null,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected ? const Color(0xFF2563EB) : Colors.grey.shade300,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Radio<DiagnosisStatus>(
-              value: status,
-              groupValue: condition.status,
-              onChanged: (value) {
-                if (value != null) {
-                  onUpdate(condition.copyWith(status: value));
-                }
-              },
-              activeColor: const Color(0xFF2563EB),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
+            Text(
+              'Disease progression and mechanisms:',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade800,
               ),
             ),
+            const SizedBox(height: 12),
+
+            ...steps.asMap().entries.map((entry) {
+              final index = entry.key;
+              final step = entry.value;
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Step number
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF7C3AED),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${index + 1}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Step description
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF7C3AED).withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(0xFF7C3AED).withOpacity(0.2),
+                          ),
+                        ),
+                        child: Text(
+                          step,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade800,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDiagnosticCriteriaCard(BuildContext context) {
+  // 3. SYMPTOMS (New with checkboxes)
+  Widget _buildDiagnosticCriteriaCard() {
+    final criteria = _getDiagnosticCriteria();
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -306,101 +286,158 @@ class OverviewTab extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'DIAGNOSTIC CRITERIA',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+            Row(
+              children: [
+                const Icon(Icons.assignment_turned_in, color: Color(0xFF059669), size: 24),
+                const SizedBox(width: 12),
+                const Text(
+                  'DIAGNOSTIC CRITERIA',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF059669),
+                  ),
+                ),
+                const Spacer(),
+                Chip(
+                  label: Text(
+                    '${selectedCriteria.length}/${criteria.length} completed',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  backgroundColor: const Color(0xFF059669).withOpacity(0.1),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
 
-            _buildCriteriaCheckbox(
-              'Clinical features present',
-              Icons.medical_services,
+            Text(
+              'Mark completed diagnostic steps:',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade800,
+              ),
             ),
-            _buildCriteriaCheckbox(
-              'Laboratory tests consistent',
-              Icons.science,
-            ),
-            _buildCriteriaCheckbox(
-              'Imaging studies done',
-              Icons.camera_alt,
-            ),
-            _buildCriteriaCheckbox(
-              'Specialist consultation obtained',
-              Icons.person,
-            ),
+            const SizedBox(height: 12),
+
+            ...criteria.map((criterion) => _buildCriteriaCheckbox(criterion)).toList(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCriteriaCheckbox(String text, IconData icon) {
-    // TODO: Store checkbox state properly
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: Colors.grey.shade600),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontSize: 14),
-            ),
-          ),
-          Checkbox(
-            value: false, // TODO: Make this functional
-            onChanged: (value) {
-              // TODO: Update state
-            },
-            activeColor: const Color(0xFF2563EB),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSeverityCard(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'SEVERITY',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            _buildSeverityOption(context, DiseaseSeverity.mild, 'Mild'),
-            _buildSeverityOption(context, DiseaseSeverity.moderate, 'Moderate'),
-            _buildSeverityOption(context, DiseaseSeverity.severe, 'Severe'),
-            _buildSeverityOption(context, DiseaseSeverity.critical, 'Critical'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSeverityOption(BuildContext context, DiseaseSeverity severity, String label) {
-    final isSelected = condition.severity == severity;
+  Widget _buildCriteriaCheckbox(Map<String, dynamic> criterion) {
+    final text = criterion['text'] as String;
+    final icon = criterion['icon'] as IconData;
+    final isSelected = selectedCriteria.contains(text);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: InkWell(
         onTap: () {
-          onUpdate(condition.copyWith(severity: severity));
+          setState(() {
+            if (isSelected) {
+              selectedCriteria.remove(text);
+            } else {
+              selectedCriteria.add(text);
+            }
+          });
+          _updateConditionCriteria();
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF059669).withOpacity(0.05) : null,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected ? const Color(0xFF059669).withOpacity(0.3) : Colors.grey.shade300,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: isSelected ? const Color(0xFF059669) : Colors.grey.shade600,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: isSelected ? const Color(0xFF059669) : Colors.grey.shade800,
+                  ),
+                ),
+              ),
+              Checkbox(
+                value: isSelected,
+                onChanged: (value) {
+                  setState(() {
+                    if (value == true) {
+                      selectedCriteria.add(text);
+                    } else {
+                      selectedCriteria.remove(text);
+                    }
+                  });
+                  _updateConditionCriteria();
+                },
+                activeColor: const Color(0xFF059669),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 5. SEVERITY (Keep existing)
+  Widget _buildSeverityCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.speed, color: Color(0xFFEA580C), size: 24),
+                SizedBox(width: 12),
+                Text(
+                  'SEVERITY',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFEA580C),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            _buildSeverityOption(DiseaseSeverity.mild, 'Mild'),
+            _buildSeverityOption(DiseaseSeverity.moderate, 'Moderate'),
+            _buildSeverityOption(DiseaseSeverity.severe, 'Severe'),
+            _buildSeverityOption(DiseaseSeverity.critical, 'Critical'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSeverityOption(DiseaseSeverity severity, String label) {
+    final isSelected = widget.condition.severity == severity;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: () {
+          widget.onUpdate(widget.condition.copyWith(severity: severity));
         },
         borderRadius: BorderRadius.circular(6),
         child: Container(
@@ -416,10 +453,10 @@ class OverviewTab extends StatelessWidget {
             children: [
               Radio<DiseaseSeverity>(
                 value: severity,
-                groupValue: condition.severity,
+                groupValue: widget.condition.severity,
                 onChanged: (value) {
                   if (value != null) {
-                    onUpdate(condition.copyWith(severity: value));
+                    widget.onUpdate(widget.condition.copyWith(severity: value));
                   }
                 },
                 activeColor: _getSeverityColor(severity),
@@ -439,8 +476,9 @@ class OverviewTab extends StatelessWidget {
     );
   }
 
-  Widget _buildComplicationsCard(BuildContext context) {
-    final complications = diseaseConfig.complications;
+  // 6. COMPLICATIONS (Enhanced with functional checkboxes)
+  Widget _buildComplicationsCard() {
+    final complications = widget.diseaseConfig.complications ?? [];
 
     return Card(
       elevation: 2,
@@ -450,24 +488,49 @@ class OverviewTab extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'COMPLICATIONS',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+            Row(
+              children: [
+                const Icon(Icons.warning_amber, color: Color(0xFFD97706), size: 24),
+                const SizedBox(width: 12),
+                const Text(
+                  'COMPLICATIONS',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFD97706),
+                  ),
+                ),
+                const Spacer(),
+                if (complications.isNotEmpty)
+                  Chip(
+                    label: Text(
+                      '${selectedComplications.length}/${complications.length} present',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    backgroundColor: const Color(0xFFD97706).withOpacity(0.1),
+                  ),
+              ],
             ),
             const SizedBox(height: 16),
 
-            if (complications != null && complications.isNotEmpty)
+            if (complications.isNotEmpty) ...[
+              Text(
+                'Mark complications present in this patient:',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+              const SizedBox(height: 12),
               ...complications.map((comp) => _buildComplicationCheckbox(comp as String))
-            else
+            ] else
               Text(
                 'No complications listed for this condition',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.grey.shade600,
+                  fontStyle: FontStyle.italic,
                 ),
               ),
           ],
@@ -477,32 +540,72 @@ class OverviewTab extends StatelessWidget {
   }
 
   Widget _buildComplicationCheckbox(String complication) {
-    // TODO: Store in actual state
+    final isSelected = selectedComplications.contains(complication);
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          const Icon(Icons.warning_amber, size: 20, color: Colors.orange),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              complication,
-              style: const TextStyle(fontSize: 14),
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            if (isSelected) {
+              selectedComplications.remove(complication);
+            } else {
+              selectedComplications.add(complication);
+            }
+          });
+          _updateConditionComplications();
+        },
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFFD97706).withOpacity(0.05) : null,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isSelected ? const Color(0xFFD97706).withOpacity(0.3) : Colors.grey.shade300,
             ),
           ),
-          Checkbox(
-            value: false, // TODO: Make functional
-            onChanged: (value) {
-              // TODO: Update state
-            },
-            activeColor: Colors.orange,
+          child: Row(
+            children: [
+              Icon(
+                Icons.warning_amber,
+                size: 20,
+                color: isSelected ? const Color(0xFFD97706) : Colors.grey.shade600,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  complication,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: isSelected ? const Color(0xFFD97706) : Colors.grey.shade800,
+                  ),
+                ),
+              ),
+              Checkbox(
+                value: isSelected,
+                onChanged: (value) {
+                  setState(() {
+                    if (value == true) {
+                      selectedComplications.add(complication);
+                    } else {
+                      selectedComplications.remove(complication);
+                    }
+                  });
+                  _updateConditionComplications();
+                },
+                activeColor: const Color(0xFFD97706),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildNotesCard(BuildContext context) {
+  // 7. CLINICAL NOTES (Keep existing)
+  Widget _buildNotesCard() {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -511,18 +614,24 @@ class OverviewTab extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'CLINICAL NOTES',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+            const Row(
+              children: [
+                Icon(Icons.note_add, color: Color(0xFF6366F1), size: 24),
+                SizedBox(width: 12),
+                Text(
+                  'CLINICAL NOTES',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF6366F1),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             TextField(
               maxLines: 6,
-              controller: TextEditingController(text: condition.notes),
+              controller: TextEditingController(text: widget.condition.notes),
               decoration: InputDecoration(
                 hintText: 'Enter clinical notes, observations, or additional information...',
                 border: OutlineInputBorder(
@@ -532,7 +641,7 @@ class OverviewTab extends StatelessWidget {
                 fillColor: Colors.grey.shade50,
               ),
               onChanged: (value) {
-                onUpdate(condition.copyWith(notes: value));
+                widget.onUpdate(widget.condition.copyWith(notes: value));
               },
             ),
           ],
@@ -541,9 +650,73 @@ class OverviewTab extends StatelessWidget {
     );
   }
 
+  // Helper methods
+  List<String> _getPathophysiologySteps() {
+    final diseaseId = widget.condition.diseaseId;
+
+    if (diseaseId == 'graves_disease') {
+      return [
+        'TSH receptor antibodies (TSH-R Ab) produced by immune system',
+        'Antibodies bind to TSH receptors on thyroid follicular cells',
+        'Continuous stimulation of thyroid gland (independent of TSH)',
+        'Excessive synthesis and release of T3 and T4',
+        'Negative feedback suppresses TSH to near-zero levels',
+        'Systemic hypermetabolic state develops',
+      ];
+    } else if (diseaseId == 'primary_hypothyroidism') {
+      return [
+        'Thyroid gland failure (autoimmune, iodine deficiency, etc.)',
+        'Decreased production of T3 and T4',
+        'Pituitary increases TSH production (feedback mechanism)',
+        'Elevated TSH attempts to stimulate failing thyroid',
+        'Persistent hypothyroid state despite high TSH',
+      ];
+    } else if (diseaseId == 'hashimotos_thyroiditis') {
+      return [
+        'Autoimmune attack on thyroid tissue',
+        'Anti-TPO and anti-thyroglobulin antibodies produced',
+        'Gradual destruction of thyroid follicles',
+        'Progressive decline in thyroid hormone production',
+        'Compensatory TSH elevation',
+        'Eventually leads to overt hypothyroidism',
+      ];
+    } else if (diseaseId == 'toxic_multinodular_goiter') {
+      return [
+        'Multiple thyroid nodules develop over years',
+        'Some nodules gain autonomous function',
+        'Independent thyroid hormone production',
+        'TSH suppression due to excess hormones',
+        'Hyperthyroid symptoms develop',
+      ];
+    } else if (diseaseId == 'subacute_thyroiditis') {
+      return [
+        'Viral infection triggers thyroid inflammation',
+        'Initial release of stored thyroid hormones (hyperthyroid phase)',
+        'Thyroid gland damage and reduced hormone production',
+        'Hypothyroid phase as stores deplete',
+        'Gradual recovery in most cases',
+      ];
+    }
+
+    return [
+      'Thyroid gland dysfunction',
+      'Altered hormone production',
+      'Metabolic changes',
+      'Clinical manifestations',
+    ];
+  }
+
+  List<Map<String, dynamic>> _getDiagnosticCriteria() {
+    return [
+      {'text': 'Clinical examination performed', 'icon': Icons.medical_services},
+      {'text': 'Thyroid function tests ordered', 'icon': Icons.science},
+      {'text': 'Imaging studies done', 'icon': Icons.camera_alt},
+      // Removed: 'Specialist consultation obtained'
+    ];
+  }
+
   bool _showSeverity() {
-    // Show severity for most conditions except subclinical ones
-    return !condition.diseaseId.contains('subclinical');
+    return !widget.condition.diseaseId.contains('subclinical');
   }
 
   Color _getSeverityColor(DiseaseSeverity severity) {
@@ -559,20 +732,11 @@ class OverviewTab extends StatelessWidget {
     }
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+  void _updateConditionCriteria() {
+    widget.onUpdate(widget.condition.copyWith(selectedDiagnosticCriteria: selectedCriteria.toList()));
   }
 
-  Future<void> _selectDiagnosisDate(BuildContext context) async {
-    final date = await showDatePicker(
-      context: context,
-      initialDate: condition.diagnosisDate ?? DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-    );
-
-    if (date != null) {
-      // TODO: Update diagnosis date in condition
-    }
+  void _updateConditionComplications() {
+    widget.onUpdate(widget.condition.copyWith(selectedComplications: selectedComplications.toList()));
   }
 }

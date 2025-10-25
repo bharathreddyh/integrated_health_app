@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../../models/endocrine/endocrine_condition.dart';
 import '../../config/thyroid_disease_config.dart';
 import 'tabs/overview_tab.dart';
-import 'tabs/anatomy_tab.dart';
+import 'tabs/canvas_tab.dart';
 import 'tabs/labs_trends_tab.dart';
 import 'tabs/clinical_features_tab.dart';
 import 'tabs/investigations_tab.dart';
@@ -141,36 +141,36 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
                   fontWeight: FontWeight.normal,
                 ),
                 tabs: const [
-                  Tab(text: 'Patient Data'), // ✅ NEW TAB
-                  Tab(text: 'Overview'),
-                  Tab(text: 'Anatomy'),
-                  Tab(text: 'Labs'),
+                  Tab(text: 'Patient Data'),
                   Tab(text: 'Clinical'),
+                  Tab(text: 'Canvas'),
+                  Tab(text: 'Labs'),
+                  Tab(text: 'Overview'),
                   Tab(text: 'Investigations'),
                   Tab(text: 'Treatment'),
                 ],
               ),
             ),
 
-            // Tab Content - 6 tabs
+            // Tab Content - 7 tabs
             Expanded(
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  // ✅ NEW: Tab 0 - Patient Data
+                  // Tab 0 - Patient Data
                   PatientDataTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
                   ),
-                  // Tab 1: Overview
-                  OverviewTab(
+                  // Tab 1: Clinical Features
+                  ClinicalFeaturesTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
                   ),
-                  // Tab 2: Anatomy & Pathophysiology
-                  AnatomyTab(
+                  // Tab 2: Canvas
+                  CanvasTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
@@ -181,8 +181,8 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
                   ),
-                  // Tab 4: Clinical Features
-                  ClinicalFeaturesTab(
+                  // Tab 4: Overview
+                  OverviewTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
@@ -396,6 +396,8 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
     switch (status) {
       case DiagnosisStatus.suspected:
         return Icons.help_outline;
+      case DiagnosisStatus.provisional:  // 🆕 ADD
+        return Icons.help_outline;
       case DiagnosisStatus.confirmed:
         return Icons.check_circle;
       case DiagnosisStatus.ruledOut:
@@ -407,6 +409,8 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
     switch (status) {
       case DiagnosisStatus.suspected:
         return Colors.orange;
+      case DiagnosisStatus.provisional:  // 🆕 ADD
+        return Colors.blue;
       case DiagnosisStatus.confirmed:
         return Colors.green;
       case DiagnosisStatus.ruledOut:
@@ -418,6 +422,8 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
     switch (status) {
       case DiagnosisStatus.suspected:
         return 'Suspected';
+      case DiagnosisStatus.provisional:  // 🆕 ADD
+        return 'Provisional';
       case DiagnosisStatus.confirmed:
         return 'Confirmed';
       case DiagnosisStatus.ruledOut:

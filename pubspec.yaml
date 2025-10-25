@@ -55,4 +55,11 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/images/thyroid/anatomy/
+    - assets/images/thyroid/diseases/graves/
+    - assets/images/thyroid/diseases/hashimotos/
+    - assets/images/thyroid/diseases/hypothyroid/
+    - assets/images/thyroid/diseases/toxic_multinodular/
+    - assets/images/thyroid/diseases/subacute/
+    - assets/images/thyroid/diseases/cancer/
 

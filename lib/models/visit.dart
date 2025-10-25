@@ -1,5 +1,3 @@
-// lib/models/visit.dart - UPDATED
-
 import 'dart:convert';
 import 'dart:typed_data';
 import 'marker.dart';
@@ -8,37 +6,43 @@ import 'drawing_path.dart';
 class Visit {
   final int? id;
   final String patientId;
-  final String system;        // NEW: kidney, cardiac, respiratory, etc.
+  final String system;  // NEW - thyroid, kidney, cardiac, etc.
   final String diagramType;
   final List<Marker> markers;
   final List<DrawingPath> drawingPaths;
   final String? notes;
   final DateTime createdAt;
-  final Uint8List? canvasImage;
+  final Uint8List? canvasImage;  // NEW - captured canvas image
+  final bool isEdited;  // NEW - flag to indicate if this is an edited version
+  final int? originalVisitId;  // NEW - reference to the original visit if this is an edit
 
   const Visit({
     this.id,
     required this.patientId,
-    this.system = 'kidney',  // NEW: Default to kidney
+    required this.system,
     required this.diagramType,
     required this.markers,
     this.drawingPaths = const [],
     this.notes,
     required this.createdAt,
     this.canvasImage,
+    this.isEdited = false,
+    this.originalVisitId,
   });
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'patient_id': patientId,
-      'system': system,  // NEW
+      'system': system,
       'diagram_type': diagramType,
       'markers': jsonEncode(markers.map((m) => m.toMap()).toList()),
       'drawing_paths': jsonEncode(drawingPaths.map((d) => d.toMap()).toList()),
       'notes': notes,
       'created_at': createdAt.toIso8601String(),
       'canvas_image': canvasImage,
+      'is_edited': isEdited ? 1 : 0,
+      'original_visit_id': originalVisitId,
     };
   }
 
@@ -56,13 +60,15 @@ class Visit {
     return Visit(
       id: map['id'] as int?,
       patientId: map['patient_id'] as String,
-      system: map['system'] as String? ?? 'kidney',  // NEW: Default to kidney for old data
+      system: map['system'] as String? ?? 'kidney',  // Default for backward compatibility
       diagramType: map['diagram_type'] as String,
       markers: markersList.map((m) => Marker.fromMap(m as Map<String, dynamic>)).toList(),
       drawingPaths: paths,
       notes: map['notes'] as String?,
       createdAt: DateTime.parse(map['created_at'] as String),
       canvasImage: map['canvas_image'] as Uint8List?,
+      isEdited: map['is_edited'] == 1,
+      originalVisitId: map['original_visit_id'] as int?,
     );
   }
 
@@ -76,6 +82,8 @@ class Visit {
     String? notes,
     DateTime? createdAt,
     Uint8List? canvasImage,
+    bool? isEdited,
+    int? originalVisitId,
   }) {
     return Visit(
       id: id ?? this.id,
@@ -87,21 +95,8 @@ class Visit {
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       canvasImage: canvasImage ?? this.canvasImage,
+      isEdited: isEdited ?? this.isEdited,
+      originalVisitId: originalVisitId ?? this.originalVisitId,
     );
   }
 }
-
-// DATABASE MIGRATION NEEDED:
-// Add this to your DatabaseHelper _onUpgrade method:
-/*
-if (oldVersion < 9) {
-  try {
-    await db.execute('ALTER TABLE visits ADD COLUMN system TEXT DEFAULT "kidney"');
-    print('✅ Added system column to visits table');
-  } catch (e) {
-    print('system column may already exist: $e');
-  }
-}
-*/
-
-// And update your database version from 8 to 9 in _initDB method

@@ -26,7 +26,7 @@ class DatabaseHelper {
     final path = join(dbPath, filePath);
     return await openDatabase(
       path,
-      version: 11, // UPDATED: Increment version for canvas_image column
+      version: 12, // UPDATED: Increment version for canvas_image column
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -34,6 +34,76 @@ class DatabaseHelper {
 
   Future<void> _createDB(Database db, int version) async {
     // Users table
+
+
+    await db.execute('''
+  CREATE TABLE endocrine_visits (
+    id TEXT PRIMARY KEY,
+    patient_id TEXT NOT NULL,
+    doctor_id TEXT NOT NULL,
+    visit_date TEXT NOT NULL,
+    gland TEXT NOT NULL,
+    category TEXT,
+    disease_id TEXT,
+    disease_name TEXT,
+    status TEXT NOT NULL,
+    severity TEXT,
+    
+    -- Patient Data Tab
+    chief_complaint TEXT,
+    history_present_illness TEXT,
+    past_medical_history TEXT,
+    family_history TEXT,
+    allergies TEXT,
+    vitals TEXT,
+    measurements TEXT,
+    ordered_lab_tests TEXT,
+    ordered_investigations TEXT,
+    
+    -- Clinical Features Tab
+    clinical_features TEXT,
+    
+    -- Labs & Trends Tab
+    lab_readings TEXT,
+    
+    -- Investigations Tab
+    investigation_findings TEXT,
+    images TEXT,
+    
+    -- Treatment Tab
+    medications TEXT,
+    treatment_plan TEXT,
+    
+    -- Complications
+    complications TEXT,
+    
+    -- Notes
+    notes TEXT,
+    follow_up_plan TEXT,
+    next_visit TEXT,
+    
+    -- Meta
+    created_at TEXT NOT NULL,
+    last_updated TEXT NOT NULL,
+    is_active INTEGER DEFAULT 1,
+    
+    FOREIGN KEY (patient_id) REFERENCES patients (id) ON DELETE CASCADE,
+    FOREIGN KEY (doctor_id) REFERENCES users (id) ON DELETE CASCADE
+  )
+''');
+
+// 2. CREATE INDEX for faster queries
+    await db.execute('''
+  CREATE INDEX idx_endocrine_visits_patient 
+  ON endocrine_visits(patient_id, visit_date DESC)
+''');
+
+    await db.execute('''
+  CREATE INDEX idx_endocrine_visits_disease 
+  ON endocrine_visits(patient_id, disease_id, visit_date DESC)
+''');
+
+
     await db.execute('''
       CREATE TABLE users (
         id TEXT PRIMARY KEY,
@@ -268,7 +338,15 @@ class DatabaseHelper {
 
     return results;
   }
-
+  Future<int> updateEndocrineCondition(EndocrineCondition condition) async {
+    final db = await database;
+    return await db.update(
+      'endocrine_condition',
+      condition.toJson(),
+      where: 'id = ?',
+      whereArgs: [condition.id],
+    );
+  }
 // 1. Save draft
   Future<void> saveDraftConsultation(String patientId, Map<String, dynamic> data) async {
     final db = await database;
@@ -449,7 +527,14 @@ class DatabaseHelper {
   ''');
       print('✅ Created patient_data_snapshots table');
     }
-
+    Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+      if (oldVersion < 12) {  // Increment your version
+        await db.execute('ALTER TABLE visits ADD COLUMN system TEXT DEFAULT "kidney"');
+        await db.execute('ALTER TABLE visits ADD COLUMN canvas_image BLOB');
+        await db.execute('ALTER TABLE visits ADD COLUMN is_edited INTEGER DEFAULT 0');
+        await db.execute('ALTER TABLE visits ADD COLUMN original_visit_id INTEGER');
+      }
+    }
 
   }
 
@@ -828,6 +913,304 @@ class DatabaseHelper {
     );
 
     return maps.map((map) => EndocrineCondition.fromJson(map)).toList();
+  }
+  Future<String> saveEndocrineVisit(EndocrineCondition condition, String doctorId) async {
+    final db = await database;
+
+    final visitData = {
+      'id': condition.id,
+      'patient_id': condition.patientId,
+      'doctor_id': doctorId,
+      'visit_date': DateTime.now().toIso8601String(),
+      'gland': condition.gland,
+      'category': condition.category,
+      'disease_id': condition.diseaseId,
+      'disease_name': condition.diseaseName,
+      'status': condition.status.toString().split('.').last,
+      'severity': condition.severity?.toString().split('.').last,
+
+      // Patient Data
+      'chief_complaint': condition.chiefComplaint,
+      'history_present_illness': condition.historyOfPresentIllness,
+      'past_medical_history': condition.pastMedicalHistory,
+      'family_history': condition.familyHistory,
+      'allergies': condition.allergies,
+      'vitals': condition.vitals != null ? jsonEncode(condition.vitals) : null,
+      'measurements': condition.measurements != null ? jsonEncode(condition.measurements) : null,
+      'ordered_lab_tests': condition.orderedLabTests != null ? jsonEncode(condition.orderedLabTests) : null,
+      'ordered_investigations': condition.orderedInvestigations != null ? jsonEncode(condition.orderedInvestigations) : null,
+
+      // Clinical Features
+      'clinical_features': jsonEncode(condition.clinicalFeatures.map((f) => f.toJson()).toList()),
+
+      // Lab Readings
+      'lab_readings': jsonEncode(condition.labReadings.map((r) => r.toJson()).toList()),
+
+      // Investigations
+      'investigation_findings': condition.investigationFindings != null ? jsonEncode(condition.investigationFindings) : null,
+      'images': jsonEncode(condition.images.map((i) => i.toJson()).toList()),
+
+      // Treatment
+      'medications': jsonEncode(condition.medications.map((m) => m.toJson()).toList()),
+      'treatment_plan': condition.treatmentPlan != null ? jsonEncode(condition.treatmentPlan!.toJson()) : null,
+
+      // Complications
+      'complications': jsonEncode(condition.complications.map((c) => c.toJson()).toList()),
+
+      // Notes
+      'notes': condition.notes,
+      'follow_up_plan': condition.followUpPlan,
+      'next_visit': condition.nextVisit?.toIso8601String(),
+
+      // Meta
+      'created_at': condition.createdAt.toIso8601String(),
+      'last_updated': DateTime.now().toIso8601String(),
+      'is_active': condition.isActive ? 1 : 0,
+    };
+
+    await db.insert('endocrine_visits', visitData, conflictAlgorithm: ConflictAlgorithm.replace);
+    return condition.id;
+  }
+
+  Future<List<EndocrineCondition>> getEndocrineVisitsByPatient(String patientId) async {
+    final db = await database;
+    final maps = await db.query(
+      'endocrine_visits',
+      where: 'patient_id = ?',
+      whereArgs: [patientId],
+      orderBy: 'visit_date DESC',
+    );
+    return maps.map((map) => _endocrineConditionFromMap(map)).toList();
+  }
+
+  Future<List<EndocrineCondition>> getEndocrineVisitsByDisease(String patientId, String diseaseId) async {
+    final db = await database;
+    final maps = await db.query(
+      'endocrine_visits',
+      where: 'patient_id = ? AND disease_id = ?',
+      whereArgs: [patientId, diseaseId],
+      orderBy: 'visit_date DESC',
+    );
+    return maps.map((map) => _endocrineConditionFromMap(map)).toList();
+  }
+
+  Future<EndocrineCondition?> getLatestEndocrineVisit(String patientId, String diseaseId) async {
+    final db = await database;
+    final maps = await db.query(
+      'endocrine_visits',
+      where: 'patient_id = ? AND disease_id = ?',
+      whereArgs: [patientId, diseaseId],
+      orderBy: 'visit_date DESC',
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return _endocrineConditionFromMap(maps.first);
+  }
+
+  Future<List<Map<String, dynamic>>> getLabTrendsForPatient(String patientId, String testName) async {
+    final db = await database;
+    final maps = await db.query(
+      'endocrine_visits',
+      where: 'patient_id = ?',
+      whereArgs: [patientId],
+      orderBy: 'visit_date ASC',
+    );
+
+    List<Map<String, dynamic>> trends = [];
+    for (var map in maps) {
+      if (map['lab_readings'] != null) {
+        final readings = jsonDecode(map['lab_readings'] as String) as List;
+        for (var reading in readings) {
+          if (reading['testName'] == testName) {
+            trends.add({
+              'date': DateTime.parse(map['visit_date'] as String),
+              'value': reading['value'],
+              'unit': reading['unit'],
+              'status': reading['abnormalityType'] ?? 'normal',
+            });
+          }
+        }
+      }
+    }
+    return trends;
+  }
+
+  Future<Map<String, dynamic>> getComparisonData(String patientId, String diseaseId) async {
+    final visits = await getEndocrineVisitsByDisease(patientId, diseaseId);
+
+    if (visits.length < 2) {
+      return {'hasComparison': false};
+    }
+
+    final latest = visits[0];
+    final previous = visits[1];
+
+    return {
+      'hasComparison': true,
+      'currentVisit': {
+        'date': latest.createdAt,
+        'labReadings': latest.labReadings,
+        'clinicalFeatures': latest.clinicalFeatures,
+        'medications': latest.medications,
+      },
+      'previousVisit': {
+        'date': previous.createdAt,
+        'labReadings': previous.labReadings,
+        'clinicalFeatures': previous.clinicalFeatures,
+        'medications': previous.medications,
+      },
+      'changes': _calculateChanges(latest, previous),
+    };
+  }
+
+  Map<String, dynamic> _calculateChanges(EndocrineCondition current, EndocrineCondition previous) {
+    Map<String, dynamic> changes = {};
+
+    // Lab changes
+    Map<String, Map<String, dynamic>> labChanges = {};
+    for (var currentReading in current.labReadings) {
+      var previousReading = previous.labReadings.firstWhere(
+            (r) => r.testName == currentReading.testName,
+        orElse: () => currentReading,
+      );
+
+      if (previousReading != currentReading) {
+        labChanges[currentReading.testName] = {
+          'previous': previousReading.value,
+          'current': currentReading.value,
+          'change': currentReading.value - previousReading.value,
+          'percentChange': ((currentReading.value - previousReading.value) / previousReading.value * 100).toStringAsFixed(1),
+          'trend': currentReading.value > previousReading.value ? 'up' : 'down',
+        };
+      }
+    }
+    changes['labs'] = labChanges;
+
+    // Feature changes
+    List<String> newFeatures = [];
+    List<String> resolvedFeatures = [];
+
+    for (var feature in current.clinicalFeatures) {
+      if (feature.isPresent && !previous.clinicalFeatures.any((f) => f.name == feature.name && f.isPresent)) {
+        newFeatures.add(feature.name);
+      }
+    }
+
+    for (var feature in previous.clinicalFeatures) {
+      if (feature.isPresent && !current.clinicalFeatures.any((f) => f.name == feature.name && f.isPresent)) {
+        resolvedFeatures.add(feature.name);
+      }
+    }
+
+    changes['features'] = {
+      'new': newFeatures,
+      'resolved': resolvedFeatures,
+    };
+
+    // Medication changes
+    List<String> newMeds = [];
+    List<String> stoppedMeds = [];
+
+    for (var med in current.medications) {
+      if (med.isActive && !previous.medications.any((m) => m.name == med.name && m.isActive)) {
+        newMeds.add(med.name);
+      }
+    }
+
+    for (var med in previous.medications) {
+      if (med.isActive && !current.medications.any((m) => m.name == med.name && m.isActive)) {
+        stoppedMeds.add(med.name);
+      }
+    }
+
+    changes['medications'] = {
+      'new': newMeds,
+      'stopped': stoppedMeds,
+    };
+
+    return changes;
+  }
+
+  EndocrineCondition _endocrineConditionFromMap(Map<String, dynamic> map) {
+    return EndocrineCondition(
+      id: map['id'] as String,
+      patientId: map['patient_id'] as String,
+      patientName: '', // Load from patient table if needed
+      gland: map['gland'] as String,
+      category: (map['category'] as String?) ?? '',
+      diseaseId: map['disease_id'] as String,
+      diseaseName: map['disease_name'] as String,
+      status: DiagnosisStatus.values.firstWhere(
+            (e) => e.toString().split('.').last == map['status'],
+      ),
+      severity: map['severity'] != null
+          ? DiseaseSeverity.values.firstWhere(
+            (e) => e.toString().split('.').last == map['severity'],
+      )
+          : null,
+
+      // Patient Data
+      chiefComplaint: map['chief_complaint'] as String?,
+      historyOfPresentIllness: map['history_present_illness'] as String?,
+      pastMedicalHistory: map['past_medical_history'] as String?,
+      familyHistory: map['family_history'] as String?,
+      allergies: map['allergies'] as String?,
+      vitals: map['vitals'] != null ? Map<String, String>.from(jsonDecode(map['vitals'])) : null,
+      measurements: map['measurements'] != null ? Map<String, String>.from(jsonDecode(map['measurements'])) : null,
+      orderedLabTests: map['ordered_lab_tests'] != null ? List<Map<String, dynamic>>.from(jsonDecode(map['ordered_lab_tests'])) : null,
+      orderedInvestigations: map['ordered_investigations'] != null ? List<Map<String, dynamic>>.from(jsonDecode(map['ordered_investigations'])) : null,
+
+      // Clinical Features
+      clinicalFeatures: map['clinical_features'] != null
+          ? (jsonDecode(map['clinical_features']) as List)
+          .map((f) => ClinicalFeature.fromJson(f))
+          .toList()
+          : [],
+
+      // Lab Readings
+      labReadings: map['lab_readings'] != null
+          ? (jsonDecode(map['lab_readings']) as List)
+          .map((r) => LabReading.fromJson(r))
+          .toList()
+          : [],
+
+      // Investigations
+      investigationFindings: map['investigation_findings'] != null ? jsonDecode(map['investigation_findings']) : null,
+      images: map['images'] != null
+          ? (jsonDecode(map['images']) as List)
+          .map((i) => MedicalImage.fromJson(i))
+          .toList()
+          : [],
+
+      // Treatment
+      medications: map['medications'] != null
+          ? (jsonDecode(map['medications']) as List)
+          .map((m) => Medication.fromJson(m))
+          .toList()
+          : [],
+      treatmentPlan: map['treatment_plan'] != null
+          ? TreatmentPlan.fromJson(jsonDecode(map['treatment_plan']))
+          : null,
+
+      // Complications
+      complications: map['complications'] != null
+          ? (jsonDecode(map['complications']) as List)
+          .map((c) => Complication.fromJson(c))
+          .toList()
+          : [],
+
+      // Notes
+      notes: map['notes'] as String? ?? '',
+      followUpPlan: map['follow_up_plan'] as String? ?? '',
+      nextVisit: map['next_visit'] != null ? DateTime.parse(map['next_visit']) : null,
+
+      // Meta
+      createdAt: DateTime.parse(map['created_at']),
+      lastUpdated: DateTime.parse(map['last_updated']),
+      isActive: (map['is_active'] as int) == 1,
+
+      diagnosisDate: DateTime.parse(map['visit_date']),
+    );
   }
 
 

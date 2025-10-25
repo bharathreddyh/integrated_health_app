@@ -2,10 +2,12 @@
 // lib/screens/endocrine/tabs/labs_trends_tab.dart
 
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 import '../../../models/endocrine/endocrine_condition.dart';
 import '../../../config/thyroid_disease_config.dart';
 
 import '../../../widgets/simple_lab_chart.dart'; // Custom chart - no external package needed!
+import '../../../models/endocrine/endocrine_condition.dart';
 
 class LabsTrendsTab extends StatefulWidget {
   final EndocrineCondition condition;
@@ -210,15 +212,15 @@ class _LabsTrendsTabState extends State<LabsTrendsTab> {
 
     switch (type) {
       case AbnormalityType.low:
-        text = '🔴 LOW';
+        text = 'ðŸ”´ LOW';
         color = Colors.red;
         break;
       case AbnormalityType.normal:
-        text = '🟢 NORMAL';
+        text = 'ðŸŸ¢ NORMAL';
         color = Colors.green;
         break;
       case AbnormalityType.high:
-        text = '🔴 HIGH';
+        text = 'ðŸ”´ HIGH';
         color = Colors.red;
         break;
     }
@@ -411,8 +413,7 @@ class _LabsTrendsTabState extends State<LabsTrendsTab> {
                     DataCell(Text(reading.testName)),
                     DataCell(Text('${reading.value} ${reading.unit}')),
                     DataCell(_buildStatusIndicator(reading.abnormalityType)),
-                    DataCell(Text(
-                      reading.notes.isEmpty ? '-' : reading.notes,
+                    DataCell(Text(reading.notes?.isEmpty ?? true ? '-' : reading.notes!,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     )),
@@ -546,13 +547,14 @@ class _LabsTrendsTabState extends State<LabsTrendsTab> {
               final value = double.tryParse(valueController.text);
               if (value != null) {
                 final newReading = LabReading(
+                  id: const Uuid().v4(),
                   testName: test['name'] as String,
                   value: value,
                   unit: test['unit'] as String,
-                  normalMin: test['normalMin'] as double?,
-                  normalMax: test['normalMax'] as double?,
-                  date: selectedDate,
-                  notes: notesController.text,
+                  normalMin: (test['normalMin'] as double?) ?? 0.0,
+                  normalMax: (test['normalMax'] as double?) ?? double.infinity,
+                  testDate: selectedDate,
+                  notes: notesController.text.isEmpty ? null : notesController.text,
                 );
 
                 final updatedReadings = List<LabReading>.from(widget.condition.labReadings)
