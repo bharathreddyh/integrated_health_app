@@ -1,20 +1,24 @@
-// ==================== TAB 2: ANATOMY & PATHOPHYSIOLOGY ====================
+// ==================== CORRECTED ANATOMY TAB ====================
 // lib/screens/endocrine/tabs/anatomy_tab.dart
 
 import 'package:flutter/material.dart';
 import '../../../models/endocrine/endocrine_condition.dart';
 import '../../../config/thyroid_disease_config.dart';
+import '../../../models/patient.dart';
+import '../../canvas/canvas_screen.dart';
 
 class AnatomyTab extends StatefulWidget {
   final EndocrineCondition condition;
-  final ThyroidDiseaseConfig diseaseConfig; // Changed from Map<String, dynamic>
+  final ThyroidDiseaseConfig diseaseConfig;
   final Function(EndocrineCondition) onUpdate;
+  final Patient patient;
 
   const AnatomyTab({
     super.key,
     required this.condition,
     required this.diseaseConfig,
     required this.onUpdate,
+    required this.patient,
   });
 
   @override
@@ -22,8 +26,7 @@ class AnatomyTab extends StatefulWidget {
 }
 
 class _AnatomyTabState extends State<AnatomyTab> {
-  String _selectedView = 'normal';
-  List<Annotation> _annotations = [];
+  String _selectedView = 'anterior';
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +39,7 @@ class _AnatomyTabState extends State<AnatomyTab> {
           _buildViewSelector(),
           const SizedBox(height: 20),
 
-          // Main Anatomy Diagram
+          // Main Anatomy Diagram Card
           _buildAnatomyDiagramCard(),
           const SizedBox(height: 20),
 
@@ -44,12 +47,8 @@ class _AnatomyTabState extends State<AnatomyTab> {
           _buildPathophysiologyCard(),
           const SizedBox(height: 20),
 
-          // Disease-Specific Anatomical Changes
-          _buildAnatomicalChangesCard(),
-          const SizedBox(height: 20),
-
-          // Annotations List
-          if (_annotations.isNotEmpty) _buildAnnotationsCard(),
+          // Clinical Features Section (using signs from config)
+          _buildClinicalFeaturesCard(),
         ],
       ),
     );
@@ -64,23 +63,28 @@ class _AnatomyTabState extends State<AnatomyTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'SELECT VIEW',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+            Row(
+              children: [
+                Icon(Icons.visibility, size: 20, color: Colors.blue.shade700),
+                const SizedBox(width: 8),
+                const Text(
+                  'SELECT VIEW',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 12,
               runSpacing: 12,
               children: [
-                _buildViewChip('normal', 'Normal Anatomy', Icons.account_box),
                 _buildViewChip('anterior', 'Anterior View', Icons.person),
                 _buildViewChip('lateral', 'Lateral View', Icons.accessibility),
-                _buildViewChip('cross', 'Cross-Section', Icons.layers),
+                _buildViewChip('cross_section', 'Cross-Section', Icons.layers),
                 _buildViewChip('microscopic', 'Microscopic', Icons.biotech),
               ],
             ),
@@ -90,173 +94,159 @@ class _AnatomyTabState extends State<AnatomyTab> {
     );
   }
 
-  Widget _buildViewChip(String value, String label, IconData icon) {
-    final isSelected = _selectedView == value;
+  Widget _buildViewChip(String view, String label, IconData icon) {
+    final isSelected = _selectedView == view;
     return FilterChip(
+      selected: isSelected,
       label: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16),
+          Icon(icon, size: 16, color: isSelected ? Colors.white : Colors.grey.shade700),
           const SizedBox(width: 6),
           Text(label),
         ],
       ),
-      selected: isSelected,
       onSelected: (selected) {
-        setState(() => _selectedView = value);
+        setState(() {
+          _selectedView = view;
+        });
       },
-      selectedColor: const Color(0xFF2563EB).withOpacity(0.2),
-      checkmarkColor: const Color(0xFF2563EB),
+      selectedColor: const Color(0xFF2563EB),
+      backgroundColor: Colors.grey.shade100,
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : Colors.grey.shade700,
+        fontWeight: FontWeight.w600,
+      ),
     );
   }
 
   Widget _buildAnatomyDiagramCard() {
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            // Title
             Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.image, color: Color(0xFF2563EB)),
-                const SizedBox(width: 12),
+                Icon(Icons.biotech, color: Colors.blue.shade700, size: 24),
+                const SizedBox(width: 8),
                 Text(
                   _getViewTitle(_selectedView),
-                  style: const TextStyle(
-                    fontSize: 16,
+                  style: TextStyle(
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade800,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
+            Text(
+              'Thyroid Gland Anatomy',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            const SizedBox(height: 24),
 
-            // Main Anatomy Diagram
-            GestureDetector(
-              onTapDown: _handleTapOnDiagram,
-              child: Container(
-                height: 400,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300, width: 2),
-                ),
-                child: Stack(
+            // Placeholder Diagram
+            Container(
+              height: 300,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300, width: 2),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Placeholder diagram
-                    Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _getDiagramIcon(_selectedView),
-                          const SizedBox(height: 16),
-                          Text(
-                            _getViewTitle(_selectedView),
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Thyroid Gland Anatomy',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '(Tap to add annotations)',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade500,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
+                    _getDiagramIcon(_selectedView),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Tap "Open Canvas" to view and annotate',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
-
-                    // Annotations overlay
-                    ..._annotations.map((annotation) => Positioned(
-                      left: annotation.x,
-                      top: annotation.y,
-                      child: _buildAnnotationMarker(annotation),
-                    )),
                   ],
                 ),
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
-            // Action Buttons
-            Row(
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // TODO: Open full-screen annotation tool
-                  },
-                  icon: const Icon(Icons.edit, size: 16),
-                  label: const Text('Annotate'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    foregroundColor: Colors.white,
-                  ),
+            // OPEN CANVAS BUTTON
+            ElevatedButton.icon(
+              onPressed: () => _openCanvas(),
+              icon: const Icon(Icons.edit, size: 20),
+              label: const Text(
+                'Open Canvas & Annotate',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2563EB),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(width: 12),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    // TODO: Upload custom image
-                  },
-                  icon: const Icon(Icons.upload_file, size: 16),
-                  label: const Text('Upload Image'),
-                ),
-                const Spacer(),
-                if (_annotations.isNotEmpty)
-                  TextButton.icon(
-                    onPressed: () {
-                      setState(() => _annotations.clear());
-                    },
-                    icon: const Icon(Icons.clear_all, size: 16, color: Colors.red),
-                    label: const Text(
-                      'Clear All',
-                      style: TextStyle(color: Colors.red),
-                    ),
-                  ),
-              ],
+                elevation: 4,
+              ),
             ),
 
             const SizedBox(height: 12),
-
-            // Anatomical Labels
-            _buildAnatomicalLabels(),
+            Text(
+              'Full canvas tool with markers, drawing, and zoom',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
+  void _openCanvas() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CanvasScreen(
+          patient: widget.patient,
+          preSelectedSystem: 'thyroid',
+          preSelectedDiagramType: _selectedView,
+          existingVisit: null,
+        ),
+      ),
+    );
+  }
+
   Widget _buildPathophysiologyCard() {
+    final steps = _getPathophysiologySteps();
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.device_hub, color: Color(0xFF2563EB)),
-                SizedBox(width: 12),
-                Text(
+                Icon(Icons.timeline, size: 20, color: Colors.orange.shade700),
+                const SizedBox(width: 8),
+                const Text(
                   'PATHOPHYSIOLOGY',
                   style: TextStyle(
                     fontSize: 14,
@@ -267,311 +257,103 @@ class _AnatomyTabState extends State<AnatomyTab> {
               ],
             ),
             const SizedBox(height: 16),
-
-            // Disease description from config
-            if (widget.diseaseConfig.description.isNotEmpty) ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.shade200),
-                ),
-                child: Column(
+            ...steps.asMap().entries.map((entry) {
+              final index = entry.key;
+              final step = entry.value;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Disease Overview',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2563EB),
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade100,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange.shade700,
+                          ),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.diseaseConfig.description,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.blue.shade900,
-                        height: 1.5,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        step,
+                        style: const TextStyle(fontSize: 13),
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 20),
-            ],
-
-            // Disease mechanism flowchart
-            const Text(
-              'Disease Mechanism',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _buildPathophysiologyFlowchart(),
+              );
+            }).toList(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildPathophysiologyFlowchart() {
-    // Get disease-specific pathophysiology steps
-    final steps = _getPathophysiologySteps();
+  Widget _buildClinicalFeaturesCard() {
+    // Use signs from diseaseConfig instead of anatomicalChanges
+    final signs = widget.diseaseConfig.signs;
 
-    return Column(
-      children: [
-        for (int i = 0; i < steps.length; i++) ...[
-          _buildFlowchartStep(i + 1, steps[i]),
-          if (i < steps.length - 1)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: Icon(Icons.arrow_downward, color: Color(0xFF2563EB)),
-            ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildFlowchartStep(int number, String text) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF2563EB)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: const BoxDecoration(
-              color: Color(0xFF2563EB),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                number.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontSize: 14),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAnatomicalChangesCard() {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'DISEASE-SPECIFIC ANATOMICAL CHANGES',
+            Row(
+              children: [
+                Icon(Icons.medical_information, size: 20, color: Colors.red.shade700),
+                const SizedBox(width: 8),
+                const Text(
+                  'CLINICAL SIGNS',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Physical examination findings in ${widget.diseaseConfig.name}',
               style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                fontSize: 12,
+                color: Colors.grey.shade600,
               ),
             ),
             const SizedBox(height: 16),
-
-            ..._getAnatomicalChanges().map((change) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.fiber_manual_record,
-                    size: 12,
-                    color: Color(0xFF2563EB),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      change,
-                      style: const TextStyle(fontSize: 14, height: 1.5),
+            ...signs.map((sign) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.arrow_right, size: 20, color: Colors.red.shade600),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        sign,
+                        style: const TextStyle(fontSize: 13),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            )),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAnatomicalLabels() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Key Anatomical Structures:',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildLabelChip('Right Lobe', Colors.red),
-              _buildLabelChip('Left Lobe', Colors.blue),
-              _buildLabelChip('Isthmus', Colors.green),
-              _buildLabelChip('Pyramidal Lobe', Colors.orange),
-              _buildLabelChip('Trachea', Colors.purple),
-              _buildLabelChip('Blood Vessels', Colors.pink),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLabelChip(String label, Color color) {
-    return Chip(
-      avatar: CircleAvatar(
-        backgroundColor: color,
-        radius: 8,
-      ),
-      label: Text(
-        label,
-        style: const TextStyle(fontSize: 12),
-      ),
-      backgroundColor: Colors.white,
-      side: BorderSide(color: Colors.grey.shade300),
-    );
-  }
-
-  Widget _buildAnnotationsCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'ANNOTATIONS',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ..._annotations.asMap().entries.map((entry) {
-              final index = entry.key;
-              final annotation = entry.value;
-              return _buildAnnotationListItem(index, annotation);
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAnnotationListItem(int index, Annotation annotation) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: annotation.color,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-            ),
-            child: Center(
-              child: Text(
-                '${index + 1}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
+                  ],
                 ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              annotation.label,
-              style: const TextStyle(fontSize: 14),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete, size: 18, color: Colors.red),
-            onPressed: () {
-              setState(() => _annotations.removeAt(index));
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAnnotationMarker(Annotation annotation) {
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: annotation.color,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 3),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Text(
-          '${_annotations.indexOf(annotation) + 1}',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
+              );
+            }).toList(),
+          ],
         ),
       ),
     );
@@ -586,7 +368,7 @@ class _AnatomyTabState extends State<AnatomyTab> {
       case 'lateral':
         icon = Icons.accessibility;
         break;
-      case 'cross':
+      case 'cross_section':
         icon = Icons.layers;
         break;
       case 'microscopic':
@@ -605,7 +387,7 @@ class _AnatomyTabState extends State<AnatomyTab> {
         return 'Anterior View';
       case 'lateral':
         return 'Lateral View';
-      case 'cross':
+      case 'cross_section':
         return 'Cross-Section';
       case 'microscopic':
         return 'Microscopic View';
@@ -630,153 +412,45 @@ class _AnatomyTabState extends State<AnatomyTab> {
       return [
         'Thyroid gland failure (autoimmune, iodine deficiency, etc.)',
         'Decreased production of T3 and T4',
-        'Pituitary increases TSH production (feedback mechanism)',
-        'Elevated TSH attempts to stimulate failing thyroid',
-        'Persistent hypothyroid state despite high TSH',
+        'Compensatory increase in TSH from pituitary',
+        'Progressive thyroid dysfunction',
+        'Systemic hypometabolic state develops',
       ];
     } else if (diseaseId == 'hashimotos_thyroiditis') {
       return [
         'Autoimmune attack on thyroid tissue',
-        'Anti-TPO and anti-thyroglobulin antibodies produced',
-        'Gradual destruction of thyroid follicles',
-        'Progressive decline in thyroid hormone production',
+        'Lymphocytic infiltration of thyroid gland',
+        'Destruction of thyroid follicles',
+        'Gradual decline in thyroid hormone production',
         'Compensatory TSH elevation',
-        'Eventually leads to overt hypothyroidism',
-      ];
-    } else if (diseaseId == 'toxic_multinodular_goiter') {
-      return [
-        'Multiple thyroid nodules develop over years',
-        'Some nodules gain autonomous function',
-        'Independent thyroid hormone production',
-        'TSH suppression due to excess hormones',
-        'Hyperthyroid symptoms develop',
+        'Progressive hypothyroidism develops',
       ];
     } else if (diseaseId == 'subacute_thyroiditis') {
       return [
         'Viral infection triggers thyroid inflammation',
-        'Initial release of stored thyroid hormones (hyperthyroid phase)',
-        'Thyroid gland damage and reduced hormone production',
-        'Hypothyroid phase as stores deplete',
-        'Gradual recovery in most cases',
+        'Thyroid follicle destruction releases stored hormones',
+        'Transient hyperthyroidism phase (1-3 months)',
+        'Gland becomes depleted of hormone stores',
+        'Hypothyroid phase follows (months)',
+        'Usually resolves with return to normal function',
+      ];
+    } else if (diseaseId.contains('cancer') || diseaseId.contains('carcinoma')) {
+      return [
+        'Malignant transformation of thyroid cells',
+        'Uncontrolled cellular proliferation',
+        'Formation of thyroid nodule or mass',
+        'Potential local invasion',
+        'Risk of lymph node metastasis',
+        'Distant metastasis in advanced cases',
+      ];
+    } else {
+      // Generic pathophysiology for other thyroid conditions
+      return [
+        'Disease-specific pathophysiology',
+        'Cellular and molecular changes in thyroid tissue',
+        'Progression of thyroid dysfunction',
+        'Systemic effects of hormone imbalance',
       ];
     }
-
-    return [
-      'Thyroid gland dysfunction',
-      'Altered hormone production',
-      'Metabolic changes',
-      'Clinical manifestations',
-    ];
   }
-
-  List<String> _getAnatomicalChanges() {
-    final diseaseId = widget.condition.diseaseId;
-
-    if (diseaseId == 'graves_disease') {
-      return [
-        'Diffuse thyroid enlargement (goiter)',
-        'Increased vascularity (thyroid bruit may be present)',
-        'Hyperplastic follicular cells',
-        'Decreased colloid in follicles',
-        'Orbital tissue expansion (in thyroid eye disease)',
-        'Pretibial skin thickening (in some cases)',
-      ];
-    } else if (diseaseId == 'hashimotos_thyroiditis') {
-      return [
-        'Diffuse lymphocytic infiltration',
-        'Follicular destruction and atrophy',
-        'Firm, lobulated goiter',
-        'Oncocytic (Hürthle) cell metaplasia',
-        'Progressive gland fibrosis',
-      ];
-    } else if (diseaseId.contains('toxic') || diseaseId.contains('adenoma')) {
-      return [
-        'Single or multiple autonomous nodules',
-        'Hyperplastic nodular tissue',
-        'Surrounding thyroid tissue suppressed',
-        'Variable gland enlargement',
-        'Increased vascularity in nodules',
-      ];
-    } else if (widget.condition.category == 'cancer') {
-      return [
-        'Solid thyroid mass or nodule',
-        'Irregular borders (may be infiltrative)',
-        'Possible lymph node involvement',
-        'Potential capsular invasion',
-        'Calcifications may be present',
-        'Increased vascularity in malignant areas',
-      ];
-    } else if (widget.condition.category == 'hypothyroidism') {
-      return [
-        'Thyroid gland may be small, normal, or enlarged',
-        'Reduced follicular activity',
-        'Increased TSH stimulation effects',
-        'May show fibrosis or atrophy',
-      ];
-    }
-
-    return [
-      'Variable thyroid gland changes depending on specific condition',
-      'May include size changes, texture changes, or nodular formation',
-      'Vascular changes may be present',
-      'Surrounding tissue may be affected',
-    ];
-  }
-
-  void _handleTapOnDiagram(TapDownDetails details) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        final labelController = TextEditingController();
-        return AlertDialog(
-          title: const Text('Add Annotation'),
-          content: TextField(
-            controller: labelController,
-            decoration: const InputDecoration(
-              labelText: 'Annotation Label',
-              hintText: 'e.g., Enlarged right lobe',
-            ),
-            autofocus: true,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (labelController.text.isNotEmpty) {
-                  setState(() {
-                    _annotations.add(Annotation(
-                      x: details.localPosition.dx - 16,
-                      y: details.localPosition.dy - 16,
-                      label: labelController.text,
-                      color: const Color(0xFFDC2626),
-                    ));
-                  });
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Add'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-// Simple annotation model
-class Annotation {
-  final double x;
-  final double y;
-  final String label;
-  final Color color;
-
-  Annotation({
-    required this.x,
-    required this.y,
-    required this.label,
-    required this.color,
-  });
 }

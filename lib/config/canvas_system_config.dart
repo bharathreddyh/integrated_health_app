@@ -1,7 +1,22 @@
 // lib/config/canvas_system_config.dart
+// Enhanced system configurations for multi-system canvas tool WITH THYROID SUPPORT
 
 import 'package:flutter/material.dart';
 import '../models/condition_tool.dart';
+
+class DiagramConfig {
+  final String id;
+  final String name;
+  final String imagePath;
+  final String category; // 'anatomy' or 'template'
+
+  const DiagramConfig({
+    required this.id,
+    required this.name,
+    required this.imagePath,
+    required this.category,
+  });
+}
 
 class SystemConfig {
   final String id;
@@ -20,28 +35,82 @@ class SystemConfig {
     required this.systemTemplates,
   });
 
-  Map<String, DiagramConfig> get allDiagrams => {
-    ...anatomyDiagrams,
-    ...systemTemplates,
-  };
-}
-
-class DiagramConfig {
-  final String id;
-  final String name;
-  final String imagePath;
-  final String category;
-
-  const DiagramConfig({
-    required this.id,
-    required this.name,
-    required this.imagePath,
-    required this.category,
-  });
+  Map<String, DiagramConfig> get allDiagrams {
+    return {...anatomyDiagrams, ...systemTemplates};
+  }
 }
 
 class CanvasSystemConfig {
   static const Map<String, SystemConfig> systems = {
+
+    // ==================== THYROID SYSTEM ====================
+    'thyroid': SystemConfig(
+      id: 'thyroid',
+      name: 'Thyroid System',
+      icon: '🦋',
+      tools: [
+        ConditionTool(id: 'pan', name: 'Pan Tool', color: Colors.grey, defaultSize: 0),
+        ConditionTool(id: 'nodule', name: 'Nodule', color: Color(0xFF78716C), defaultSize: 12),
+        ConditionTool(id: 'inflammation', name: 'Inflammation', color: Color(0xFFDC2626), defaultSize: 15),
+        ConditionTool(id: 'calcification', name: 'Calcification', color: Color(0xFFE5E7EB), defaultSize: 8),
+        ConditionTool(id: 'tumor', name: 'Tumor', color: Color(0xFF7C3AED), defaultSize: 18),
+        ConditionTool(id: 'cyst', name: 'Cyst', color: Color(0xFF2563EB), defaultSize: 12),
+        ConditionTool(id: 'goiter', name: 'Goiter/Enlargement', color: Color(0xFFF97316), defaultSize: 20),
+      ],
+      anatomyDiagrams: {
+        'anterior': DiagramConfig(
+          id: 'anterior',
+          name: 'Anterior View',
+          imagePath: 'assets/images/thyroid/anatomy/thyroid_anterior.png',
+          category: 'anatomy',
+        ),
+        'lateral': DiagramConfig(
+          id: 'lateral',
+          name: 'Lateral View',
+          imagePath: 'assets/images/thyroid/anatomy/thyroid_lateral.png',
+          category: 'anatomy',
+        ),
+        'cross_section': DiagramConfig(
+          id: 'cross_section',
+          name: 'Cross-Section View',
+          imagePath: 'assets/images/thyroid/anatomy/thyroid_cross_section.png',
+          category: 'anatomy',
+        ),
+        'microscopic': DiagramConfig(
+          id: 'microscopic',
+          name: 'Microscopic (Follicles)',
+          imagePath: 'assets/images/thyroid/anatomy/thyroid_microscopic.png',
+          category: 'anatomy',
+        ),
+      },
+      systemTemplates: {
+        'graves_diffuse': DiagramConfig(
+          id: 'graves_diffuse',
+          name: 'Diffuse Goiter (Graves)',
+          imagePath: 'assets/images/thyroid/diseases/graves/graves_diffuse_goiter.png',
+          category: 'template',
+        ),
+        'graves_vascularity': DiagramConfig(
+          id: 'graves_vascularity',
+          name: 'Increased Vascularity',
+          imagePath: 'assets/images/thyroid/diseases/graves/graves_vascularity.png',
+          category: 'template',
+        ),
+        'hashimotos_lymphocytes': DiagramConfig(
+          id: 'hashimotos_lymphocytes',
+          name: 'Lymphocytic Infiltration',
+          imagePath: 'assets/images/thyroid/diseases/hashimotos/hashimotos_lymphocytes.png',
+          category: 'template',
+        ),
+        'hypothyroid_atrophy': DiagramConfig(
+          id: 'hypothyroid_atrophy',
+          name: 'Thyroid Atrophy',
+          imagePath: 'assets/images/thyroid/diseases/hypothyroid/hypothyroid_atrophy.png',
+          category: 'template',
+        ),
+      },
+    ),
+
     // ==================== KIDNEY SYSTEM ====================
     'kidney': SystemConfig(
       id: 'kidney',
@@ -49,10 +118,11 @@ class CanvasSystemConfig {
       icon: '🫘',
       tools: [
         ConditionTool(id: 'pan', name: 'Pan Tool', color: Colors.grey, defaultSize: 0),
-        ConditionTool(id: 'calculi', name: 'Calculi', color: Color(0xFF78716C), defaultSize: 10),
+        ConditionTool(id: 'calculi', name: 'Calculi', color: Colors.grey, defaultSize: 8),
         ConditionTool(id: 'cyst', name: 'Cyst', color: Color(0xFF2563EB), defaultSize: 12),
         ConditionTool(id: 'tumor', name: 'Tumor', color: Color(0xFF7C2D12), defaultSize: 16),
-        // Removed: inflammation and blockage
+        ConditionTool(id: 'inflammation', name: 'Inflammation', color: Color(0xFFEA580C), defaultSize: 14),
+        ConditionTool(id: 'blockage', name: 'Blockage', color: Color(0xFF9333EA), defaultSize: 10),
       ],
       anatomyDiagrams: {
         'anatomical': DiagramConfig(
@@ -148,57 +218,45 @@ class CanvasSystemConfig {
           imagePath: 'assets/images/cardiac_mi.png',
           category: 'template',
         ),
-        'heartFailure': DiagramConfig(
-          id: 'heartFailure',
-          name: 'Heart Failure',
-          imagePath: 'assets/images/cardiac_heart_failure.png',
-          category: 'template',
-        ),
-        'atrialFib': DiagramConfig(
-          id: 'atrialFib',
-          name: 'Atrial Fibrillation',
-          imagePath: 'assets/images/cardiac_atrial_fib.png',
+        'chf': DiagramConfig(
+          id: 'chf',
+          name: 'Congestive Heart Failure',
+          imagePath: 'assets/images/cardiac_chf.png',
           category: 'template',
         ),
       },
     ),
 
-    // ==================== RESPIRATORY SYSTEM ====================
-    'respiratory': SystemConfig(
-      id: 'respiratory',
-      name: 'Respiratory System',
+    // ==================== PULMONARY SYSTEM ====================
+    'pulmonary': SystemConfig(
+      id: 'pulmonary',
+      name: 'Pulmonary System',
       icon: '🫁',
       tools: [
         ConditionTool(id: 'pan', name: 'Pan Tool', color: Colors.grey, defaultSize: 0),
-        ConditionTool(id: 'nodule', name: 'Nodule', color: Color(0xFF7C2D12), defaultSize: 8),
-        ConditionTool(id: 'infiltrate', name: 'Infiltrate', color: Color(0xFFEA580C), defaultSize: 14),
-        ConditionTool(id: 'effusion', name: 'Effusion', color: Color(0xFF2563EB), defaultSize: 16),
-        ConditionTool(id: 'consolidation', name: 'Consolidation', color: Color(0xFF991B1B), defaultSize: 14),
-        ConditionTool(id: 'mass', name: 'Mass', color: Color(0xFF7C2D12), defaultSize: 16),
+        ConditionTool(id: 'consolidation', name: 'Consolidation', color: Color(0xFFDC2626), defaultSize: 16),
+        ConditionTool(id: 'nodule', name: 'Nodule', color: Color(0xFF7C2D12), defaultSize: 10),
+        ConditionTool(id: 'effusion', name: 'Effusion', color: Color(0xFF2563EB), defaultSize: 14),
+        ConditionTool(id: 'inflammation', name: 'Inflammation', color: Color(0xFFEA580C), defaultSize: 12),
+        ConditionTool(id: 'obstruction', name: 'Obstruction', color: Color(0xFF9333EA), defaultSize: 12),
       ],
       anatomyDiagrams: {
         'anterior': DiagramConfig(
           id: 'anterior',
           name: 'Anterior View',
-          imagePath: 'assets/images/respiratory_anterior.png',
+          imagePath: 'assets/images/pulmonary_anterior.png',
           category: 'anatomy',
         ),
         'posterior': DiagramConfig(
           id: 'posterior',
           name: 'Posterior View',
-          imagePath: 'assets/images/respiratory_posterior.png',
+          imagePath: 'assets/images/pulmonary_posterior.png',
           category: 'anatomy',
         ),
-        'leftLateral': DiagramConfig(
-          id: 'leftLateral',
-          name: 'Left Lateral',
-          imagePath: 'assets/images/respiratory_left_lateral.png',
-          category: 'anatomy',
-        ),
-        'rightLateral': DiagramConfig(
-          id: 'rightLateral',
-          name: 'Right Lateral',
-          imagePath: 'assets/images/respiratory_right_lateral.png',
+        'lobes': DiagramConfig(
+          id: 'lobes',
+          name: 'Lobes & Segments',
+          imagePath: 'assets/images/pulmonary_lobes.png',
           category: 'anatomy',
         ),
       },
@@ -206,36 +264,36 @@ class CanvasSystemConfig {
         'pneumonia': DiagramConfig(
           id: 'pneumonia',
           name: 'Pneumonia',
-          imagePath: 'assets/images/respiratory_pneumonia.png',
+          imagePath: 'assets/images/pulmonary_pneumonia.png',
           category: 'template',
         ),
         'copd': DiagramConfig(
           id: 'copd',
           name: 'COPD',
-          imagePath: 'assets/images/respiratory_copd.png',
+          imagePath: 'assets/images/pulmonary_copd.png',
           category: 'template',
         ),
         'asthma': DiagramConfig(
           id: 'asthma',
           name: 'Asthma',
-          imagePath: 'assets/images/respiratory_asthma.png',
+          imagePath: 'assets/images/pulmonary_asthma.png',
           category: 'template',
         ),
       },
     ),
 
     // ==================== NEUROLOGICAL SYSTEM ====================
-    'neurological': SystemConfig(
-      id: 'neurological',
+    'neuro': SystemConfig(
+      id: 'neuro',
       name: 'Neurological System',
       icon: '🧠',
       tools: [
         ConditionTool(id: 'pan', name: 'Pan Tool', color: Colors.grey, defaultSize: 0),
         ConditionTool(id: 'lesion', name: 'Lesion', color: Color(0xFFDC2626), defaultSize: 12),
-        ConditionTool(id: 'tumor', name: 'Tumor', color: Color(0xFF7C2D12), defaultSize: 16),
         ConditionTool(id: 'hemorrhage', name: 'Hemorrhage', color: Color(0xFF991B1B), defaultSize: 14),
-        ConditionTool(id: 'infarct', name: 'Infarct', color: Color(0xFF9333EA), defaultSize: 14),
-        ConditionTool(id: 'atrophy', name: 'Atrophy', color: Color(0xFF78716C), defaultSize: 12),
+        ConditionTool(id: 'infarct', name: 'Infarct', color: Color(0xFF7C2D12), defaultSize: 16),
+        ConditionTool(id: 'tumor', name: 'Tumor', color: Color(0xFF7C3AED), defaultSize: 16),
+        ConditionTool(id: 'atrophy', name: 'Atrophy', color: Color(0xFF64748B), defaultSize: 14),
       ],
       anatomyDiagrams: {
         'sagittal': DiagramConfig(
@@ -244,16 +302,16 @@ class CanvasSystemConfig {
           imagePath: 'assets/images/neuro_sagittal.png',
           category: 'anatomy',
         ),
-        'axial': DiagramConfig(
-          id: 'axial',
-          name: 'Axial View',
-          imagePath: 'assets/images/neuro_axial.png',
-          category: 'anatomy',
-        ),
         'coronal': DiagramConfig(
           id: 'coronal',
           name: 'Coronal View',
           imagePath: 'assets/images/neuro_coronal.png',
+          category: 'anatomy',
+        ),
+        'axial': DiagramConfig(
+          id: 'axial',
+          name: 'Axial View',
+          imagePath: 'assets/images/neuro_axial.png',
           category: 'anatomy',
         ),
       },
@@ -268,12 +326,6 @@ class CanvasSystemConfig {
           id: 'alzheimers',
           name: 'Alzheimer\'s Disease',
           imagePath: 'assets/images/neuro_alzheimers.png',
-          category: 'template',
-        ),
-        'parkinsons': DiagramConfig(
-          id: 'parkinsons',
-          name: 'Parkinson\'s Disease',
-          imagePath: 'assets/images/neuro_parkinsons.png',
           category: 'template',
         ),
       },
@@ -325,74 +377,22 @@ class CanvasSystemConfig {
           imagePath: 'assets/images/hepatic_hepatitis.png',
           category: 'template',
         ),
-        'fattyLiver': DiagramConfig(
-          id: 'fattyLiver',
-          name: 'Fatty Liver Disease',
-          imagePath: 'assets/images/hepatic_fatty_liver.png',
-          category: 'template',
-        ),
-      },
-    ),
-
-    // ==================== MUSCULOSKELETAL SYSTEM ====================
-    'musculoskeletal': SystemConfig(
-      id: 'musculoskeletal',
-      name: 'Musculoskeletal System',
-      icon: '🦴',
-      tools: [
-        ConditionTool(id: 'pan', name: 'Pan Tool', color: Colors.grey, defaultSize: 0),
-        ConditionTool(id: 'fracture', name: 'Fracture', color: Color(0xFFDC2626), defaultSize: 12),
-        ConditionTool(id: 'dislocation', name: 'Dislocation', color: Color(0xFFEA580C), defaultSize: 14),
-        ConditionTool(id: 'arthritis', name: 'Arthritis', color: Color(0xFF9333EA), defaultSize: 12),
-        ConditionTool(id: 'tear', name: 'Tear', color: Color(0xFF991B1B), defaultSize: 10),
-        ConditionTool(id: 'inflammation', name: 'Inflammation', color: Color(0xFFF59E0B), defaultSize: 14),
-      ],
-      anatomyDiagrams: {
-        'spine': DiagramConfig(
-          id: 'spine',
-          name: 'Spine',
-          imagePath: 'assets/images/msk_spine.png',
-          category: 'anatomy',
-        ),
-        'knee': DiagramConfig(
-          id: 'knee',
-          name: 'Knee',
-          imagePath: 'assets/images/msk_knee.png',
-          category: 'anatomy',
-        ),
-        'shoulder': DiagramConfig(
-          id: 'shoulder',
-          name: 'Shoulder',
-          imagePath: 'assets/images/msk_shoulder.png',
-          category: 'anatomy',
-        ),
-        'hip': DiagramConfig(
-          id: 'hip',
-          name: 'Hip',
-          imagePath: 'assets/images/msk_hip.png',
-          category: 'anatomy',
-        ),
-      },
-      systemTemplates: {
-        'osteoarthritis': DiagramConfig(
-          id: 'osteoarthritis',
-          name: 'Osteoarthritis',
-          imagePath: 'assets/images/msk_osteoarthritis.png',
-          category: 'template',
-        ),
-        'rheumatoid': DiagramConfig(
-          id: 'rheumatoid',
-          name: 'Rheumatoid Arthritis',
-          imagePath: 'assets/images/msk_rheumatoid.png',
-          category: 'template',
-        ),
-        'osteoporosis': DiagramConfig(
-          id: 'osteoporosis',
-          name: 'Osteoporosis',
-          imagePath: 'assets/images/msk_osteoporosis.png',
-          category: 'template',
-        ),
       },
     ),
   };
+
+  // Helper method to get system config by ID
+  static SystemConfig? getSystem(String systemId) {
+    return systems[systemId];
+  }
+
+  // Helper method to get all system IDs
+  static List<String> getAllSystemIds() {
+    return systems.keys.toList();
+  }
+
+  // Helper method to check if system exists
+  static bool hasSystem(String systemId) {
+    return systems.containsKey(systemId);
+  }
 }

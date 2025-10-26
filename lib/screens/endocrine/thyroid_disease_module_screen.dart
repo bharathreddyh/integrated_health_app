@@ -1,16 +1,18 @@
-// ==================== THYROID DISEASE MODULE - 6 TAB VERSION ====================
+// ==================== FIXED THYROID DISEASE MODULE SCREEN ====================
 // lib/screens/endocrine/thyroid_disease_module_screen.dart
 
 import 'package:flutter/material.dart';
 import '../../models/endocrine/endocrine_condition.dart';
+import '../../models/patient.dart';  // ADD THIS IMPORT
 import '../../config/thyroid_disease_config.dart';
 import 'tabs/overview_tab.dart';
 import 'tabs/canvas_tab.dart';
+import 'tabs/anatomy_tab.dart';  // ADD THIS IMPORT
 import 'tabs/labs_trends_tab.dart';
 import 'tabs/clinical_features_tab.dart';
 import 'tabs/investigations_tab.dart';
 import 'tabs/treatment_tab.dart';
-import 'tabs/patient_data_tab.dart'; // ✅ Add import
+import 'tabs/patient_data_tab.dart';
 
 class ThyroidDiseaseModuleScreen extends StatefulWidget {
   final String patientId;
@@ -38,19 +40,29 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
   late TabController _tabController;
   late EndocrineCondition _condition;
   late ThyroidDiseaseConfig _diseaseConfig;
+  late Patient _patient;  // ADD THIS
   bool _hasUnsavedChanges = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 7, vsync: this); // Changed to 6 tabs
+    _tabController = TabController(length: 7, vsync: this);
     _diseaseConfig = ThyroidDiseaseConfig.getDiseaseConfig(widget.diseaseId)!;
 
-    // Initialize or load existing condition
+    // CREATE PATIENT OBJECT - ADD THIS
+    _patient = Patient(
+      id: widget.patientId,
+      name: widget.patientName,
+      age: 0,  // You can update this from actual patient data
+      phone: '',  // You can update this from actual patient data
+      date: DateTime.now().toString().split(' ')[0],
+    );
+
+    // Initialize condition
     _condition = EndocrineCondition(
       id: 'thyroid_${DateTime.now().millisecondsSinceEpoch}',
       patientId: widget.patientId,
-      patientName: widget.patientName, // ✅ Add patient name
+      patientName: widget.patientName,
       gland: 'thyroid',
       category: _diseaseConfig.category,
       diseaseId: widget.diseaseId,
@@ -59,7 +71,7 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
     );
 
     _tabController.addListener(() {
-      setState(() {}); // Rebuild to update tab indicator
+      setState(() {});
     });
   }
 
@@ -72,8 +84,6 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
   Future<void> _saveCondition() async {
     try {
       // TODO: Save to database
-      // await DatabaseHelper.instance.saveEndocrineCondition(_condition);
-
       setState(() {
         _hasUnsavedChanges = false;
       });
@@ -105,6 +115,35 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
     });
   }
 
+  Future<bool?> _showUnsavedChangesDialog() async {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Unsaved Changes'),
+        content: const Text('You have unsaved changes. Do you want to discard them?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Discard'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await _saveCondition();
+              if (mounted) {
+                Navigator.pop(context, true);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -122,7 +161,7 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
             // Custom App Bar
             _buildCustomAppBar(),
 
-            // Tab Bar with 6 tabs
+            // Tab Bar
             Container(
               color: Colors.white,
               child: TabBar(
@@ -131,7 +170,7 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
                 unselectedLabelColor: Colors.grey.shade600,
                 indicatorColor: const Color(0xFF2563EB),
                 indicatorWeight: 3,
-                isScrollable: true, // Made scrollable for 6 tabs
+                isScrollable: true,
                 labelStyle: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
@@ -143,6 +182,7 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
                 tabs: const [
                   Tab(text: 'Patient Data'),
                   Tab(text: 'Clinical'),
+                  Tab(text: 'Anatomy'),  // CHANGED from 'Canvas'
                   Tab(text: 'Canvas'),
                   Tab(text: 'Labs'),
                   Tab(text: 'Overview'),
@@ -152,48 +192,63 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
               ),
             ),
 
-            // Tab Content - 7 tabs
+            // Tab Content
             Expanded(
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  // Tab 0 - Patient Data
+                  // Tab 0: Patient Data
                   PatientDataTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
                   ),
+
                   // Tab 1: Clinical Features
                   ClinicalFeaturesTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
                   ),
-                  // Tab 2: Canvas
+
+                  // Tab 2: Anatomy (NEW - with canvas button)
+                  AnatomyTab(
+                    condition: _condition,
+                    diseaseConfig: _diseaseConfig,
+                    onUpdate: _updateCondition,
+                    patient: _patient,  // PASS PATIENT HERE
+                  ),
+
+                  // Tab 3: Canvas (Image gallery with edited section)
                   CanvasTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
+                    patient: _patient,  // PASS PATIENT HERE
                   ),
-                  // Tab 3: Labs & Trends
+
+                  // Tab 4: Labs & Trends
                   LabsTrendsTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
                   ),
-                  // Tab 4: Overview
+
+                  // Tab 5: Overview
                   OverviewTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
                   ),
-                  // Tab 5: Investigations
+
+                  // Tab 6: Investigations
                   InvestigationsTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
                   ),
-                  // Tab 6: Treatment
+
+                  // Tab 7: Treatment
                   TreatmentTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
@@ -214,9 +269,9 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
   Widget _buildCustomAppBar() {
     return Container(
       padding: const EdgeInsets.only(top: 40, left: 16, right: 16, bottom: 16),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [const Color(0xFF2563EB), const Color(0xFF1E40AF)],
+          colors: [Color(0xFF2563EB), Color(0xFF1E40AF)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -236,69 +291,45 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
               }
             },
           ),
-          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Text(
-                      '🦋',
-                      style: TextStyle(fontSize: 20),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        widget.diseaseName.toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    if (_hasUnsavedChanges)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.orange,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          'UNSAVED',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                  ],
+                Text(
+                  widget.diseaseName,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(
-                      widget.isQuickMode ? Icons.flash_on : Icons.person,
-                      color: Colors.white70,
-                      size: 14,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      widget.isQuickMode
-                          ? 'Quick Template Mode'
-                          : 'Patient: ${widget.patientName}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.white70,
-                      ),
-                    ),
-                  ],
+                Text(
+                  widget.patientName,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white.withOpacity(0.9),
+                  ),
                 ),
               ],
             ),
           ),
+          if (_hasUnsavedChanges)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.orange,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'Unsaved',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -311,123 +342,55 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
             offset: const Offset(0, -2),
           ),
         ],
       ),
       child: Row(
         children: [
-          // Status Indicator
-          Expanded(
-            child: Row(
-              children: [
-                Icon(
-                  _getStatusIcon(_condition.status),
-                  size: 20,
-                  color: _getStatusColor(_condition.status),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  _getStatusText(_condition.status),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: _getStatusColor(_condition.status),
+          // Quick Mode indicator
+          if (widget.isQuickMode)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.green.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.bolt, size: 16, color: Colors.green.shade700),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Quick Mode',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.green.shade700,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
-          // Action Buttons
-          OutlinedButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          const SizedBox(width: 12),
+          const Spacer(),
+
+          // Save Button
           ElevatedButton.icon(
             onPressed: _hasUnsavedChanges ? _saveCondition : null,
-            icon: const Icon(Icons.save, size: 18),
-            label: const Text('Save'),
+            icon: const Icon(Icons.save, size: 20),
+            label: const Text('Save Changes'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
+              backgroundColor: const Color(0xFF10B981),
               foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               disabledBackgroundColor: Colors.grey.shade300,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
           ),
         ],
       ),
     );
-  }
-
-  Future<bool?> _showUnsavedChangesDialog() {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Unsaved Changes'),
-        content: const Text(
-          'You have unsaved changes. Do you want to save before leaving?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Discard'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              await _saveCondition();
-              if (mounted) Navigator.pop(context, true);
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  IconData _getStatusIcon(DiagnosisStatus status) {
-    switch (status) {
-      case DiagnosisStatus.suspected:
-        return Icons.help_outline;
-      case DiagnosisStatus.provisional:  // 🆕 ADD
-        return Icons.help_outline;
-      case DiagnosisStatus.confirmed:
-        return Icons.check_circle;
-      case DiagnosisStatus.ruledOut:
-        return Icons.cancel;
-    }
-  }
-
-  Color _getStatusColor(DiagnosisStatus status) {
-    switch (status) {
-      case DiagnosisStatus.suspected:
-        return Colors.orange;
-      case DiagnosisStatus.provisional:  // 🆕 ADD
-        return Colors.blue;
-      case DiagnosisStatus.confirmed:
-        return Colors.green;
-      case DiagnosisStatus.ruledOut:
-        return Colors.grey;
-    }
-  }
-
-  String _getStatusText(DiagnosisStatus status) {
-    switch (status) {
-      case DiagnosisStatus.suspected:
-        return 'Suspected';
-      case DiagnosisStatus.provisional:  // 🆕 ADD
-        return 'Provisional';
-      case DiagnosisStatus.confirmed:
-        return 'Confirmed';
-      case DiagnosisStatus.ruledOut:
-        return 'Ruled Out';
-    }
   }
 }
