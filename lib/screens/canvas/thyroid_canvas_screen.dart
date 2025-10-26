@@ -1205,16 +1205,7 @@ class _ThyroidCanvasScreenState extends State<ThyroidCanvasScreen>
               const SizedBox(width: 12),
 
               // Proceed Button
-              ElevatedButton.icon(
-                onPressed: _proceedToConsultation,
-                icon: const Icon(Icons.arrow_forward, size: 18),
-                label: const Text('Consultation'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3B82F6),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                ),
-              ),
+
             ],
           ),
         ],

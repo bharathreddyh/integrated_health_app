@@ -1073,16 +1073,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                                 const SizedBox(width: 12),
 
                                 // PROCEED TO CONSULTATION BUTTON
-                                ElevatedButton.icon(
-                                  onPressed: _proceedToConsultation,
-                                  icon: const Icon(Icons.arrow_forward, size: 16),
-                                  label: const Text('Proceed to Consultation'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF3B82F6),
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                  ),
-                                ),
+
                               ],
                             ),
                           ],

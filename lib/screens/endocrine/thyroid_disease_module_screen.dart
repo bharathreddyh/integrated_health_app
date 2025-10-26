@@ -1,13 +1,12 @@
-// ==================== FIXED THYROID DISEASE MODULE SCREEN ====================
+// ==================== UPDATED THYROID DISEASE MODULE SCREEN ====================
 // lib/screens/endocrine/thyroid_disease_module_screen.dart
 
 import 'package:flutter/material.dart';
 import '../../models/endocrine/endocrine_condition.dart';
-import '../../models/patient.dart';  // ADD THIS IMPORT
+import '../../models/patient.dart';
 import '../../config/thyroid_disease_config.dart';
 import 'tabs/overview_tab.dart';
 import 'tabs/canvas_tab.dart';
-import 'tabs/anatomy_tab.dart';  // ADD THIS IMPORT
 import 'tabs/labs_trends_tab.dart';
 import 'tabs/clinical_features_tab.dart';
 import 'tabs/investigations_tab.dart';
@@ -40,27 +39,24 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
   late TabController _tabController;
   late EndocrineCondition _condition;
   late ThyroidDiseaseConfig _diseaseConfig;
-  late Patient _patient;  // ADD THIS
+  late Patient _patient;
   bool _hasUnsavedChanges = false;
 
   @override
   void initState() {
     super.initState();
+    // CHANGED: Length from 8 to 7 (removed Anatomy tab)
     _tabController = TabController(length: 7, vsync: this);
     _diseaseConfig = ThyroidDiseaseConfig.getDiseaseConfig(widget.diseaseId)!;
 
-    // CREATE PATIENT OBJECT - ADD THIS
     _patient = Patient(
       id: widget.patientId,
       name: widget.patientName,
-      age: 0,  // You can update this from actual patient data
-      phone: '',  // You can update this from actual patient data
-      date: DateTime.now().toString().split(' ')[0],
+      dateOfBirth: DateTime.now(),
+      gender: 'Unknown',
     );
 
-    // Initialize condition
     _condition = EndocrineCondition(
-      id: 'thyroid_${DateTime.now().millisecondsSinceEpoch}',
       patientId: widget.patientId,
       patientName: widget.patientName,
       gland: 'thyroid',
@@ -81,67 +77,11 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
     super.dispose();
   }
 
-  Future<void> _saveCondition() async {
-    try {
-      // TODO: Save to database
-      setState(() {
-        _hasUnsavedChanges = false;
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Condition saved successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error saving: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  void _updateCondition(EndocrineCondition updatedCondition) {
+  void _updateCondition(EndocrineCondition updated) {
     setState(() {
-      _condition = updatedCondition;
+      _condition = updated;
       _hasUnsavedChanges = true;
     });
-  }
-
-  Future<bool?> _showUnsavedChangesDialog() async {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Unsaved Changes'),
-        content: const Text('You have unsaved changes. Do you want to discard them?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Discard'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              await _saveCondition();
-              if (mounted) {
-                Navigator.pop(context, true);
-              }
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
@@ -149,7 +89,23 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
     return WillPopScope(
       onWillPop: () async {
         if (_hasUnsavedChanges) {
-          final shouldPop = await _showUnsavedChangesDialog();
+          final shouldPop = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Unsaved Changes'),
+              content: const Text('You have unsaved changes. Do you want to discard them?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Discard'),
+                ),
+              ],
+            ),
+          );
           return shouldPop ?? false;
         }
         return true;
@@ -161,7 +117,7 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
             // Custom App Bar
             _buildCustomAppBar(),
 
-            // Tab Bar
+            // Tab Bar - ANATOMY TAB REMOVED
             Container(
               color: Colors.white,
               child: TabBar(
@@ -182,8 +138,7 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
                 tabs: const [
                   Tab(text: 'Patient Data'),
                   Tab(text: 'Clinical'),
-                  Tab(text: 'Anatomy'),  // CHANGED from 'Canvas'
-                  Tab(text: 'Canvas'),
+                  Tab(text: 'Canvas'),  // This now contains Anatomy & Diseases sub-tabs
                   Tab(text: 'Labs'),
                   Tab(text: 'Overview'),
                   Tab(text: 'Investigations'),
@@ -211,44 +166,36 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
                     onUpdate: _updateCondition,
                   ),
 
-                  // Tab 2: Anatomy (NEW - with canvas button)
-                  AnatomyTab(
-                    condition: _condition,
-                    diseaseConfig: _diseaseConfig,
-                    onUpdate: _updateCondition,
-                    patient: _patient,  // PASS PATIENT HERE
-                  ),
-
-                  // Tab 3: Canvas (Image gallery with edited section)
+                  // Tab 2: Canvas (Now with Anatomy & Diseases sub-tabs)
                   CanvasTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
-                    patient: _patient,  // PASS PATIENT HERE
+                    patient: _patient,
                   ),
 
-                  // Tab 4: Labs & Trends
+                  // Tab 3: Labs & Trends
                   LabsTrendsTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
                   ),
 
-                  // Tab 5: Overview
+                  // Tab 4: Overview
                   OverviewTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
                   ),
 
-                  // Tab 6: Investigations
+                  // Tab 5: Investigations
                   InvestigationsTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
                   ),
 
-                  // Tab 7: Treatment
+                  // Tab 6: Treatment
                   TreatmentTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
@@ -258,8 +205,46 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
               ),
             ),
 
-            // Bottom Action Bar
-            _buildBottomActionBar(),
+            // Bottom Save Bar
+            if (_hasUnsavedChanges)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: Color(0xFFF59E0B)),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'You have unsaved changes',
+                      style: TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () {
+                        setState(() => _hasUnsavedChanges = false);
+                      },
+                      child: const Text('Discard'),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: _saveCondition,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2563EB),
+                      ),
+                      child: const Text('Save Changes'),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
@@ -268,129 +253,76 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
 
   Widget _buildCustomAppBar() {
     return Container(
-      padding: const EdgeInsets.only(top: 40, left: 16, right: 16, bottom: 16),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
+      padding: const EdgeInsets.fromLTRB(16, 48, 16, 16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
           colors: [Color(0xFF2563EB), Color(0xFF1E40AF)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () async {
-              if (_hasUnsavedChanges) {
-                final shouldPop = await _showUnsavedChangesDialog();
-                if (shouldPop == true && mounted) {
-                  Navigator.pop(context);
-                }
-              } else {
-                Navigator.pop(context);
-              }
-            },
+            onPressed: () => Navigator.pop(context),
           ),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.diseaseName,
+                  _diseaseConfig.name,
                   style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
                     color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   widget.patientName,
                   style: TextStyle(
-                    fontSize: 14,
                     color: Colors.white.withOpacity(0.9),
+                    fontSize: 14,
                   ),
                 ),
               ],
             ),
           ),
-          if (_hasUnsavedChanges)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.orange,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text(
-                'Unsaved',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '${_condition.completionPercentage.toInt()}% Complete',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
               ),
             ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildBottomActionBar() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Quick Mode indicator
-          if (widget.isQuickMode)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.green.shade100,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.bolt, size: 16, color: Colors.green.shade700),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Quick Mode',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.green.shade700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          const Spacer(),
-
-          // Save Button
-          ElevatedButton.icon(
-            onPressed: _hasUnsavedChanges ? _saveCondition : null,
-            icon: const Icon(Icons.save, size: 20),
-            label: const Text('Save Changes'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF10B981),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              disabledBackgroundColor: Colors.grey.shade300,
-            ),
-          ),
-        ],
-      ),
+  Future<void> _saveCondition() async {
+    // Implement save logic here
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Changes saved successfully')),
     );
+    setState(() => _hasUnsavedChanges = false);
   }
 }

@@ -1,14 +1,14 @@
-// ==================== ENHANCED CANVAS TAB WITH EDITED CATEGORY ====================
+// ==================== UPDATED CANVAS TAB WITH SUB-TABS ====================
 // lib/screens/endocrine/tabs/canvas_tab.dart
 
 import 'package:flutter/material.dart';
 import '../../../models/endocrine/endocrine_condition.dart';
+import '../../../models/patient.dart';
 import '../../../config/thyroid_disease_config.dart';
-import '../../../config/thyroid_canvas_config.dart';
 import '../../../models/visit.dart';
 import '../../../services/database_helper.dart';
-import '../../../models/patient.dart';
 import '../../canvas/canvas_screen.dart';
+import 'dart:typed_data';
 
 class CanvasTab extends StatefulWidget {
   final EndocrineCondition condition;
@@ -28,158 +28,283 @@ class CanvasTab extends StatefulWidget {
   State<CanvasTab> createState() => _CanvasTabState();
 }
 
-class _CanvasTabState extends State<CanvasTab> {
-  String? _selectedImageId;
+class _CanvasTabState extends State<CanvasTab>
+    with SingleTickerProviderStateMixin {
+  late TabController _subTabController;
   List<Visit> _editedVisits = [];
-  bool _isLoadingEdits = true;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    // Sub-tab controller for Anatomy and Diseases
+    _subTabController = TabController(length: 2, vsync: this);
     _loadEditedImages();
   }
 
+  @override
+  void dispose() {
+    _subTabController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadEditedImages() async {
-    setState(() => _isLoadingEdits = true);
-
     try {
-      // Load all visits for this patient with thyroid system
-      final allVisits = await DatabaseHelper.instance.getPatientVisits(
-        widget.patient.id,
-      );
-
-      // Filter for thyroid system visits that are marked as edited
-      final editedVisits = allVisits
-          .where((v) => v.system == 'thyroid' && v.isEdited)
-          .toList();
+      final db = DatabaseHelper.instance;
+      final visits = await db.getVisitsByPatient(widget.patient.id);
 
       setState(() {
-        _editedVisits = editedVisits;
-        _isLoadingEdits = false;
+        _editedVisits = visits
+            .where((v) => v.canvasImage != null && v.system == 'thyroid')
+            .toList();
+        _isLoading = false;
       });
     } catch (e) {
       print('Error loading edited images: $e');
-      setState(() {
-        _editedVisits = [];
-        _isLoadingEdits = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final anatomyImages = ThyroidCanvasConfig.getAnatomyImages();
-    final diseaseImages = ThyroidCanvasConfig.getDiseaseImagesOnly(
-      widget.condition.diseaseId,
-    );
-    final hasDiseaseImages = diseaseImages.isNotEmpty;
-    final hasEditedImages = _editedVisits.isNotEmpty;
-
-    return RefreshIndicator(
-      onRefresh: _loadEditedImages,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              children: [
-                const Icon(Icons.image, color: Color(0xFF2563EB), size: 24),
-                const SizedBox(width: 8),
-                const Text(
-                  'THYROID IMAGES',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2563EB),
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${anatomyImages.length + diseaseImages.length + _editedVisits.length} total',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF2563EB),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
+    return Column(
+      children: [
+        // Sub-Tab Bar for Anatomy and Diseases
+        Container(
+          color: Colors.white,
+          child: TabBar(
+            controller: _subTabController,
+            labelColor: const Color(0xFF2563EB),
+            unselectedLabelColor: Colors.grey.shade600,
+            indicatorColor: const Color(0xFF2563EB),
+            indicatorWeight: 3,
+            labelStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
             ),
-            const SizedBox(height: 8),
+            unselectedLabelStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.normal,
+            ),
+            tabs: [
+              Tab(
+                icon: const Icon(Icons.biotech, size: 20),
+                text: 'Anatomy',
+              ),
+              Tab(
+                icon: const Icon(Icons.medical_information, size: 20),
+                text: 'Diseases',
+              ),
+            ],
+          ),
+        ),
+
+        // Sub-Tab Content
+        Expanded(
+          child: TabBarView(
+            controller: _subTabController,
+            children: [
+              // Anatomy Sub-Tab
+              _buildAnatomyContent(),
+
+              // Diseases Sub-Tab
+              _buildDiseasesContent(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAnatomyContent() {
+    final anatomyImages = widget.diseaseConfig.anatomyDiagrams.entries
+        .map((e) => DiagramInfo(
+      id: e.key,
+      name: e.value.name,
+      imagePath: e.value.imagePath,
+      category: 'anatomy',
+    ))
+        .toList();
+
+    return _buildImageGallery(
+      title: 'Normal Anatomy',
+      subtitle: 'Explore normal thyroid anatomy diagrams',
+      images: anatomyImages,
+      editedVisits: _editedVisits
+          .where((v) => _isAnatomyDiagram(v.diagramType))
+          .toList(),
+    );
+  }
+
+  Widget _buildDiseasesContent() {
+    final diseaseImages = widget.diseaseConfig.systemTemplates.entries
+        .map((e) => DiagramInfo(
+      id: e.key,
+      name: e.value.name,
+      imagePath: e.value.imagePath,
+      category: 'disease',
+    ))
+        .toList();
+
+    return _buildImageGallery(
+      title: widget.diseaseConfig.name,
+      subtitle: 'Disease-specific imaging and pathology',
+      images: diseaseImages,
+      editedVisits: _editedVisits
+          .where((v) => !_isAnatomyDiagram(v.diagramType))
+          .toList(),
+    );
+  }
+
+  bool _isAnatomyDiagram(String diagramType) {
+    final anatomyTypes = [
+      'anterior',
+      'lateral',
+      'cross_section',
+      'microscopic',
+      'anatomical',
+    ];
+    return anatomyTypes.contains(diagramType);
+  }
+
+  Widget _buildImageGallery({
+    required String title,
+    required String subtitle,
+    required List<DiagramInfo> images,
+    required List<Visit> editedVisits,
+  }) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final hasEditedImages = editedVisits.isNotEmpty;
+    final hasImages = images.isNotEmpty;
+
+    if (!hasImages && !hasEditedImages) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.image_not_supported,
+                size: 64, color: Colors.grey.shade400),
+            const SizedBox(height: 16),
             Text(
-              'Tap an image to preview, then edit to add annotations',
+              'No images available',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 16,
                 color: Colors.grey.shade600,
               ),
             ),
-            const SizedBox(height: 24),
-
-            // EDITED IMAGES SECTION (Show first - most recent work)
-            if (hasEditedImages) ...[
-              _buildEditedSection(),
-              const SizedBox(height: 32),
-            ],
-
-            // Normal Anatomy Section
-            _buildImageSection(
-              title: 'Normal Anatomy',
-              icon: Icons.biotech,
-              images: anatomyImages,
-            ),
-
-            // Disease-Specific Section
-            if (hasDiseaseImages) ...[
-              const SizedBox(height: 32),
-              _buildImageSection(
-                title: '${widget.diseaseConfig.name} Images',
-                icon: Icons.medical_information,
-                images: diseaseImages,
-              ),
-            ],
           ],
         ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2563EB).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${images.length + editedVisits.length} total',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF2563EB),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tap an image to preview, then edit to add annotations',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // EDITED IMAGES SECTION (Show first)
+          if (hasEditedImages) ...[
+            _buildEditedSection(editedVisits),
+            const SizedBox(height: 32),
+          ],
+
+          // Original Images Section
+          if (hasImages)
+            _buildImageSection(
+              title: 'Available Diagrams',
+              icon: Icons.image,
+              images: images,
+            ),
+        ],
       ),
     );
   }
 
-  Widget _buildEditedSection() {
+  Widget _buildEditedSection(List<Visit> editedVisits) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Header
         Row(
           children: [
-            const Icon(Icons.edit, size: 20, color: Color(0xFF10B981)),
+            const Icon(Icons.edit_note,
+                color: Color(0xFF10B981), size: 24),
             const SizedBox(width: 8),
             const Text(
-              'Edited Images',
+              'Your Edited Images',
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1F2937),
+                color: Colors.black87,
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: const Color(0xFF10B981).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                '${_editedVisits.length}',
+                '${editedVisits.length}',
                 style: const TextStyle(
-                  fontSize: 11,
+                  fontSize: 12,
                   color: Color(0xFF10B981),
                   fontWeight: FontWeight.bold,
                 ),
@@ -189,15 +314,10 @@ class _CanvasTabState extends State<CanvasTab> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Your annotated diagrams',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
-          ),
+          'Most recent annotations and edits',
+          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
         ),
-        const SizedBox(height: 12),
-
-        // Grid of edited images
+        const SizedBox(height: 16),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -205,11 +325,11 @@ class _CanvasTabState extends State<CanvasTab> {
             crossAxisCount: 3,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 0.75,
+            childAspectRatio: 0.85,
           ),
-          itemCount: _editedVisits.length,
+          itemCount: editedVisits.length,
           itemBuilder: (context, index) {
-            final visit = _editedVisits[index];
+            final visit = editedVisits[index];
             return _buildEditedImageCard(visit);
           },
         ),
@@ -217,166 +337,29 @@ class _CanvasTabState extends State<CanvasTab> {
     );
   }
 
-  Widget _buildEditedImageCard(Visit visit) {
-    final dateTime = visit.createdAt;
-    final formattedDate = '${dateTime.day}/${dateTime.month}/${dateTime.year}';
-    final diagramName = _getDiagramDisplayName(visit.diagramType);
-
-    return GestureDetector(
-      onTap: () => _showEditedImagePreview(visit),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF10B981), width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Edited Badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: const BoxDecoration(
-                color: Color(0xFF10B981),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(10),
-                  topRight: Radius.circular(10),
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(Icons.edit, size: 12, color: Colors.white),
-                  SizedBox(width: 4),
-                  Text(
-                    'EDITED',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Image Preview
-            Expanded(
-              child: Container(
-                margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: visit.canvasImage != null
-                      ? Image.memory(
-                    visit.canvasImage!,
-                    fit: BoxFit.cover,
-                  )
-                      : const Center(
-                    child: Icon(Icons.image, color: Colors.grey, size: 32),
-                  ),
-                ),
-              ),
-            ),
-
-            // Info
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    diagramName,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    formattedDate,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.circle, size: 8, color: Colors.blue.shade400),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${visit.markers.length} markers',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildImageSection({
     required String title,
     required IconData icon,
-    required List<ThyroidImageConfig> images,
+    required List<DiagramInfo> images,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Header
         Row(
           children: [
-            Icon(icon, size: 20, color: const Color(0xFF2563EB)),
+            Icon(icon, color: const Color(0xFF2563EB), size: 24),
             const SizedBox(width: 8),
             Text(
               title,
               style: const TextStyle(
-                fontSize: 15,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF1F2937),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2563EB).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '${images.length}',
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: Color(0xFF2563EB),
-                  fontWeight: FontWeight.bold,
-                ),
+                color: Colors.black87,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-
-        // Grid
+        const SizedBox(height: 16),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -384,7 +367,7 @@ class _CanvasTabState extends State<CanvasTab> {
             crossAxisCount: 3,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 0.75,
+            childAspectRatio: 0.85,
           ),
           itemCount: images.length,
           itemBuilder: (context, index) {
@@ -396,14 +379,15 @@ class _CanvasTabState extends State<CanvasTab> {
     );
   }
 
-  Widget _buildImageCard(ThyroidImageConfig image) {
-    return GestureDetector(
+  Widget _buildImageCard(DiagramInfo image) {
+    return InkWell(
       onTap: () => _showImagePreview(image),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -416,37 +400,60 @@ class _CanvasTabState extends State<CanvasTab> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: Container(
-                margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    image.imagePath,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Center(
-                        child: Icon(Icons.broken_image, color: Colors.grey),
-                      );
-                    },
-                  ),
+              child: ClipRRect(
+                borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(12)),
+                child: Image.asset(
+                  image.imagePath,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: Colors.grey.shade100,
+                      child: Icon(Icons.image_not_supported,
+                          size: 48, color: Colors.grey.shade400),
+                    );
+                  },
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Text(
-                image.name,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+            Container(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    image.name,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _navigateToCanvas(
+                        diagramType: image.id,
+                        existingVisit: null,
+                      ),
+                      icon: const Icon(Icons.edit, size: 14),
+                      label: const Text('Edit',
+                          style: TextStyle(fontSize: 12)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2563EB),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 8, horizontal: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -455,37 +462,105 @@ class _CanvasTabState extends State<CanvasTab> {
     );
   }
 
-  void _showImagePreview(ThyroidImageConfig image) {
-    setState(() {
-      _selectedImageId = image.id;
-    });
-
-    showDialog(
-      context: context,
-      barrierColor: Colors.black87,
-      builder: (context) => _buildBigPreviewDialog(
-        title: image.name,
-        subtitle: image.category == 'anatomy'
-            ? 'Normal Anatomy'
-            : widget.diseaseConfig.name,
-        child: Image.asset(
-          image.imagePath,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) {
-            return Center(
+  Widget _buildEditedImageCard(Visit visit) {
+    return InkWell(
+      onTap: () => _showEditedImagePreview(visit),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF10B981), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF10B981).withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(12)),
+                child: visit.canvasImage != null
+                    ? Image.memory(
+                  visit.canvasImage!,
+                  fit: BoxFit.cover,
+                )
+                    : Container(
+                  color: Colors.grey.shade100,
+                  child: Icon(Icons.image,
+                      size: 48, color: Colors.grey.shade400),
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(12),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.image_not_supported, size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'EDITED',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF10B981),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
                   Text(
-                    'Image not found',
-                    style: TextStyle(color: Colors.grey.shade600),
+                    _getDiagramDisplayName(visit.diagramType),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatDateTime(visit.createdAt),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade600,
+                    ),
                   ),
                 ],
               ),
-            );
-          },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showImagePreview(DiagramInfo image) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (context) => _buildPreviewDialog(
+        title: image.name,
+        subtitle: 'Tap Edit to add annotations',
+        child: Image.asset(
+          image.imagePath,
+          fit: BoxFit.contain,
         ),
         onEdit: () {
           Navigator.pop(context);
@@ -502,17 +577,12 @@ class _CanvasTabState extends State<CanvasTab> {
     showDialog(
       context: context,
       barrierColor: Colors.black87,
-      builder: (context) => _buildBigPreviewDialog(
+      builder: (context) => _buildPreviewDialog(
         title: _getDiagramDisplayName(visit.diagramType),
         subtitle: 'Edited: ${_formatDateTime(visit.createdAt)}',
         child: visit.canvasImage != null
-            ? Image.memory(
-          visit.canvasImage!,
-          fit: BoxFit.contain,
-        )
-            : const Center(
-          child: Icon(Icons.image, color: Colors.grey, size: 64),
-        ),
+            ? Image.memory(visit.canvasImage!, fit: BoxFit.contain)
+            : const Icon(Icons.image, size: 100),
         onEdit: () {
           Navigator.pop(context);
           _navigateToCanvas(
@@ -524,7 +594,7 @@ class _CanvasTabState extends State<CanvasTab> {
     );
   }
 
-  Widget _buildBigPreviewDialog({
+  Widget _buildPreviewDialog({
     required String title,
     required String subtitle,
     required Widget child,
@@ -534,23 +604,19 @@ class _CanvasTabState extends State<CanvasTab> {
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(20),
       child: Container(
-        width: MediaQuery.of(context).size.width * 0.9,
-        height: MediaQuery.of(context).size.height * 0.85, // 85% of screen height
+        constraints: const BoxConstraints(maxWidth: 800, maxHeight: 700),
         decoration: BoxDecoration(
-          color: Colors.grey.shade900,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           children: [
-            // Header
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.3),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
+                color: const Color(0xFF2563EB),
+                borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(16)),
               ),
               child: Row(
                 children: [
@@ -561,7 +627,7 @@ class _CanvasTabState extends State<CanvasTab> {
                         Text(
                           title,
                           style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
@@ -571,49 +637,31 @@ class _CanvasTabState extends State<CanvasTab> {
                           subtitle,
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey.shade300,
+                            color: Colors.white.withOpacity(0.9),
                           ),
                         ),
                       ],
                     ),
                   ),
                   IconButton(
-                    onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.close, color: Colors.white),
-                    iconSize: 28,
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),
             ),
-
-            // Image - Takes up 3/4 of screen
             Expanded(
               child: Container(
-                margin: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: InteractiveViewer(
-                    minScale: 0.5,
-                    maxScale: 4.0,
-                    child: Center(child: child),
-                  ),
-                ),
+                padding: const EdgeInsets.all(20),
+                child: child,
               ),
             ),
-
-            // Action Buttons
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.3),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
-                ),
+                color: Colors.grey.shade50,
+                borderRadius:
+                const BorderRadius.vertical(bottom: Radius.circular(16)),
               ),
               child: Row(
                 children: [
@@ -621,10 +669,12 @@ class _CanvasTabState extends State<CanvasTab> {
                     child: OutlinedButton.icon(
                       onPressed: () => Navigator.pop(context),
                       icon: const Icon(Icons.close, size: 20),
-                      label: const Text('Close', style: TextStyle(fontSize: 16)),
+                      label: const Text('Close',
+                          style: TextStyle(fontSize: 16)),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.white, width: 2),
+                        foregroundColor: Colors.grey.shade700,
+                        side: BorderSide(
+                            color: Colors.grey.shade300, width: 2),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -638,7 +688,8 @@ class _CanvasTabState extends State<CanvasTab> {
                     child: ElevatedButton.icon(
                       onPressed: onEdit,
                       icon: const Icon(Icons.edit, size: 20),
-                      label: const Text('Edit Image', style: TextStyle(fontSize: 16)),
+                      label: const Text('Edit Image',
+                          style: TextStyle(fontSize: 16)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2563EB),
                         foregroundColor: Colors.white,
@@ -675,7 +726,6 @@ class _CanvasTabState extends State<CanvasTab> {
       ),
     );
 
-    // Reload edited images after returning
     if (result == true) {
       _loadEditedImages();
     }
@@ -685,21 +735,46 @@ class _CanvasTabState extends State<CanvasTab> {
     final displayNames = {
       'anterior': 'Anterior View',
       'lateral': 'Lateral View',
-      'cross_section': 'Cross-Section View',
+      'cross_section': 'Cross-Section',
       'microscopic': 'Microscopic View',
+      'anatomical': 'Anatomical View',
       'graves_diffuse': 'Diffuse Goiter',
       'graves_vascularity': 'Increased Vascularity',
       'graves_ophthalmopathy': 'Eye Changes',
       'hashimotos_lymphocytes': 'Lymphocytic Infiltration',
       'hashimotos_destruction': 'Thyroid Destruction',
       'hashimotos_fibrosis': 'Fibrosis',
-      // Add more as needed
     };
     return displayNames[diagramType] ?? diagramType;
   }
 
   String _formatDateTime(DateTime dateTime) {
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return '${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year}';
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inDays == 0) {
+      if (difference.inHours == 0) {
+        return '${difference.inMinutes}m ago';
+      }
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    } else {
+      return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+    }
   }
+}
+
+class DiagramInfo {
+  final String id;
+  final String name;
+  final String imagePath;
+  final String category;
+
+  DiagramInfo({
+    required this.id,
+    required this.name,
+    required this.imagePath,
+    required this.category,
+  });
 }
