@@ -1,10 +1,12 @@
-// ==================== UPDATED CANVAS TAB WITH SUB-TABS ====================
+// ==================== FIXED CANVAS TAB WITH SUB-TABS ====================
 // lib/screens/endocrine/tabs/canvas_tab.dart
+// ✅ Fixed: Using SystemConfig for anatomyDiagrams and systemTemplates
 
 import 'package:flutter/material.dart';
 import '../../../models/endocrine/endocrine_condition.dart';
 import '../../../models/patient.dart';
 import '../../../config/thyroid_disease_config.dart';
+import '../../../config/canvas_system_config.dart';  // ✅ ADDED: Import SystemConfig
 import '../../../models/visit.dart';
 import '../../../services/database_helper.dart';
 import '../../canvas/canvas_screen.dart';
@@ -31,6 +33,7 @@ class CanvasTab extends StatefulWidget {
 class _CanvasTabState extends State<CanvasTab>
     with SingleTickerProviderStateMixin {
   late TabController _subTabController;
+  late SystemConfig _systemConfig;  // ✅ ADDED: SystemConfig variable
   List<Visit> _editedVisits = [];
   bool _isLoading = true;
 
@@ -39,6 +42,7 @@ class _CanvasTabState extends State<CanvasTab>
     super.initState();
     // Sub-tab controller for Anatomy and Diseases
     _subTabController = TabController(length: 2, vsync: this);
+    _systemConfig = CanvasSystemConfig.systems['thyroid']!;  // ✅ ADDED: Initialize SystemConfig
     _loadEditedImages();
   }
 
@@ -116,8 +120,9 @@ class _CanvasTabState extends State<CanvasTab>
     );
   }
 
+  // ✅ FIXED: Now using _systemConfig.anatomyDiagrams
   Widget _buildAnatomyContent() {
-    final anatomyImages = widget.diseaseConfig.anatomyDiagrams.entries
+    final anatomyImages = _systemConfig.anatomyDiagrams.entries
         .map((e) => DiagramInfo(
       id: e.key,
       name: e.value.name,
@@ -136,8 +141,9 @@ class _CanvasTabState extends State<CanvasTab>
     );
   }
 
+  // ✅ FIXED: Now using _systemConfig.systemTemplates
   Widget _buildDiseasesContent() {
-    final diseaseImages = widget.diseaseConfig.systemTemplates.entries
+    final diseaseImages = _systemConfig.systemTemplates.entries
         .map((e) => DiagramInfo(
       id: e.key,
       name: e.value.name,
@@ -189,11 +195,8 @@ class _CanvasTabState extends State<CanvasTab>
                 size: 64, color: Colors.grey.shade400),
             const SizedBox(height: 16),
             Text(
-              'No images available',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade600,
-              ),
+              'No diagrams available',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
             ),
           ],
         ),
@@ -201,351 +204,248 @@ class _CanvasTabState extends State<CanvasTab>
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
+          // Edited Images Section (if any)
+          if (hasEditedImages) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Your Edited Diagrams',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade800,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${images.length + editedVisits.length} total',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF2563EB),
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tap an image to preview, then edit to add annotations',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade600,
+                Icon(Icons.swipe, size: 16, color: Colors.grey.shade500),
+                const SizedBox(width: 4),
+                Text(
+                  'Swipe →',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 24),
-
-          // EDITED IMAGES SECTION (Show first)
-          if (hasEditedImages) ...[
-            _buildEditedSection(editedVisits),
-            const SizedBox(height: 32),
+            const SizedBox(height: 12),
+            _buildEditedImagesGrid(editedVisits),
+            const SizedBox(height: 24),
           ],
 
-          // Original Images Section
-          if (hasImages)
-            _buildImageSection(
-              title: 'Available Diagrams',
-              icon: Icons.image,
-              images: images,
+          // Available Templates Section
+          if (hasImages) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade800,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.swipe, size: 16, color: Colors.grey.shade500),
+                const SizedBox(width: 4),
+                Text(
+                  'Swipe →',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(height: 12),
+            _buildImageGrid(images),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildEditedSection(List<Visit> editedVisits) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.edit_note,
-                color: Color(0xFF10B981), size: 24),
-            const SizedBox(width: 8),
-            const Text(
-              'Your Edited Images',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+  Widget _buildImageGrid(List<DiagramInfo> images) {
+    return SizedBox(
+      height: 200, // Fixed height for horizontal scroll
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: images.length,
+        itemBuilder: (context, index) {
+          final image = images[index];
+          return Padding(
+            padding: EdgeInsets.only(
+              right: index < images.length - 1 ? 12 : 0,
             ),
-            const SizedBox(width: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFF10B981).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '${editedVisits.length}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF10B981),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Most recent annotations and edits',
-          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-        ),
-        const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.85,
-          ),
-          itemCount: editedVisits.length,
-          itemBuilder: (context, index) {
-            final visit = editedVisits[index];
-            return _buildEditedImageCard(visit);
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildImageSection({
-    required String title,
-    required IconData icon,
-    required List<DiagramInfo> images,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, color: const Color(0xFF2563EB), size: 24),
-            const SizedBox(width: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.85,
-          ),
-          itemCount: images.length,
-          itemBuilder: (context, index) {
-            final image = images[index];
-            return _buildImageCard(image);
-          },
-        ),
-      ],
+            child: _buildImageCard(image),
+          );
+        },
+      ),
     );
   }
 
   Widget _buildImageCard(DiagramInfo image) {
-    return InkWell(
+    return GestureDetector(
       onTap: () => _showImagePreview(image),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(12)),
+      child: SizedBox(
+        width: 160, // Fixed width for horizontal scroll
+        child: Card(
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: 2,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
                 child: Image.asset(
                   image.imagePath,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Container(
-                      color: Colors.grey.shade100,
-                      child: Icon(Icons.image_not_supported,
-                          size: 48, color: Colors.grey.shade400),
+                      color: Colors.grey.shade200,
+                      child: const Icon(Icons.image, size: 40, color: Colors.grey),
                     );
                   },
                 ),
               ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    image.name,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+              Container(
+                padding: const EdgeInsets.all(10),
+                color: Colors.white,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      image.name,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
+                    const SizedBox(height: 6),
+                    ElevatedButton.icon(
                       onPressed: () => _navigateToCanvas(
                         diagramType: image.id,
                         existingVisit: null,
                       ),
                       icon: const Icon(Icons.edit, size: 14),
-                      label: const Text('Edit',
-                          style: TextStyle(fontSize: 12)),
+                      label: const Text('Edit', style: TextStyle(fontSize: 12)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2563EB),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+                        minimumSize: const Size(double.infinity, 32),
+                        padding: const EdgeInsets.symmetric(vertical: 6),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildEditedImageCard(Visit visit) {
-    return InkWell(
-      onTap: () => _showEditedImagePreview(visit),
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF10B981), width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF10B981).withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+  Widget _buildEditedImagesGrid(List<Visit> visits) {
+    return SizedBox(
+      height: 200, // Fixed height for horizontal scroll
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: visits.length,
+        itemBuilder: (context, index) {
+          final visit = visits[index];
+          return Padding(
+            padding: EdgeInsets.only(
+              right: index < visits.length - 1 ? 12 : 0,
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(12)),
+            child: _buildEditedImageCard(visit),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildEditedImageCard(Visit visit) {
+    return GestureDetector(
+      onTap: () => _showEditedImagePreview(visit),
+      child: SizedBox(
+        width: 160, // Fixed width for horizontal scroll
+        child: Card(
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: 2,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
                 child: visit.canvasImage != null
-                    ? Image.memory(
-                  visit.canvasImage!,
-                  fit: BoxFit.cover,
-                )
+                    ? Image.memory(visit.canvasImage!, fit: BoxFit.cover)
                     : Container(
-                  color: Colors.grey.shade100,
-                  child: Icon(Icons.image,
-                      size: 48, color: Colors.grey.shade400),
+                  color: Colors.grey.shade200,
+                  child: const Icon(Icons.image, size: 40, color: Colors.grey),
                 ),
               ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          'EDITED',
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF10B981),
-                          ),
-                        ),
+              Container(
+                padding: const EdgeInsets.all(10),
+                color: Colors.white,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _getDiagramDisplayName(visit.diagramType),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _getDiagramDisplayName(visit.diagramType),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatDateTime(visit.createdAt),
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade600,
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatDateTime(visit.createdAt),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 6),
+                    ElevatedButton.icon(
+                      onPressed: () => _navigateToCanvas(
+                        diagramType: visit.diagramType,
+                        existingVisit: visit,
+                      ),
+                      icon: const Icon(Icons.edit, size: 14),
+                      label: const Text('Re-edit', style: TextStyle(fontSize: 12)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green.shade600,
+                        minimumSize: const Size(double.infinity, 32),
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -672,32 +572,20 @@ class _CanvasTabState extends State<CanvasTab>
                       label: const Text('Close',
                           style: TextStyle(fontSize: 16)),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.grey.shade700,
-                        side: BorderSide(
-                            color: Colors.grey.shade300, width: 2),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    flex: 2,
                     child: ElevatedButton.icon(
                       onPressed: onEdit,
                       icon: const Icon(Icons.edit, size: 20),
-                      label: const Text('Edit Image',
+                      label: const Text('Edit',
                           style: TextStyle(fontSize: 16)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2563EB),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 4,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                     ),
                   ),
@@ -713,8 +601,8 @@ class _CanvasTabState extends State<CanvasTab>
   void _navigateToCanvas({
     required String diagramType,
     Visit? existingVisit,
-  }) async {
-    final result = await Navigator.push(
+  }) {
+    Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CanvasScreen(
@@ -724,47 +612,22 @@ class _CanvasTabState extends State<CanvasTab>
           existingVisit: existingVisit,
         ),
       ),
-    );
-
-    if (result == true) {
+    ).then((_) {
       _loadEditedImages();
-    }
+    });
   }
 
   String _getDiagramDisplayName(String diagramType) {
-    final displayNames = {
-      'anterior': 'Anterior View',
-      'lateral': 'Lateral View',
-      'cross_section': 'Cross-Section',
-      'microscopic': 'Microscopic View',
-      'anatomical': 'Anatomical View',
-      'graves_diffuse': 'Diffuse Goiter',
-      'graves_vascularity': 'Increased Vascularity',
-      'graves_ophthalmopathy': 'Eye Changes',
-      'hashimotos_lymphocytes': 'Lymphocytic Infiltration',
-      'hashimotos_destruction': 'Thyroid Destruction',
-      'hashimotos_fibrosis': 'Fibrosis',
-    };
-    return displayNames[diagramType] ?? diagramType;
+    final diagrams = {..._systemConfig.anatomyDiagrams, ..._systemConfig.systemTemplates};
+    return diagrams[diagramType]?.name ?? diagramType;
   }
 
   String _formatDateTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inDays == 0) {
-      if (difference.inHours == 0) {
-        return '${difference.inMinutes}m ago';
-      }
-      return '${difference.inHours}h ago';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays}d ago';
-    } else {
-      return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
-    }
+    return '${dateTime.day}/${dateTime.month}/${dateTime.year} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 }
 
+// Helper class for diagram information
 class DiagramInfo {
   final String id;
   final String name;
