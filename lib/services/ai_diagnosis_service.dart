@@ -163,12 +163,13 @@ class AIDiagnosisService {
       buffer.writeln('');
     }
 
+
     // Lab results
     if (labResults != null && labResults.isNotEmpty) {
       buffer.writeln('LABORATORY RESULTS:');
       for (var test in labResults) {
-        if (test.result != null && test.result!.isNotEmpty) {
-          buffer.writeln('- ${test.testName}: ${test.result} ${test.unit ?? ''}');
+        if (test.resultValue != null && test.resultValue!.isNotEmpty) {
+          buffer.writeln('- ${test.testName}: ${test.resultValue} ${test.resultUnit ?? ''}');
         }
       }
       buffer.writeln('');
@@ -299,10 +300,13 @@ Provide 2-4 diagnosis suggestions, ordered by likelihood (highest confidence fir
   }
 
   /// Infer gender from name (simple heuristic - can be improved)
+  /// Infer gender from name (simple heuristic - can be improved)
   static String _inferGender(String name) {
     // This is a simplification - in production, collect gender data directly
     final femaleSuffixes = ['a', 'i', 'e'];
-    final lastChar = name.toLowerCase().trim().characters.last;
+    final lowerName = name.toLowerCase().trim();
+    if (lowerName.isEmpty) return 'Unknown';
+    final lastChar = lowerName.substring(lowerName.length - 1);
     return femaleSuffixes.contains(lastChar) ? 'Female' : 'Male';
   }
 
