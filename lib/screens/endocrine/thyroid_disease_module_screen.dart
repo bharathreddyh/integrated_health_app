@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../models/endocrine/endocrine_condition.dart';
 import '../../models/patient.dart';
 import '../../config/thyroid_disease_config.dart';
+import '../../widgets/ai_pdf_generator_button.dart';
 import 'tabs/overview_tab.dart';
 import 'tabs/canvas_tab.dart';
 import 'tabs/labs_trends_tab.dart';
@@ -199,32 +200,48 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
               ),
             ),
 
-            // Bottom Save Bar
-            if (_hasUnsavedChanges)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.shade300,
-                      blurRadius: 4,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
-                ),
-                child: ElevatedButton(
-                  onPressed: _saveCondition,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    minimumSize: const Size(double.infinity, 48),
+            // Bottom Action Bar
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.shade300,
+                    blurRadius: 4,
+                    offset: const Offset(0, -2),
                   ),
-                  child: const Text(
-                    'Save Changes',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                ),
+                ],
               ),
+              child: Row(
+                children: [
+                  // Save Changes Button (only show if unsaved changes)
+                  if (_hasUnsavedChanges) ...[
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _saveCondition,
+                        icon: const Icon(Icons.save, size: 20),
+                        label: const Text(
+                          'Save Changes',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2563EB),
+                          minimumSize: const Size(double.infinity, 48),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+
+                  // AI PDF Generator Button
+                  Expanded(
+                    flex: _hasUnsavedChanges ? 1 : 2,
+                    child: _buildAIPDFButton(),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -299,5 +316,81 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
       const SnackBar(content: Text('Changes saved successfully')),
     );
     setState(() => _hasUnsavedChanges = false);
+  }
+
+  Widget _buildAIPDFButton() {
+    // Check if enough data is available for PDF generation
+    final canGenerate = _condition.canGeneratePDF;
+
+    if (!canGenerate) {
+      // Show disabled button with tooltip
+      return Tooltip(
+        message: 'Complete required fields to generate PDF:\n${_condition.incompleteSections.join('\n')}',
+        child: ElevatedButton.icon(
+          onPressed: null,
+          icon: const Icon(Icons.picture_as_pdf, size: 20),
+          label: const Text(
+            'Generate AI Report',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.grey.shade400,
+            disabledBackgroundColor: Colors.grey.shade300,
+            minimumSize: const Size(double.infinity, 48),
+          ),
+        ),
+      );
+    }
+
+    // Show active AI PDF button
+    return AIPDFGeneratorButton(
+      condition: _condition,
+      patient: _patient,
+      onSuccess: () {
+        // Refresh the state after successful PDF generation
+        setState(() {
+          _hasUnsavedChanges = false;
+        });
+      },
+    );
+  }
+
+  void _showIncompleteSectionsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning, color: Colors.orange.shade700),
+            const SizedBox(width: 8),
+            const Text('Incomplete Data'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Please complete the following sections:'),
+            const SizedBox(height: 12),
+            ..._condition.incompleteSections.map((section) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.circle, size: 8, color: Colors.orange.shade700),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(section, style: const TextStyle(fontSize: 13))),
+                ],
+              ),
+            )),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 }
