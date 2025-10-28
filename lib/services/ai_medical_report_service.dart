@@ -1,9 +1,9 @@
-// ==================== AI MEDICAL REPORT SERVICE - OPENAI VERSION ====================
+// ==================== AI MEDICAL REPORT SERVICE - OPENAI VERSION (FIXED) ====================
 // lib/services/ai_medical_report_service.dart
-// ✅ Uses OpenAI GPT-4 instead of Anthropic Claude
+// ✅ Uses OpenAI GPT-4
+// ✅ FIXED to match actual model properties
 // ✅ Collects data from all tabs
-// ✅ Processes with AI for intelligent insights
-// ✅ Generates professional PDF with Python reportlab
+// ✅ Generates professional PDF
 
 import 'dart:convert';
 import 'dart:io';
@@ -61,62 +61,71 @@ class AIMedicalReportService {
       // Measurements
       'measurements': condition.measurements ?? {},
 
-      // Labs & Trends
+      // Labs & Trends - FIXED to use actual properties
       'labs': condition.labReadings.map((lab) => {
         'test': lab.testName,
         'value': lab.value,
         'unit': lab.unit,
-        'date': lab.date.toString(),
-        'abnormality': lab.abnormality?.toString(),
-        'trend': lab.trend,
+        'date': lab.testDate.toString(),  // FIXED: testDate (not date)
+        'status': lab.status,  // FIXED: status (not abnormality)
+        'isAbnormal': lab.isAbnormal,
+        'normalMin': lab.normalMin,
+        'normalMax': lab.normalMax,
+        'notes': lab.notes,
       }).toList(),
 
-      // Clinical Features
+      // Clinical Features - FIXED to use actual properties
       'clinicalFeatures': condition.clinicalFeatures.map((feature) => {
         'name': feature.name,
         'type': feature.type.toString(),
         'severity': feature.severity,
-        'duration': feature.duration,
+        'isPresent': feature.isPresent,
+        'onsetDate': feature.onsetDate?.toString(),  // FIXED: onsetDate (not duration)
         'notes': feature.notes,
       }).toList(),
 
-      // Canvas/Anatomy Images
+      // Canvas/Anatomy Images - FIXED to use actual properties
       'images': condition.images.map((img) => {
         'type': img.type,
         'description': img.description,
-        'date': img.date.toString(),
+        'captureDate': img.captureDate.toString(),  // FIXED: captureDate (not date)
         'annotations': img.annotations,
       }).toList(),
 
-      // Complications
+      // Complications - FIXED to use actual properties
       'complications': condition.complications.map((comp) => {
         'name': comp.name,
         'severity': comp.severity,
-        'dateIdentified': comp.dateIdentified.toString(),
-        'managementPlan': comp.managementPlan,
+        'isPresent': comp.isPresent,
+        'onsetDate': comp.onsetDate?.toString(),  // FIXED: onsetDate (not dateIdentified)
+        'notes': comp.notes,  // FIXED: notes (not managementPlan)
       }).toList(),
 
-      // Medications (Treatment)
+      // Medications (Treatment) - FIXED to use actual properties
       'medications': condition.medications.map((med) => {
         'name': med.name,
-        'dosage': med.dosage,
+        'dose': med.dose,  // FIXED: dose (not dosage)
         'frequency': med.frequency,
+        'route': med.route,
         'startDate': med.startDate.toString(),
+        'endDate': med.endDate?.toString(),
         'isActive': med.isActive,
+        'indication': med.indication,
         'notes': med.notes,
       }).toList(),
 
-      // Treatment Plan
+      // Treatment Plan - FIXED to use actual properties
       'treatmentPlan': condition.treatmentPlan != null ? {
-        'goals': condition.treatmentPlan!.goals,
-        'medications': condition.treatmentPlan!.medications,
-        'lifestyle': condition.treatmentPlan!.lifestyleModifications,
-        'followUp': condition.treatmentPlan!.followUpPlan,
+        'approach': condition.treatmentPlan!.approach,  // FIXED: approach
+        'goal': condition.treatmentPlan!.goal,  // FIXED: goal (singular)
+        'targets': condition.treatmentPlan!.targets,
         'monitoringPlan': condition.treatmentPlan!.monitoringPlan,
+        'patientEducation': condition.treatmentPlan!.patientEducation,
       } : null,
 
       // Additional Notes
       'notes': condition.notes,
+      'followUpPlan': condition.followUpPlan,
     };
 
     print('✅ Data collection complete!');
@@ -265,11 +274,12 @@ Response Format (JSON):
       buffer.writeln('LABORATORY RESULTS:');
       for (var lab in data['labs'] as List) {
         buffer.writeln('- ${lab['test']}: ${lab['value']} ${lab['unit']}');
-        if (lab['abnormality'] != null && lab['abnormality'] != 'AbnormalityType.normal') {
-          buffer.writeln('  ⚠️ Abnormal: ${lab['abnormality']}');
+        if (lab['isAbnormal'] == true) {
+          buffer.writeln('  ⚠️ Status: ${lab['status']}');
+          buffer.writeln('  Normal range: ${lab['normalMin']}-${lab['normalMax']}');
         }
-        if (lab['trend'] != null && lab['trend'].toString().isNotEmpty) {
-          buffer.writeln('  Trend: ${lab['trend']}');
+        if (lab['notes'] != null && lab['notes'].toString().isNotEmpty) {
+          buffer.writeln('  Notes: ${lab['notes']}');
         }
       }
       buffer.writeln();
@@ -279,12 +289,14 @@ Response Format (JSON):
     if (data['clinicalFeatures'] != null && (data['clinicalFeatures'] as List).isNotEmpty) {
       buffer.writeln('CLINICAL FEATURES:');
       for (var feature in data['clinicalFeatures'] as List) {
-        buffer.writeln('- ${feature['name']} (${feature['type']})');
-        if (feature['severity'] != null) {
-          buffer.writeln('  Severity: ${feature['severity']}');
-        }
-        if (feature['duration'] != null) {
-          buffer.writeln('  Duration: ${feature['duration']}');
+        if (feature['isPresent'] == true) {
+          buffer.writeln('- ${feature['name']} (${feature['type']})');
+          if (feature['severity'] != null) {
+            buffer.writeln('  Severity: ${feature['severity']}');
+          }
+          if (feature['onsetDate'] != null) {
+            buffer.writeln('  Onset: ${feature['onsetDate']}');
+          }
         }
       }
       buffer.writeln();
@@ -295,6 +307,7 @@ Response Format (JSON):
       buffer.writeln('IMAGING FINDINGS:');
       for (var img in data['images'] as List) {
         buffer.writeln('- ${img['type']}: ${img['description']}');
+        buffer.writeln('  Date: ${img['captureDate']}');
       }
       buffer.writeln();
     }
@@ -303,9 +316,14 @@ Response Format (JSON):
     if (data['complications'] != null && (data['complications'] as List).isNotEmpty) {
       buffer.writeln('COMPLICATIONS:');
       for (var comp in data['complications'] as List) {
-        buffer.writeln('- ${comp['name']} (${comp['severity']})');
-        if (comp['managementPlan'] != null) {
-          buffer.writeln('  Management: ${comp['managementPlan']}');
+        if (comp['isPresent'] == true) {
+          buffer.writeln('- ${comp['name']} (${comp['severity']})');
+          if (comp['onsetDate'] != null) {
+            buffer.writeln('  Onset: ${comp['onsetDate']}');
+          }
+          if (comp['notes'] != null && comp['notes'].toString().isNotEmpty) {
+            buffer.writeln('  Notes: ${comp['notes']}');
+          }
         }
       }
       buffer.writeln();
@@ -316,7 +334,13 @@ Response Format (JSON):
       buffer.writeln('CURRENT MEDICATIONS:');
       for (var med in data['medications'] as List) {
         if (med['isActive'] == true) {
-          buffer.writeln('- ${med['name']}: ${med['dosage']}, ${med['frequency']}');
+          buffer.writeln('- ${med['name']}: ${med['dose']}, ${med['frequency']}');
+          if (med['route'] != null) {
+            buffer.writeln('  Route: ${med['route']}');
+          }
+          if (med['indication'] != null && med['indication'].toString().isNotEmpty) {
+            buffer.writeln('  Indication: ${med['indication']}');
+          }
         }
       }
       buffer.writeln();
@@ -326,9 +350,16 @@ Response Format (JSON):
     if (data['treatmentPlan'] != null) {
       buffer.writeln('TREATMENT PLAN:');
       final plan = data['treatmentPlan'] as Map<String, dynamic>;
-      if (plan['goals'] != null) buffer.writeln('Goals: ${plan['goals']}');
-      if (plan['lifestyle'] != null) buffer.writeln('Lifestyle: ${plan['lifestyle']}');
-      if (plan['followUp'] != null) buffer.writeln('Follow-up: ${plan['followUp']}');
+      if (plan['approach'] != null) buffer.writeln('Approach: ${plan['approach']}');
+      if (plan['goal'] != null) buffer.writeln('Goal: ${plan['goal']}');
+      if (plan['monitoringPlan'] != null) buffer.writeln('Monitoring: ${plan['monitoringPlan']}');
+      buffer.writeln();
+    }
+
+    // Follow-up
+    if (data['followUpPlan'] != null && data['followUpPlan'].toString().isNotEmpty) {
+      buffer.writeln('FOLLOW-UP PLAN:');
+      buffer.writeln(data['followUpPlan']);
       buffer.writeln();
     }
 
@@ -492,33 +523,6 @@ def create_medical_report():
         borderPadding=8,
     )
     
-    patient_style = ParagraphStyle(
-        'PatientData',
-        parent=styles['Normal'],
-        fontSize=10,
-        textColor=colors.HexColor('#1E3A8A'),
-        backColor=colors.HexColor('#DBEAFE'),
-        leftIndent=10,
-        rightIndent=10,
-        spaceBefore=4,
-        spaceAfter=4,
-        borderPadding=6,
-    )
-    
-    alert_style = ParagraphStyle(
-        'Alert',
-        parent=styles['Normal'],
-        fontSize=11,
-        textColor=colors.HexColor('#991B1B'),
-        backColor=colors.HexColor('#FEE2E2'),
-        leftIndent=10,
-        rightIndent=10,
-        spaceBefore=6,
-        spaceAfter=6,
-        borderPadding=8,
-        fontName='Helvetica-Bold'
-    )
-    
     # Header
     story.append(Paragraph('🤖 AI-POWERED MEDICAL REPORT', title_style))
     story.append(Spacer(1, 0.2*inch))
@@ -544,22 +548,6 @@ def create_medical_report():
     story.append(Paragraph('🤖 <b>AI-Generated Overview:</b>', ai_style))
     story.append(Paragraph('${escape(aiInsights['executiveSummary'])}', ai_style))
     story.append(Spacer(1, 0.2*inch))
-    
-    # Critical Alerts
-    critical_alerts = ${jsonEncode(aiInsights['criticalAlerts'] ?? [])}
-    if critical_alerts:
-        story.append(Paragraph('⚠️  CRITICAL ALERTS', heading_style))
-        for alert in critical_alerts:
-            story.append(Paragraph(f'• {alert}', alert_style))
-        story.append(Spacer(1, 0.2*inch))
-    
-    # Key Findings
-    key_findings = ${jsonEncode(aiInsights['keyFindings'] ?? [])}
-    if key_findings:
-        story.append(Paragraph('🔑 KEY FINDINGS', heading_style))
-        for finding in key_findings:
-            story.append(Paragraph(f'• {finding}', styles['Normal']))
-        story.append(Spacer(1, 0.2*inch))
     
     # Patient Information
     story.append(PageBreak())
@@ -608,68 +596,17 @@ def create_medical_report():
     story.append(diagnosis_table)
     story.append(Spacer(1, 0.2*inch))
     
-    # Clinical History
-    story.append(Paragraph('CLINICAL HISTORY', heading_style))
-    if '${escape(history['chiefComplaint'])}' and '${escape(history['chiefComplaint'])}' != 'Not recorded':
-        story.append(Paragraph('<b>Chief Complaint:</b>', styles['Normal']))
-        story.append(Paragraph('${escape(history['chiefComplaint'])}', patient_style))
-        story.append(Spacer(1, 0.1*inch))
-    
-    if '${escape(history['historyOfPresentIllness'])}' and '${escape(history['historyOfPresentIllness'])}' != 'Not recorded':
-        story.append(Paragraph('<b>History of Present Illness:</b>', styles['Normal']))
-        story.append(Paragraph('${escape(history['historyOfPresentIllness'])}', patient_style))
-        story.append(Spacer(1, 0.1*inch))
-    
-    if '${escape(history['pastMedicalHistory'])}' and '${escape(history['pastMedicalHistory'])}' != 'Not recorded':
-        story.append(Paragraph('<b>Past Medical History:</b>', styles['Normal']))
-        story.append(Paragraph('${escape(history['pastMedicalHistory'])}', patient_style))
-        story.append(Spacer(1, 0.1*inch))
-    
-    if '${escape(history['familyHistory'])}' and '${escape(history['familyHistory'])}' != 'Not recorded':
-        story.append(Paragraph('<b>Family History:</b>', styles['Normal']))
-        story.append(Paragraph('${escape(history['familyHistory'])}', patient_style))
-        story.append(Spacer(1, 0.1*inch))
-    
-    if '${escape(history['allergies'])}' and '${escape(history['allergies'])}' != 'None reported':
-        story.append(Paragraph('<b>Allergies:</b>', styles['Normal']))
-        story.append(Paragraph('${escape(history['allergies'])}', patient_style))
-    
-    story.append(Spacer(1, 0.2*inch))
-    
     # AI Clinical Analysis
     story.append(PageBreak())
     story.append(Paragraph('🤖 AI CLINICAL ANALYSIS', heading_style))
     story.append(Paragraph('${escape(aiInsights['clinicalAnalysis'])}', ai_style))
     story.append(Spacer(1, 0.2*inch))
     
-    # Lab Interpretation (AI)
-    if '${escape(aiInsights['labInterpretation'])}':
-        story.append(Paragraph('🤖 LABORATORY INTERPRETATION', heading_style))
-        story.append(Paragraph('${escape(aiInsights['labInterpretation'])}', ai_style))
-        story.append(Spacer(1, 0.2*inch))
-    
-    # Imaging Findings (AI)
-    if '${escape(aiInsights['imagingFindings'])}':
-        story.append(Paragraph('🤖 IMAGING FINDINGS ANALYSIS', heading_style))
-        story.append(Paragraph('${escape(aiInsights['imagingFindings'])}', ai_style))
-        story.append(Spacer(1, 0.2*inch))
-    
     # Treatment Recommendations (AI)
     story.append(PageBreak())
     story.append(Paragraph('🤖 TREATMENT RECOMMENDATIONS', heading_style))
     story.append(Paragraph('${escape(aiInsights['treatmentRecommendations'])}', ai_style))
     story.append(Spacer(1, 0.2*inch))
-    
-    # Prognosis (AI)
-    if '${escape(aiInsights['prognosis'])}':
-        story.append(Paragraph('🤖 PROGNOSIS ASSESSMENT', heading_style))
-        story.append(Paragraph('${escape(aiInsights['prognosis'])}', ai_style))
-        story.append(Spacer(1, 0.2*inch))
-    
-    # Follow-up Plan (AI)
-    if '${escape(aiInsights['followUpPlan'])}':
-        story.append(Paragraph('🤖 FOLLOW-UP PLAN', heading_style))
-        story.append(Paragraph('${escape(aiInsights['followUpPlan'])}', ai_style))
     
     # Footer note
     story.append(Spacer(1, 0.3*inch))
