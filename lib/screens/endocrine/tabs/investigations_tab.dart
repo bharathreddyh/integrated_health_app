@@ -1,4 +1,4 @@
-// ==================== UPDATED TAB 5: INVESTIGATIONS ====================
+// ==================== ENHANCED TAB 5: INVESTIGATIONS WITH QUICK ADD ====================
 // lib/screens/endocrine/tabs/investigations_tab.dart
 
 import 'package:flutter/material.dart';
@@ -90,7 +90,87 @@ class _InvestigationsTabState extends State<InvestigationsTab> {
   bool _isSaving = false;
   DateTime? _lastSaved;
 
-  // Thyroid-specific Lab Tests
+  // Get disease-specific recommended tests and investigations
+  List<Map<String, dynamic>> get _quickAddTests {
+    final recommendations = _getRecommendedInvestigations();
+    final tests = <Map<String, dynamic>>[];
+
+    for (final rec in recommendations) {
+      // Parse test names from recommendations
+      if (rec.toLowerCase().contains('tsh')) {
+        tests.add({'name': 'TSH', 'category': 'Thyroid Function', 'description': 'Thyroid Stimulating Hormone'});
+      }
+      if (rec.toLowerCase().contains('free t4') || rec.toLowerCase().contains('t4')) {
+        tests.add({'name': 'Free T4', 'category': 'Thyroid Function', 'description': 'Free Thyroxine'});
+      }
+      if (rec.toLowerCase().contains('free t3') || rec.toLowerCase().contains('t3')) {
+        tests.add({'name': 'Free T3', 'category': 'Thyroid Function', 'description': 'Free Triiodothyronine'});
+      }
+      if (rec.toLowerCase().contains('anti-tpo') || rec.toLowerCase().contains('tpo')) {
+        tests.add({'name': 'Anti-TPO', 'category': 'Antibodies', 'description': 'Thyroid Peroxidase Antibody'});
+      }
+      if (rec.toLowerCase().contains('trab') || rec.toLowerCase().contains('receptor antibod')) {
+        tests.add({'name': 'TSH Receptor Antibody (TRAb)', 'category': 'Antibodies', 'description': 'TSH receptor antibodies'});
+      }
+      if (rec.toLowerCase().contains('anti-thyroglobulin')) {
+        tests.add({'name': 'Anti-Thyroglobulin Antibody', 'category': 'Antibodies', 'description': 'Thyroglobulin antibodies'});
+      }
+      if (rec.toLowerCase().contains('calcitonin')) {
+        tests.add({'name': 'Calcitonin', 'category': 'Tumor Markers', 'description': 'Calcitonin level'});
+      }
+    }
+
+    // Remove duplicates
+    final uniqueTests = <String, Map<String, dynamic>>{};
+    for (final test in tests) {
+      uniqueTests[test['name'] as String] = test;
+    }
+
+    return uniqueTests.values.toList();
+  }
+
+  List<Map<String, dynamic>> get _quickAddInvestigations {
+    final recommendations = _getRecommendedInvestigations();
+    final investigations = <Map<String, dynamic>>[];
+
+    for (final rec in recommendations) {
+      // Parse investigation names from recommendations
+      if (rec.toLowerCase().contains('ultrasound') || rec.toLowerCase().contains('usg thyroid')) {
+        investigations.add({'name': 'USG Thyroid', 'category': 'Imaging', 'description': 'Thyroid ultrasound'});
+      }
+      if (rec.toLowerCase().contains('doppler')) {
+        investigations.add({'name': 'Thyroid ultrasound with Doppler', 'category': 'Imaging', 'description': 'USG with blood flow assessment'});
+      }
+      if (rec.toLowerCase().contains('fnac') || rec.toLowerCase().contains('fine needle')) {
+        investigations.add({'name': 'FNAC Thyroid', 'category': 'Biopsy', 'description': 'Fine needle aspiration cytology'});
+      }
+      if (rec.toLowerCase().contains('radioiodine') || rec.toLowerCase().contains('uptake scan')) {
+        investigations.add({'name': 'Radioiodine Uptake Scan', 'category': 'Imaging', 'description': 'RAI uptake study'});
+      }
+      if (rec.toLowerCase().contains('eye examination')) {
+        investigations.add({'name': 'Eye Examination', 'category': 'Other', 'description': 'Ophthalmology assessment'});
+      }
+      if (rec.toLowerCase().contains('ct') || rec.toLowerCase().contains('mri')) {
+        investigations.add({'name': 'CT Neck with Contrast', 'category': 'Imaging', 'description': 'For staging/assessment'});
+      }
+      if (rec.toLowerCase().contains('ecg')) {
+        investigations.add({'name': 'ECG', 'category': 'Cardiac Assessment', 'description': 'Electrocardiogram'});
+      }
+      if (rec.toLowerCase().contains('echo')) {
+        investigations.add({'name': 'ECHO (Echocardiography)', 'category': 'Cardiac Assessment', 'description': '2D Echo'});
+      }
+    }
+
+    // Remove duplicates
+    final uniqueInvestigations = <String, Map<String, dynamic>>{};
+    for (final inv in investigations) {
+      uniqueInvestigations[inv['name'] as String] = inv;
+    }
+
+    return uniqueInvestigations.values.toList();
+  }
+
+  // Thyroid-specific Lab Tests (full list)
   static const Map<String, List<String>> _thyroidLabTests = {
     'Thyroid Function': [
       'TSH',
@@ -121,7 +201,7 @@ class _InvestigationsTabState extends State<InvestigationsTab> {
     ],
   };
 
-  // Thyroid-specific Investigations
+  // Thyroid-specific Investigations (full list)
   static const Map<String, List<String>> _thyroidInvestigations = {
     'Imaging': [
       'USG Thyroid',
@@ -156,7 +236,22 @@ class _InvestigationsTabState extends State<InvestigationsTab> {
   }
 
   void _loadExistingData() {
-    // TODO: Load lab tests and investigations from condition.additionalData
+    // Load from condition.orderedLabTests and orderedInvestigations
+    if (widget.condition.orderedLabTests != null) {
+      setState(() {
+        _orderedLabTests = widget.condition.orderedLabTests!
+            .map((test) => LabTestOrder.fromJson(test))
+            .toList();
+      });
+    }
+
+    if (widget.condition.orderedInvestigations != null) {
+      setState(() {
+        _orderedInvestigations = widget.condition.orderedInvestigations!
+            .map((inv) => Investigation.fromJson(inv))
+            .toList();
+      });
+    }
   }
 
   void _onDataChanged() {
@@ -170,7 +265,12 @@ class _InvestigationsTabState extends State<InvestigationsTab> {
     setState(() => _isSaving = true);
 
     try {
-      // TODO: Save lab tests and investigations to condition.additionalData
+      final updatedCondition = widget.condition.copyWith(
+        orderedLabTests: _orderedLabTests.map((t) => t.toJson()).toList(),
+        orderedInvestigations: _orderedInvestigations.map((i) => i.toJson()).toList(),
+      );
+
+      widget.onUpdate(updatedCondition);
 
       setState(() {
         _lastSaved = DateTime.now();
@@ -186,28 +286,16 @@ class _InvestigationsTabState extends State<InvestigationsTab> {
                 Text('Investigations saved'),
               ],
             ),
-            duration: const Duration(seconds: 1),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
             behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
           ),
         );
       }
-    } catch (e) {
-      print('Auto-save error: $e');
     } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
+      setState(() => _isSaving = false);
     }
-  }
-
-  String _formatTime(DateTime time) {
-    final now = DateTime.now();
-    final diff = now.difference(time);
-
-    if (diff.inSeconds < 60) return 'just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
   }
 
   @override
@@ -220,48 +308,42 @@ class _InvestigationsTabState extends State<InvestigationsTab> {
           // Auto-save indicator
           if (_isSaving || _lastSaved != null)
             Container(
-              padding: const EdgeInsets.all(12),
-              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: _isSaving ? Colors.blue.shade50 : Colors.green.shade50,
+                color: _isSaving ? Colors.orange.shade50 : Colors.green.shade50,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: _isSaving ? Colors.blue.shade200 : Colors.green.shade200,
+                  color: _isSaving ? Colors.orange.shade200 : Colors.green.shade200,
                 ),
               ),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   if (_isSaving)
-                    const SizedBox(
+                    SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(Colors.orange.shade700),
+                      ),
                     )
                   else
                     Icon(Icons.check_circle, size: 16, color: Colors.green.shade700),
                   const SizedBox(width: 8),
                   Text(
-                    _isSaving ? 'Saving...' : 'Saved',
+                    _isSaving
+                        ? 'Saving...'
+                        : 'Last saved: ${_formatTime(_lastSaved!)}',
                     style: TextStyle(
                       fontSize: 12,
-                      color: _isSaving ? Colors.blue.shade700 : Colors.green.shade700,
-                      fontWeight: FontWeight.w600,
+                      color: _isSaving ? Colors.orange.shade700 : Colors.green.shade700,
                     ),
                   ),
-                  if (_lastSaved != null) ...[
-                    const Spacer(),
-                    Text(
-                      'Last saved: ${_formatTime(_lastSaved!)}',
-                      style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                    ),
-                  ],
                 ],
               ),
             ),
-
-          // Recommended Investigations Card
-          _buildDiseaseSpecificInvestigationsCard(),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
           // Lab Tests Card
           _buildLabTestsCard(),
@@ -269,72 +351,7 @@ class _InvestigationsTabState extends State<InvestigationsTab> {
 
           // Investigations Card
           _buildInvestigationsCard(),
-          const SizedBox(height: 20),
-
-          // Investigation Summary
-          _buildInvestigationSummary(),
         ],
-      ),
-    );
-  }
-
-  Widget _buildDiseaseSpecificInvestigationsCard() {
-    final recommendations = _getRecommendedInvestigations();
-
-    if (recommendations.isEmpty) return const SizedBox();
-
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.checklist, color: Color(0xFF2563EB)),
-                const SizedBox(width: 12),
-                const Text(
-                  'RECOMMENDED INVESTIGATIONS',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'For ${widget.diseaseConfig.name}:',
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 12),
-            ...recommendations.map((test) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.check_circle_outline,
-                    size: 18,
-                    color: Color(0xFF2563EB),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      test,
-                      style: const TextStyle(fontSize: 13),
-                    ),
-                  ),
-                ],
-              ),
-            )),
-          ],
-        ),
       ),
     );
   }
@@ -358,6 +375,17 @@ class _InvestigationsTabState extends State<InvestigationsTab> {
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
+                  ),
+                ),
+                const Spacer(),
+                ElevatedButton.icon(
+                  onPressed: _showAddLabTestDialog,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text(_orderedLabTests.isEmpty ? 'Add Lab Tests' : 'Add More Tests'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
                   ),
                 ),
               ],
@@ -403,74 +431,71 @@ class _InvestigationsTabState extends State<InvestigationsTab> {
                     ),
                     subtitle: Row(
                       children: [
-                        Text(
-                          test.category,
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.purple.shade200,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            test.category,
+                            style: TextStyle(fontSize: 10, color: Colors.purple.shade900),
+                          ),
                         ),
                         if (test.isUrgent) ...[
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: Colors.red.shade100,
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Text(
-                              'URGENT',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.red.shade700,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.priority_high, size: 10, color: Colors.red.shade700),
+                                const SizedBox(width: 2),
+                                Text(
+                                  'URGENT',
+                                  style: TextStyle(fontSize: 10, color: Colors.red.shade700, fontWeight: FontWeight.bold),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ],
                     ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            test.isUrgent ? Icons.flag : Icons.flag_outlined,
-                            color: test.isUrgent ? Colors.red : Colors.grey,
-                            size: 20,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _orderedLabTests[index].isUrgent = !test.isUrgent;
-                            });
-                            _onDataChanged();
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, size: 20, color: Colors.red),
-                          onPressed: () {
-                            setState(() {
-                              _orderedLabTests.removeAt(index);
-                            });
-                            _onDataChanged();
-                          },
-                        ),
-                      ],
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                      onPressed: () => _removeLabTest(index),
                     ),
                   ),
                 );
               }).toList(),
 
-            const SizedBox(height: 16),
-
-            // Add Lab Tests Button
-            ElevatedButton.icon(
-              onPressed: _showLabTestsDialog,
-              icon: const Icon(Icons.add),
-              label: Text(_orderedLabTests.isEmpty ? 'Add Lab Tests' : 'Add More Tests'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purple,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+            // 🆕 Quick Add Section for Common Lab Tests
+            if (_orderedLabTests.isNotEmpty || _quickAddTests.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              const Divider(),
+              const SizedBox(height: 12),
+              const Text(
+                'Quick Add Recommended Tests:',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey,
+                ),
               ),
-            ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _quickAddTests.map((test) {
+                  final isAlreadyAdded = _orderedLabTests.any((t) => t.name == test['name']);
+                  return _buildQuickAddTestChip(test, isAlreadyAdded);
+                }).toList(),
+              ),
+            ],
           ],
         ),
       ),
@@ -496,6 +521,17 @@ class _InvestigationsTabState extends State<InvestigationsTab> {
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
+                  ),
+                ),
+                const Spacer(),
+                ElevatedButton.icon(
+                  onPressed: _showAddInvestigationDialog,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text(_orderedInvestigations.isEmpty ? 'Add Investigations' : 'Add More'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
                   ),
                 ),
               ],
@@ -541,132 +577,69 @@ class _InvestigationsTabState extends State<InvestigationsTab> {
                     ),
                     subtitle: Row(
                       children: [
-                        Text(
-                          investigation.category,
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade200,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            investigation.category,
+                            style: TextStyle(fontSize: 10, color: Colors.blue.shade900),
+                          ),
                         ),
                         if (investigation.isUrgent) ...[
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: Colors.red.shade100,
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Text(
-                              'URGENT',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.red.shade700,
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.priority_high, size: 10, color: Colors.red.shade700),
+                                const SizedBox(width: 2),
+                                Text(
+                                  'URGENT',
+                                  style: TextStyle(fontSize: 10, color: Colors.red.shade700, fontWeight: FontWeight.bold),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ],
                     ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: Icon(
-                            investigation.isUrgent ? Icons.flag : Icons.flag_outlined,
-                            color: investigation.isUrgent ? Colors.red : Colors.grey,
-                            size: 20,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _orderedInvestigations[index].isUrgent = !investigation.isUrgent;
-                            });
-                            _onDataChanged();
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, size: 20, color: Colors.red),
-                          onPressed: () {
-                            setState(() {
-                              _orderedInvestigations.removeAt(index);
-                            });
-                            _onDataChanged();
-                          },
-                        ),
-                      ],
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                      onPressed: () => _removeInvestigation(index),
                     ),
                   ),
                 );
               }).toList(),
 
-            const SizedBox(height: 16),
-
-            // Add Investigations Button
-            ElevatedButton.icon(
-              onPressed: _showInvestigationsDialog,
-              icon: const Icon(Icons.add),
-              label: Text(_orderedInvestigations.isEmpty ? 'Add Investigations' : 'Add More Investigations'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+            // 🆕 Quick Add Section for Common Investigations
+            if (_orderedInvestigations.isNotEmpty || _quickAddInvestigations.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              const Divider(),
+              const SizedBox(height: 12),
+              const Text(
+                'Quick Add Recommended Investigations:',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey,
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInvestigationSummary() {
-    final totalItems = _orderedLabTests.length + _orderedInvestigations.length;
-
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.summarize, color: Color(0xFF2563EB)),
-                SizedBox(width: 8),
-                Text(
-                  'Investigation Summary',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            _buildSummaryRow('Lab Tests Ordered', '${_orderedLabTests.length}'),
-            _buildSummaryRow('Investigations Ordered', '${_orderedInvestigations.length}'),
-            _buildSummaryRow('Total Items', '$totalItems'),
-
-            if (totalItems > 0) ...[
-              const Divider(height: 24),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.green.shade700, size: 20),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        '$totalItems investigation${totalItems == 1 ? '' : 's'} planned',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.green.shade900,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _quickAddInvestigations.map((investigation) {
+                  final isAlreadyAdded = _orderedInvestigations.any((i) => i.name == investigation['name']);
+                  return _buildQuickAddInvestigationChip(investigation, isAlreadyAdded);
+                }).toList(),
               ),
             ],
           ],
@@ -675,20 +648,125 @@ class _InvestigationsTabState extends State<InvestigationsTab> {
     );
   }
 
-  Widget _buildSummaryRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-          Text(value, style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w600)),
-        ],
+  // 🆕 Quick Add Test Chip Widget
+  Widget _buildQuickAddTestChip(Map<String, dynamic> test, bool isAlreadyAdded) {
+    return InkWell(
+      onTap: isAlreadyAdded ? null : () => _quickAddLabTest(test),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isAlreadyAdded ? Colors.grey.shade200 : Colors.purple.shade50,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isAlreadyAdded ? Colors.grey.shade400 : Colors.purple.shade300,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isAlreadyAdded ? Icons.check_circle : Icons.add_circle_outline,
+              size: 16,
+              color: isAlreadyAdded ? Colors.grey.shade600 : Colors.purple.shade700,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              test['name'] as String,
+              style: TextStyle(
+                fontSize: 13,
+                color: isAlreadyAdded ? Colors.grey.shade600 : Colors.purple.shade900,
+                fontWeight: isAlreadyAdded ? FontWeight.normal : FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Future<void> _showLabTestsDialog() async {
+  // 🆕 Quick Add Investigation Chip Widget
+  Widget _buildQuickAddInvestigationChip(Map<String, dynamic> investigation, bool isAlreadyAdded) {
+    return InkWell(
+      onTap: isAlreadyAdded ? null : () => _quickAddInvestigation(investigation),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isAlreadyAdded ? Colors.grey.shade200 : Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isAlreadyAdded ? Colors.grey.shade400 : Colors.blue.shade300,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isAlreadyAdded ? Icons.check_circle : Icons.add_circle_outline,
+              size: 16,
+              color: isAlreadyAdded ? Colors.grey.shade600 : Colors.blue.shade700,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              investigation['name'] as String,
+              style: TextStyle(
+                fontSize: 13,
+                color: isAlreadyAdded ? Colors.grey.shade600 : Colors.blue.shade900,
+                fontWeight: isAlreadyAdded ? FontWeight.normal : FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 🆕 Quick Add Lab Test Method
+  void _quickAddLabTest(Map<String, dynamic> test) {
+    final newTest = LabTestOrder(
+      name: test['name'] as String,
+      category: test['category'] as String,
+      notes: test['description'] as String?,
+    );
+
+    setState(() {
+      _orderedLabTests.add(newTest);
+    });
+
+    _onDataChanged();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${newTest.name} added'),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  // 🆕 Quick Add Investigation Method
+  void _quickAddInvestigation(Map<String, dynamic> investigation) {
+    final newInvestigation = Investigation(
+      name: investigation['name'] as String,
+      category: investigation['category'] as String,
+      notes: investigation['description'] as String?,
+    );
+
+    setState(() {
+      _orderedInvestigations.add(newInvestigation);
+    });
+
+    _onDataChanged();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${newInvestigation.name} added'),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _showAddLabTestDialog() async {
     final selected = await showDialog<List<String>>(
       context: context,
       builder: (context) => _MultiSelectDialog(
@@ -716,7 +794,7 @@ class _InvestigationsTabState extends State<InvestigationsTab> {
     }
   }
 
-  Future<void> _showInvestigationsDialog() async {
+  Future<void> _showAddInvestigationDialog() async {
     final selected = await showDialog<List<String>>(
       context: context,
       builder: (context) => _MultiSelectDialog(
@@ -741,6 +819,35 @@ class _InvestigationsTabState extends State<InvestigationsTab> {
         }
       });
       _onDataChanged();
+    }
+  }
+
+  void _removeLabTest(int index) {
+    setState(() {
+      _orderedLabTests.removeAt(index);
+    });
+    _onDataChanged();
+  }
+
+  void _removeInvestigation(int index) {
+    setState(() {
+      _orderedInvestigations.removeAt(index);
+    });
+    _onDataChanged();
+  }
+
+  String _formatTime(DateTime time) {
+    final now = DateTime.now();
+    final difference = now.difference(time);
+
+    if (difference.inSeconds < 60) {
+      return 'Just now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else {
+      return '${time.day}/${time.month}/${time.year}';
     }
   }
 
@@ -791,7 +898,7 @@ class _InvestigationsTabState extends State<InvestigationsTab> {
   }
 }
 
-// Multi-Select Dialog Widget
+// ==================== MULTI-SELECT DIALOG WIDGET ====================
 class _MultiSelectDialog extends StatefulWidget {
   final String title;
   final Map<String, List<String>> categories;
@@ -826,7 +933,9 @@ class _MultiSelectDialogState extends State<_MultiSelectDialog> {
 
     final filtered = <String, List<String>>{};
     widget.categories.forEach((category, items) {
-      final matchingItems = items.where((item) => item.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+      final matchingItems = items
+          .where((item) => item.toLowerCase().contains(_searchQuery.toLowerCase()))
+          .toList();
       if (matchingItems.isNotEmpty) filtered[category] = matchingItems;
     });
     return filtered.entries.toList();
@@ -842,26 +951,52 @@ class _MultiSelectDialogState extends State<_MultiSelectDialog> {
         height: MediaQuery.of(context).size.height * 0.8,
         child: Column(
           children: [
+            // Header with title and selected count
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: widget.color.withOpacity(0.1),
-                border: Border(bottom: BorderSide(color: widget.color.withOpacity(0.3))),
+                border: Border(
+                  bottom: BorderSide(color: widget.color.withOpacity(0.3)),
+                ),
               ),
               child: Row(
                 children: [
                   Icon(widget.icon, color: widget.color),
                   const SizedBox(width: 12),
-                  Expanded(child: Text(widget.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
+                  Expanded(
+                    child: Text(
+                      widget.title,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                   if (_selectedItems.isNotEmpty)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(color: widget.color, borderRadius: BorderRadius.circular(16)),
-                      child: Text('${_selectedItems.length} selected', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: widget.color,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        '${_selectedItems.length} selected',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                 ],
               ),
             ),
+
+            // Search bar
             Padding(
               padding: const EdgeInsets.all(16),
               child: TextField(
@@ -869,15 +1004,45 @@ class _MultiSelectDialogState extends State<_MultiSelectDialog> {
                 decoration: InputDecoration(
                   hintText: 'Search...',
                   prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _searchQuery.isNotEmpty ? IconButton(icon: const Icon(Icons.clear), onPressed: () => setState(() { _searchController.clear(); _searchQuery = ''; })) : null,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      setState(() {
+                        _searchController.clear();
+                        _searchQuery = '';
+                      });
+                    },
+                  )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
                 onChanged: (value) => setState(() => _searchQuery = value),
               ),
             ),
+
+            // Category list with checkboxes
             Expanded(
               child: filteredCategories.isEmpty
-                  ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.search_off, size: 64, color: Colors.grey.shade400), const SizedBox(height: 16), Text('No results found', style: TextStyle(color: Colors.grey.shade600))]))
+                  ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.search_off,
+                      size: 64,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No results found',
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+              )
                   : ListView.builder(
                 itemCount: filteredCategories.length,
                 itemBuilder: (context, index) {
@@ -887,23 +1052,42 @@ class _MultiSelectDialogState extends State<_MultiSelectDialog> {
                   final isExpanded = _expandedCategory == category;
 
                   return Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
                     child: Column(
                       children: [
                         ListTile(
                           leading: Icon(widget.icon, color: widget.color),
-                          title: Text(category, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          title: Text(
+                            category,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           subtitle: Text('${items.length} items'),
-                          trailing: Icon(isExpanded ? Icons.expand_less : Icons.expand_more),
-                          onTap: () => setState(() => _expandedCategory = isExpanded ? null : category),
+                          trailing: Icon(
+                            isExpanded
+                                ? Icons.expand_less
+                                : Icons.expand_more,
+                          ),
+                          onTap: () => setState(() {
+                            _expandedCategory =
+                            isExpanded ? null : category;
+                          }),
                         ),
                         if (isExpanded)
                           Column(
                             children: items.map((item) {
-                              final isSelected = _selectedItems.contains(item);
+                              final isSelected =
+                              _selectedItems.contains(item);
                               return CheckboxListTile(
                                 dense: true,
-                                title: Text(item, style: const TextStyle(fontSize: 14)),
+                                title: Text(
+                                  item,
+                                  style: const TextStyle(fontSize: 14),
+                                ),
                                 value: isSelected,
                                 activeColor: widget.color,
                                 onChanged: (bool? value) {
@@ -924,17 +1108,31 @@ class _MultiSelectDialogState extends State<_MultiSelectDialog> {
                 },
               ),
             ),
+
+            // Bottom action buttons
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(border: Border(top: BorderSide(color: Colors.grey.shade300))),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: Colors.grey.shade300),
+                ),
+              ),
               child: Row(
                 children: [
-                  TextButton(onPressed: () => setState(() => _selectedItems.clear()), child: const Text('Clear All')),
+                  TextButton(
+                    onPressed: () => setState(() => _selectedItems.clear()),
+                    child: const Text('Clear All'),
+                  ),
                   const Spacer(),
-                  TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
                   const SizedBox(width: 12),
                   ElevatedButton.icon(
-                    onPressed: _selectedItems.isEmpty ? null : () => Navigator.pop(context, _selectedItems.toList()),
+                    onPressed: _selectedItems.isEmpty
+                        ? null
+                        : () => Navigator.pop(context, _selectedItems.toList()),
                     icon: const Icon(Icons.check),
                     label: Text('Add ${_selectedItems.length}'),
                     style: ElevatedButton.styleFrom(

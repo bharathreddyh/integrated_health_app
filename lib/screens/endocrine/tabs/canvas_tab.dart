@@ -351,6 +351,7 @@ class _CanvasTabState extends State<CanvasTab>
                       label: const Text('Edit', style: TextStyle(fontSize: 12)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2563EB),
+                        foregroundColor: Colors.white,  // ✅ ADD THIS LINE
                         minimumSize: const Size(double.infinity, 32),
                         padding: const EdgeInsets.symmetric(vertical: 6),
                       ),
@@ -437,6 +438,7 @@ class _CanvasTabState extends State<CanvasTab>
                       label: const Text('Re-edit', style: TextStyle(fontSize: 12)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green.shade600,
+                        foregroundColor: Colors.white,  // ✅ ADD THIS LINE
                         minimumSize: const Size(double.infinity, 32),
                         padding: const EdgeInsets.symmetric(vertical: 6),
                       ),
@@ -585,6 +587,7 @@ class _CanvasTabState extends State<CanvasTab>
                           style: TextStyle(fontSize: 16)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF2563EB),
+                        foregroundColor: Colors.white,  // ✅ ADD THIS LINE
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                     ),
