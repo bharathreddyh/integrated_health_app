@@ -1,6 +1,8 @@
-// ==================== FIXED THYROID DISEASE MODULE SCREEN ====================
+// ==================== THYROID DISEASE MODULE SCREEN WITH AI PDF ====================
 // lib/screens/endocrine/thyroid_disease_module_screen.dart
 // ✅ All compilation errors fixed
+// ✅ AI PDF Generator integrated
+// ✅ CORRECTED IMPORT PATH
 
 import 'package:flutter/material.dart';
 import '../../models/endocrine/endocrine_condition.dart';
@@ -13,6 +15,7 @@ import 'tabs/clinical_features_tab.dart';
 import 'tabs/investigations_tab.dart';
 import 'tabs/treatment_tab.dart';
 import 'tabs/patient_data_tab.dart';
+import '../../widgets/ai_pdf_generator_button.dart';  // ✅ CORRECTED: Two levels up
 
 class ThyroidDiseaseModuleScreen extends StatefulWidget {
   final String patientId;
@@ -117,6 +120,17 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
       },
       child: Scaffold(
         appBar: _buildAppBar(context),
+
+        // ✅ ADD THIS: Floating Action Button for AI PDF Generation
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => _showAIPDFDialog(),
+          icon: const Icon(Icons.auto_awesome),
+          label: const Text('AI Report'),
+          backgroundColor: Colors.blue.shade600,
+          heroTag: 'ai_report_fab',
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+
         body: Column(
           children: [
             // Tab Bar
@@ -288,6 +302,184 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
               fontSize: 12,
             ),
           ),
+        ),
+      ],
+    );
+  }
+
+  // ✅ ADD THIS METHOD: Show AI PDF Generation Dialog
+  void _showAIPDFDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent dismissal during generation
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 500),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header with animated icon
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blue.shade400, Colors.purple.shade400],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.auto_awesome,
+                  size: 48,
+                  color: Colors.white,
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Title
+              const Text(
+                '🤖 AI-Powered Medical Report',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E293B),
+                ),
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 12),
+
+              // Description
+              Text(
+                'Generate a comprehensive medical report with AI analysis of all patient data, labs, imaging, and treatment plans.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade700,
+                  height: 1.5,
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Feature highlights
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.shade100),
+                ),
+                child: Column(
+                  children: [
+                    _buildFeatureItem(
+                      Icons.speed,
+                      'Lightning Fast',
+                      'Generated in seconds',
+                    ),
+                    const SizedBox(height: 8),
+                    _buildFeatureItem(
+                      Icons.insights,
+                      'AI Analysis',
+                      'Smart insights and trends',
+                    ),
+                    const SizedBox(height: 8),
+                    _buildFeatureItem(
+                      Icons.picture_as_pdf,
+                      'Professional PDF',
+                      'Ready to share',
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // AI PDF Generator Button (the actual widget)
+              AIPDFGeneratorButton(
+                condition: _condition,
+                patient: _patient,
+                onSuccess: () {
+                  Navigator.pop(context); // Close dialog on success
+                },
+              ),
+
+              const SizedBox(height: 12),
+
+              // Cancel button
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper method to build feature items
+  Widget _buildFeatureItem(IconData icon, String title, String subtitle) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            color: Colors.blue.shade600,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Icon(
+          Icons.check_circle,
+          color: Colors.green.shade400,
+          size: 18,
         ),
       ],
     );
