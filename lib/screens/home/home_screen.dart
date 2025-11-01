@@ -8,6 +8,8 @@ import '../canvas/canvas_screen.dart';
 import '../patient/patient_registration_screen.dart';
 import 'package:intl/intl.dart';
 import '../medical_templates/patient_selection_dialog.dart';
+import '../canvas/canvas_patient_selection_dialog.dart';
+
 
 
 
@@ -699,32 +701,19 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ✅ Canvas with Patient Selection
-// In home_screen.dart - Replace the _openCanvasWithPatientSelection method
+
 
   Future<void> _openCanvasWithPatientSelection() async {
-    final patients = await DatabaseHelper.instance.getAllPatients();
-
-    if (!mounted) return;
-
-    // ✅ NEW: Handle empty patient list with better options
-    if (patients.isEmpty) {
-      _showEmptyPatientsDialog();
-      return;
-    }
-
-    // Show normal patient selection dialog
-    final selectedPatient = await showDialog<Patient>(
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => _buildPatientSelectionDialog(patients),    );
-    
-    if (selectedPatient != null && mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CanvasScreen(patient: selectedPatient),
-        ),
-      );
+      builder: (context) => const CanvasPatientSelectionDialog(),
+    );
+
+    if (result != null && mounted) {
+      final patient = result['patient'] as Patient?;
+      if (patient != null) {
+        Navigator.pushNamed(context, '/kidney', arguments: patient);
+      }
     }
   }
 
