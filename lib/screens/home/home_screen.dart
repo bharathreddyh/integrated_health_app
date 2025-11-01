@@ -710,16 +710,29 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
   Future<void> _openCanvasWithPatientSelection() async {
-    final result = await showDialog<Map<String, dynamic>>(
+    final patients = await DatabaseHelper.instance.getAllPatients();
+
+    if (!mounted) return;
+
+    // Handle empty patient list
+    if (patients.isEmpty) {
+      _showEmptyPatientsDialog();
+      return;
+    }
+
+    // ✅ CORRECT: Use the existing method
+    final selectedPatient = await showDialog<Patient>(
       context: context,
-      builder: (context) => const CanvasPatientSelectionDialog(),
+      builder: (context) => _buildPatientSelectionDialog(patients),
     );
 
-    if (result != null && mounted) {
-      final patient = result['patient'] as Patient?;
-      if (patient != null) {
-        Navigator.pushNamed(context, '/kidney', arguments: patient);
-      }
+    if (selectedPatient != null && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CanvasScreen(patient: selectedPatient),
+        ),
+      );
     }
   }
   void _filterPatientsInDialog(String query, List<Patient> allPatients) {
