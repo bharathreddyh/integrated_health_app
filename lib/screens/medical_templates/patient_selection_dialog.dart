@@ -1,5 +1,5 @@
 // lib/screens/medical_templates/patient_selection_dialog.dart
-// ✅ UPDATED: History + New Visit buttons for each patient
+// ✅ UPDATED: Option 1 - Two-Column Compact Layout + History + New Visit buttons
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -83,11 +83,11 @@ class _MedicalTemplatePatientSelectionDialogState
   Widget build(BuildContext context) {
     return Dialog(
       child: Container(
-        width: 900, // ✅ INCREASED width to fit buttons
-        height: 700,
+        width: 700, // Optimal width for content
+        height: 720, // ✅ INCREASED from 700 to show more patients
         child: Column(
           children: [
-            // Header
+            // ========== HEADER ==========
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -100,11 +100,11 @@ class _MedicalTemplatePatientSelectionDialogState
                 children: [
                   const Icon(Icons.healing, color: Colors.white, size: 32),
                   const SizedBox(width: 16),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'Medical Templates',
                           style: TextStyle(
                             fontSize: 22,
@@ -112,10 +112,13 @@ class _MedicalTemplatePatientSelectionDialogState
                             color: Colors.white,
                           ),
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
                           'Select patient or start quick assessment',
-                          style: TextStyle(fontSize: 14, color: Colors.white70),
+                          style: TextStyle(
+                            fontSize: 13, // Slightly smaller
+                            color: Colors.white.withOpacity(0.9),
+                          ),
                         ),
                       ],
                     ),
@@ -128,98 +131,97 @@ class _MedicalTemplatePatientSelectionDialogState
               ),
             ),
 
-            // Action Buttons
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.purple.shade50,
-                border: Border(
-                  bottom: BorderSide(color: Colors.purple.shade200),
-                ),
-              ),
-              child: Column(
+            // ========== ✨ NEW: COMPACT 2-COLUMN ACTION BUTTONS ✨ ==========
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              child: Row(
                 children: [
-                  // Option 1: Add New Patient
-                  _buildOptionCard(
-                    icon: Icons.person_add,
-                    iconColor: Colors.purple.shade700,
-                    iconBg: Colors.purple.shade100,
-                    title: 'Add New Patient',
-                    subtitle: 'Register patient and start assessment',
-                    onTap: () async {
-                      Navigator.pop(context);
+                  // Column 1: Add New Patient
+                  Expanded(
+                    child: _buildCompactActionCard(
+                      icon: Icons.person_add,
+                      iconColor: Colors.purple.shade700,
+                      iconBg: Colors.purple.shade100,
+                      title: 'Add New Patient',
+                      subtitle: 'Register & assess',
+                      onTap: () async {
+                        Navigator.pop(context);
 
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const PatientRegistrationScreen(),
-                        ),
-                      );
+                        final result = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PatientRegistrationScreen(),
+                          ),
+                        );
 
-                      if (result != null && context.mounted) {
-                        Patient? patient;
-                        if (result is Map && result['patient'] != null) {
-                          patient = result['patient'] as Patient;
-                        } else if (result is Patient) {
-                          patient = result;
+                        if (result != null && context.mounted) {
+                          Patient? patient;
+                          if (result is Map && result['patient'] != null) {
+                            patient = result['patient'] as Patient;
+                          } else if (result is Patient) {
+                            patient = result;
+                          }
+
+                          if (patient != null) {
+                            Navigator.pushNamed(
+                              context,
+                              '/medical-systems',
+                              arguments: {
+                                'patient': patient,
+                                'isQuickMode': false,
+                              },
+                            );
+                          }
                         }
-
-                        if (patient != null) {
-                          Navigator.pushNamed(
-                            context,
-                            '/medical-systems',
-                            arguments: {
-                              'patient': patient,
-                              'isQuickMode': false,
-                            },
-                          );
-                        }
-                      }
-                    },
+                      },
+                    ),
                   ),
-                  const SizedBox(height: 12),
 
-                  // Option 2: Quick Template (Temp Patient)
-                  _buildOptionCard(
-                    icon: Icons.flash_on,
-                    iconColor: Colors.orange.shade700,
-                    iconBg: Colors.orange.shade100,
-                    title: 'Quick Template',
-                    subtitle: 'Start without patient (create temporary record)',
-                    onTap: () {
-                      // Create temporary patient
-                      final tempPatient = Patient(
-                        id: 'TEMP_${DateTime.now().millisecondsSinceEpoch}',
-                        name: 'Quick Assessment ${DateFormat('MMM dd, HH:mm').format(DateTime.now())}',
-                        age: 0,
-                        phone: 'N/A',
-                        date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
-                        conditions: [],
-                        visits: 0,
-                      );
+                  const SizedBox(width: 12),
 
-                      Navigator.pop(context, {
-                        'patient': tempPatient,
-                        'quickMode': true,
-                      });
-                    },
+                  // Column 2: Quick Template
+                  Expanded(
+                    child: _buildCompactActionCard(
+                      icon: Icons.flash_on,
+                      iconColor: Colors.orange.shade700,
+                      iconBg: Colors.orange.shade100,
+                      title: 'Quick Template',
+                      subtitle: 'Temp record mode',
+                      onTap: () {
+                        // Create temporary patient
+                        final tempPatient = Patient(
+                          id: 'TEMP_${DateTime.now().millisecondsSinceEpoch}',
+                          name: 'Quick Assessment ${DateFormat('MMM dd, HH:mm').format(DateTime.now())}',
+                          age: 0,
+                          phone: 'N/A',
+                          date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+                          conditions: [],
+                          visits: 0,
+                        );
+
+                        Navigator.pop(context, {
+                          'patient': tempPatient,
+                          'quickMode': true,
+                        });
+                      },
+                    ),
                   ),
                 ],
               ),
             ),
 
-            // Divider
+            // ========== DIVIDER (More Compact) ==========
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 8), // Reduced from 16
               child: Row(
                 children: [
                   Expanded(child: Divider(color: Colors.grey.shade300)),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       'OR SELECT EXISTING PATIENT',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 10, // Reduced from 11
                         fontWeight: FontWeight.bold,
                         color: Colors.grey.shade600,
                       ),
@@ -230,7 +232,7 @@ class _MedicalTemplatePatientSelectionDialogState
               ),
             ),
 
-            // Search Bar
+            // ========== SEARCH BAR ==========
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: TextField(
@@ -238,10 +240,11 @@ class _MedicalTemplatePatientSelectionDialogState
                 onChanged: _filterPatients,
                 decoration: InputDecoration(
                   hintText: 'Search patients by name, ID, or phone...',
-                  prefixIcon: const Icon(Icons.search),
+                  hintStyle: const TextStyle(fontSize: 14), // Slightly smaller
+                  prefixIcon: const Icon(Icons.search, size: 20),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
-                    icon: const Icon(Icons.clear),
+                    icon: const Icon(Icons.clear, size: 20),
                     onPressed: () {
                       _searchController.clear();
                       _filterPatients('');
@@ -253,12 +256,16 @@ class _MedicalTemplatePatientSelectionDialogState
                   ),
                   filled: true,
                   fillColor: Colors.grey.shade50,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12, // Compact padding
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 12),
 
-            // Patient List
+            // ========== PATIENT LIST (Now with ~100px more space!) ==========
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -271,16 +278,16 @@ class _MedicalTemplatePatientSelectionDialogState
                       _searchController.text.isEmpty
                           ? Icons.person_off
                           : Icons.search_off,
-                      size: 64,
+                      size: 48, // Slightly smaller
                       color: Colors.grey.shade400,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Text(
                       _searchController.text.isEmpty
                           ? 'No patients registered yet'
                           : 'No patients found',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 14, // Slightly smaller
                         color: Colors.grey.shade600,
                       ),
                     ),
@@ -292,35 +299,22 @@ class _MedicalTemplatePatientSelectionDialogState
                 itemCount: _filteredPatients.length,
                 itemBuilder: (context, index) {
                   final patient = _filteredPatients[index];
-
-                  // ✅ NEW: Updated patient card with History + New Visit buttons
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 10), // Reduced from 12
+                    elevation: 1,
                     child: Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(14), // Slightly more compact
                       child: Row(
                         children: [
                           // Avatar
                           CircleAvatar(
-                            radius: 28,
+                            radius: 26, // Reduced from 28
                             backgroundColor: const Color(0xFF9333EA),
                             child: Text(
                               patient.name[0].toUpperCase(),
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 20,
+                                fontSize: 18, // Reduced from 20
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -335,52 +329,43 @@ class _MedicalTemplatePatientSelectionDialogState
                                 Text(
                                   patient.name,
                                   style: const TextStyle(
-                                    fontSize: 16,
+                                    fontSize: 15, // Reduced from 16
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                                 const SizedBox(height: 6),
                                 Row(
                                   children: [
-                                    Icon(Icons.badge, size: 14, color: Colors.grey.shade600),
+                                    Icon(Icons.badge,
+                                        size: 13, // Reduced from 14
+                                        color: Colors.grey.shade600),
                                     const SizedBox(width: 4),
                                     Text(
                                       patient.id,
-                                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                                      style: TextStyle(
+                                        fontSize: 11, // Reduced from 13
+                                        color: Colors.grey.shade600,
+                                      ),
                                     ),
                                     const SizedBox(width: 12),
-                                    Icon(Icons.cake, size: 14, color: Colors.grey.shade600),
+                                    Icon(Icons.cake,
+                                        size: 13,
+                                        color: Colors.grey.shade600),
                                     const SizedBox(width: 4),
                                     Text(
                                       '${patient.age} years',
-                                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey.shade600,
+                                      ),
                                     ),
                                   ],
                                 ),
-                                // Optional: Show last visit if available
-                                // Uncomment if your Patient model has lastVisitDate
-                                // if (patient.lastVisitDate != null) ...[
-                                //   const SizedBox(height: 4),
-                                //   Row(
-                                //     children: [
-                                //       Icon(Icons.access_time, size: 12, color: Colors.orange.shade600),
-                                //       const SizedBox(width: 4),
-                                //       Text(
-                                //         'Last visit: ${_formatLastVisit(patient.lastVisitDate!)}',
-                                //         style: TextStyle(
-                                //           fontSize: 12,
-                                //           color: Colors.orange.shade700,
-                                //           fontWeight: FontWeight.w500,
-                                //         ),
-                                //       ),
-                                //     ],
-                                //   ),
-                                // ],
                               ],
                             ),
                           ),
 
-                          // ✅ NEW: Two Action Buttons
+                          // ========== ACTION BUTTONS (Compact) ==========
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -396,7 +381,10 @@ class _MedicalTemplatePatientSelectionDialogState
                                   );
                                 },
                                 icon: const Icon(Icons.history, size: 16),
-                                label: const Text('History'),
+                                label: const Text(
+                                  'History',
+                                  style: TextStyle(fontSize: 12),
+                                ),
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: const Color(0xFF9333EA),
                                   side: const BorderSide(
@@ -404,9 +392,10 @@ class _MedicalTemplatePatientSelectionDialogState
                                     width: 1.5,
                                   ),
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 12,
+                                    horizontal: 12, // More compact
+                                    vertical: 8,
                                   ),
+                                  minimumSize: const Size(0, 36),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -424,15 +413,19 @@ class _MedicalTemplatePatientSelectionDialogState
                                   });
                                 },
                                 icon: const Icon(Icons.add, size: 16),
-                                label: const Text('New Visit'),
+                                label: const Text(
+                                  'New Visit',
+                                  style: TextStyle(fontSize: 12),
+                                ),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF9333EA),
                                   foregroundColor: Colors.white,
                                   elevation: 0,
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 12,
+                                    horizontal: 16, // More compact
+                                    vertical: 8,
                                   ),
+                                  minimumSize: const Size(0, 36),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -453,6 +446,79 @@ class _MedicalTemplatePatientSelectionDialogState
     );
   }
 
+  // ========== ✨ NEW: COMPACT ACTION CARD HELPER METHOD ✨ ==========
+  Widget _buildCompactActionCard({
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBg,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Icon
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: iconColor, size: 24),
+            ),
+            const SizedBox(height: 8),
+
+            // Title
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+
+            const SizedBox(height: 2),
+
+            // Subtitle
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ========== OLD METHOD - NO LONGER USED ==========
+  // Kept for reference, but can be deleted
   Widget _buildOptionCard({
     required IconData icon,
     required Color iconColor,

@@ -9,7 +9,7 @@ import '../patient/patient_registration_screen.dart';
 import 'package:intl/intl.dart';
 import '../medical_templates/patient_selection_dialog.dart';
 import '../canvas/canvas_patient_selection_dialog.dart';
-
+import '../patient/visit_history_screen.dart';
 
 
 
@@ -24,7 +24,12 @@ class _HomeScreenState extends State<HomeScreen> {
   final _searchController = TextEditingController();
   List<Patient> _searchResults = [];
   bool _isSearching = false;
+
+
   final _searchFocusNode = FocusNode();
+  final TextEditingController _dialogSearchController = TextEditingController();
+  List<Patient> _filteredPatientsForDialog = [];
+
 
   Future<List<Visit>> _getMyVisits() async {
     final db = await DatabaseHelper.instance.database;
@@ -58,6 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _searchController.dispose();
     _searchFocusNode.dispose();
+    _dialogSearchController.dispose(); // ✅ ADD THIS LINE
     super.dispose();
   }
 
@@ -716,7 +722,24 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
   }
+  void _filterPatientsInDialog(String query, List<Patient> allPatients) {
+    setState(() {
+      if (query.isEmpty) {
+        _filteredPatientsForDialog = allPatients;
+      } else {
+        _filteredPatientsForDialog = allPatients.where((patient) {
+          final nameLower = patient.name.toLowerCase();
+          final phoneLower = patient.phone.toLowerCase();
+          final idLower = patient.id.toLowerCase();
+          final queryLower = query.toLowerCase();
 
+          return nameLower.contains(queryLower) ||
+              phoneLower.contains(queryLower) ||
+              idLower.contains(queryLower);
+        }).toList();
+      }
+    });
+  }
 // ✅ NEW: Empty patients dialog with 3 options
   void _showEmptyPatientsDialog() {
     showDialog(
@@ -948,15 +971,89 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+  Widget _buildCompactActionCard({
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBg,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade300),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Icon
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: iconColor, size: 24),
+            ),
+            const SizedBox(height: 8),
+
+            // Title
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+
+            const SizedBox(height: 2),
+
+            // Subtitle
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildPatientSelectionDialog(List<Patient> patients) {
+    // Initialize filtered list
+    if (_filteredPatientsForDialog.isEmpty && patients.isNotEmpty) {
+      _filteredPatientsForDialog = patients;
+    }
+
     return Dialog(
       child: Container(
         width: 600,
-        height: 650, // Increased height for skip button
+        height: 720, // Increased from 650 to show more patients
         child: Column(
           children: [
-            // Header
+            // ========== HEADER ==========
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -969,11 +1066,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   const Icon(Icons.draw, color: Colors.white, size: 28),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'Select Patient for Canvas',
                           style: TextStyle(
                             fontSize: 20,
@@ -981,95 +1078,61 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: Colors.white,
                           ),
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
-                          'Choose a patient or open blank canvas',
-                          style: TextStyle(fontSize: 14, color: Colors.white70),
+                          'Choose patient or demo mode',
+                          style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.white.withOpacity(0.9)
+                          ),
                         ),
                       ],
                     ),
                   ),
                   IconButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      _dialogSearchController.clear();
+                      _filteredPatientsForDialog = [];
+                      Navigator.pop(context);
+                    },
                     icon: const Icon(Icons.close, color: Colors.white),
                   ),
                 ],
               ),
             ),
 
-            // Action Buttons Section
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.orange.shade50,
-                border: Border(
-                  bottom: BorderSide(color: Colors.orange.shade200),
-                ),
-              ),
-              child: Column(
+            // ========== ✨ NEW: COMPACT 2-COLUMN ACTION BUTTONS ✨ ==========
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              child: Row(
                 children: [
-                  // Add New Patient Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
+                  // Column 1: Add New Patient
+                  Expanded(
+                    child: _buildCompactActionCard(
+                      icon: Icons.person_add,
+                      iconColor: Colors.orange.shade700,
+                      iconBg: Colors.orange.shade100,
+                      title: 'Add New Patient',
+                      subtitle: 'Register & annotate',
+                      onTap: () async {
                         Navigator.pop(context);
-
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const PatientRegistrationScreen(),
-                            settings: RouteSettings(
-                              arguments: {'returnTo': 'canvas'},
-                            ),
-                          ),
-                        );
-
-                        if (result != null && mounted) {
-                          if (result is Map && result['patient'] != null) {
-                            final patient = result['patient'] as Patient;
-                            if (result['action'] == 'annotate') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => CanvasScreen(patient: patient),
-                                ),
-                              );
-                            }
-                          } else if (result is Patient) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => CanvasScreen(patient: result),
-                              ),
-                            );
-                          }
-                        }
+                        await Navigator.pushNamed(context, '/patient-registration');
                       },
-                      icon: const Icon(Icons.person_add, size: 20),
-                      label: const Text(
-                        'Add New Patient',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange.shade700,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        elevation: 0,
-                      ),
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(width: 12),
 
-                  // ✅ NEW: Skip - Open Blank Canvas Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context); // Close dialog
-
-                        // Open canvas without patient
+                  // Column 2: Blank Canvas
+                  Expanded(
+                    child: _buildCompactActionCard(
+                      icon: Icons.edit,
+                      iconColor: Colors.blue.shade700,
+                      iconBg: Colors.blue.shade100,
+                      title: 'Blank Canvas',
+                      subtitle: 'Start demo mode',
+                      onTap: () {
+                        Navigator.pop(context);
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -1086,60 +1149,25 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         );
-
-                        // Show info message
-                        Future.delayed(const Duration(milliseconds: 500), () {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Row(
-                                  children: [
-                                    Icon(Icons.info_outline, color: Colors.white),
-                                    SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        'Quick Canvas mode - Diagrams can be saved later',
-                                        style: TextStyle(fontSize: 14),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                backgroundColor: Colors.blue.shade700,
-                                duration: Duration(seconds: 3),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
-                        });
                       },
-                      icon: const Icon(Icons.flash_on, size: 20),
-                      label: const Text(
-                        'Skip - Open Blank Canvas',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.orange.shade700,
-                        side: BorderSide(color: Colors.orange.shade700, width: 2),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
                     ),
                   ),
                 ],
               ),
             ),
 
-            // Divider with "OR" text
+            // ========== DIVIDER ==========
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 8),
               child: Row(
                 children: [
                   Expanded(child: Divider(color: Colors.grey.shade300)),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       'OR SELECT EXISTING PATIENT',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 10,
                         fontWeight: FontWeight.bold,
                         color: Colors.grey.shade600,
                       ),
@@ -1150,32 +1178,61 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // Patient List
+            // ========== SEARCH BAR ==========
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: TextField(
+                controller: _dialogSearchController,
+                onChanged: (value) => _filterPatientsInDialog(value, patients),
+                decoration: InputDecoration(
+                  hintText: 'Search patients by name, ID, or phone...',
+                  hintStyle: const TextStyle(fontSize: 14),
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  suffixIcon: _dialogSearchController.text.isNotEmpty
+                      ? IconButton(
+                    icon: const Icon(Icons.clear, size: 20),
+                    onPressed: () {
+                      _dialogSearchController.clear();
+                      _filterPatientsInDialog('', patients);
+                    },
+                  )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // ========== PATIENT LIST (Now with more space!) ==========
             Expanded(
-              child: patients.isEmpty
+              child: _filteredPatientsForDialog.isEmpty
                   ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      Icons.person_off,
-                      size: 64,
+                      _dialogSearchController.text.isEmpty
+                          ? Icons.person_off
+                          : Icons.search_off,
+                      size: 48,
                       color: Colors.grey.shade400,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Text(
-                      'No patients found',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Add a patient or use quick canvas',
+                      _dialogSearchController.text.isEmpty
+                          ? 'No patients registered'
+                          : 'No patients found',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey.shade500,
+                        color: Colors.grey.shade600,
                       ),
                     ),
                   ],
@@ -1183,22 +1240,25 @@ class _HomeScreenState extends State<HomeScreen> {
               )
                   : ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: patients.length,
+                itemCount: _filteredPatientsForDialog.length,
                 itemBuilder: (context, index) {
-                  final patient = patients[index];
+                  final patient = _filteredPatientsForDialog[index];
                   return Card(
-                    margin: const EdgeInsets.only(bottom: 12),
+                    margin: const EdgeInsets.only(bottom: 10),
                     elevation: 1,
                     child: ListTile(
-                      contentPadding: const EdgeInsets.all(16),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
                       leading: CircleAvatar(
-                        radius: 28,
+                        radius: 26,
                         backgroundColor: const Color(0xFFF97316),
                         child: Text(
                           patient.name[0].toUpperCase(),
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 20,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -1206,40 +1266,95 @@ class _HomeScreenState extends State<HomeScreen> {
                       title: Text(
                         patient.name,
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 15,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       subtitle: Padding(
-                        padding: const EdgeInsets.only(top: 8),
+                        padding: const EdgeInsets.only(top: 6),
                         child: Row(
                           children: [
-                            Icon(Icons.badge, size: 14, color: Colors.grey.shade600),
+                            Icon(Icons.badge,
+                                size: 13, color: Colors.grey.shade600),
                             const SizedBox(width: 4),
-                            Text(patient.id, style: const TextStyle(fontSize: 12)),
-                            const SizedBox(width: 16),
-                            Icon(Icons.cake, size: 14, color: Colors.grey.shade600),
+                            Text(patient.id,
+                                style: const TextStyle(fontSize: 11)),
+                            const SizedBox(width: 12),
+                            Icon(Icons.cake,
+                                size: 13, color: Colors.grey.shade600),
                             const SizedBox(width: 4),
-                            Text('${patient.age} years', style: const TextStyle(fontSize: 12)),
+                            Text('${patient.age} years',
+                                style: const TextStyle(fontSize: 11)),
                           ],
                         ),
                       ),
-                      trailing: ElevatedButton.icon(
-                        onPressed: () => Navigator.pop(context, patient),
-                        icon: const Icon(Icons.draw, size: 18),
-                        label: const Text('Open Canvas'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF97316),
-                          foregroundColor: Colors.white,
-                        ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          OutlinedButton(
+                            onPressed: () {
+                              // Navigate to history
+                              _dialogSearchController.clear();
+                              _filteredPatientsForDialog = [];
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      VisitHistoryScreen(patient: patient),
+                                ),
+                              );
+                            },
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              minimumSize: const Size(0, 36),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.history,
+                                    size: 16,
+                                    color: Colors.orange.shade700),
+                                const SizedBox(width: 4),
+                                const Text('History',
+                                    style: TextStyle(fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () {
+                              _dialogSearchController.clear();
+                              _filteredPatientsForDialog = [];
+                              Navigator.pop(context, patient);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFF97316),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              minimumSize: const Size(0, 36),
+                            ),
+                            child: Row(
+                              children: const [
+                                Icon(Icons.edit, size: 16),
+                                SizedBox(width: 4),
+                                Text('New Canvas',
+                                    style: TextStyle(fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   );
                 },
               ),
             ),
-
-            const SizedBox(height: 12),
           ],
         ),
       ),
