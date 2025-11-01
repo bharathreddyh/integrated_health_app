@@ -1,15 +1,16 @@
-// ==================== THYROID DISEASE MODULE SCREEN WITH AI PDF ====================
+// ==================== THYROID DISEASE MODULE SCREEN ====================
 // lib/screens/endocrine/thyroid_disease_module_screen.dart
-// ✅ All compilation errors fixed
-// ✅ AI PDF Generator integrated
-// ✅ AUTOSAVE & BACK BUTTON FIX APPLIED
+// ✅ ALL 3 ISSUES FIXED:
+// ✅ 1. Back button now prompts for save
+// ✅ 2. Loads existing data from database
+// ✅ 3. Data persists across app restarts
 
 import 'package:flutter/material.dart';
 import '../../models/endocrine/endocrine_condition.dart';
 import '../../models/patient.dart';
 import '../../config/thyroid_disease_config.dart';
-import '../../services/database_helper.dart';  // ✅ ADDED: For database operations
-import '../../services/user_service.dart';     // ✅ ADDED: For doctor ID
+import '../../services/database_helper.dart';  // ✅ For database operations
+import '../../services/user_service.dart';     // ✅ For doctor ID
 import 'tabs/overview_tab.dart';
 import 'tabs/canvas_tab.dart';
 import 'tabs/labs_trends_tab.dart';
@@ -47,6 +48,7 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
   late ThyroidDiseaseConfig _diseaseConfig;
   late Patient _patient;
   bool _hasUnsavedChanges = false;
+  bool _isLoadingCondition = true;  // ✅ NEW: Track loading state
 
   @override
   void initState() {
@@ -62,20 +64,69 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
       date: DateTime.now().toString(),
     );
 
-    _condition = EndocrineCondition(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      patientId: widget.patientId,
-      patientName: widget.patientName,
-      gland: 'thyroid',
-      category: _diseaseConfig.category,
-      diseaseId: widget.diseaseId,
-      diseaseName: widget.diseaseName,
-      status: DiagnosisStatus.suspected,
-    );
+    // ✅ CRITICAL FIX: Load existing condition or create new
+    _loadOrCreateCondition();
 
     _tabController.addListener(() {
       setState(() {});
     });
+  }
+
+  // ✅ NEW METHOD: Load existing condition from database or create new
+  Future<void> _loadOrCreateCondition() async {
+    try {
+      print('🔍 Checking for existing ${widget.diseaseName} condition...');
+
+      // Check if there's an existing condition for this patient + disease
+      final existing = await DatabaseHelper.instance.getLatestEndocrineVisit(
+        widget.patientId,
+        widget.diseaseId,
+      );
+
+      if (existing != null) {
+        // Found existing - load it
+        setState(() {
+          _condition = existing;
+          _hasUnsavedChanges = false;  // Already saved
+          _isLoadingCondition = false;
+        });
+        print('✅ Loaded existing ${widget.diseaseName} condition (ID: ${existing.id})');
+      } else {
+        // No existing - create new
+        setState(() {
+          _condition = EndocrineCondition(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            patientId: widget.patientId,
+            patientName: widget.patientName,
+            gland: 'thyroid',
+            category: _diseaseConfig.category,
+            diseaseId: widget.diseaseId,
+            diseaseName: widget.diseaseName,
+            status: DiagnosisStatus.suspected,
+          );
+          _hasUnsavedChanges = false;  // Fresh start
+          _isLoadingCondition = false;
+        });
+        print('✅ Created new ${widget.diseaseName} condition');
+      }
+    } catch (e) {
+      print('❌ Error loading condition: $e');
+      // Fallback: create new condition
+      setState(() {
+        _condition = EndocrineCondition(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          patientId: widget.patientId,
+          patientName: widget.patientName,
+          gland: 'thyroid',
+          category: _diseaseConfig.category,
+          diseaseId: widget.diseaseId,
+          diseaseName: widget.diseaseName,
+          status: DiagnosisStatus.suspected,
+        );
+        _hasUnsavedChanges = false;
+        _isLoadingCondition = false;
+      });
+    }
   }
 
   @override
@@ -87,16 +138,41 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
   void _updateCondition(EndocrineCondition updated) {
     setState(() {
       _condition = updated;
-      _hasUnsavedChanges = true;
+      _hasUnsavedChanges = true;  // ✅ Always mark as changed
     });
+    print('🔄 Condition updated, has unsaved changes: true');
   }
 
   @override
   Widget build(BuildContext context) {
+    // ✅ Show loading state while checking for existing data
+    if (_isLoadingCondition) {
+      return Scaffold(
+        backgroundColor: Colors.grey.shade50,
+        appBar: AppBar(
+          title: Text(widget.diseaseName),
+          backgroundColor: const Color(0xFF2563EB),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text(
+                'Loading ${widget.diseaseName}...',
+                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return WillPopScope(
       onWillPop: () async {
         if (_hasUnsavedChanges) {
-          // ✅ UPDATED: New dialog with Save/Discard/Cancel options
+          // ✅ NEW: 3-option dialog (Save/Discard/Cancel)
           final result = await showDialog<String>(
             context: context,
             builder: (context) => AlertDialog(
@@ -181,7 +257,6 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
           );
 
           if (result == 'save') {
-            // Save the condition before exiting
             await _saveConditionToDatabase();
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -202,14 +277,12 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
           } else if (result == 'discard') {
             return true;
           }
-          return false; // Cancel
+          return false;
         }
         return true;
       },
       child: Scaffold(
         appBar: _buildAppBar(context),
-
-        // Floating Action Button for AI PDF Generation
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => _showAIPDFDialog(),
           icon: const Icon(Icons.auto_awesome),
@@ -218,10 +291,8 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
           heroTag: 'ai_report_fab',
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-
         body: Column(
           children: [
-            // Tab Bar
             Container(
               color: Colors.white,
               child: TabBar(
@@ -242,56 +313,41 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
                 ],
               ),
             ),
-
-            // Tab Content
             Expanded(
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  // Tab 0: Patient Data
                   PatientDataTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
                   ),
-
-                  // Tab 1: Clinical Features
                   ClinicalFeaturesTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
                   ),
-
-                  // Tab 2: Canvas
                   CanvasTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
                     patient: _patient,
                   ),
-
-                  // Tab 3: Labs & Trends
                   LabsTrendsTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
                   ),
-
-                  // Tab 4: Overview
                   OverviewTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
                   ),
-
-                  // Tab 5: Investigations
                   InvestigationsTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
                   ),
-
-                  // Tab 6: Treatment
                   TreatmentTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
@@ -300,8 +356,6 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
                 ],
               ),
             ),
-
-            // Bottom Save Bar
             if (_hasUnsavedChanges)
               Container(
                 padding: const EdgeInsets.all(16),
@@ -340,10 +394,7 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
       flexibleSpace: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xFF2563EB),
-              Color(0xFF1E40AF),
-            ],
+            colors: [Color(0xFF2563EB), Color(0xFF1E40AF)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -358,19 +409,12 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
         children: [
           Text(
             _diseaseConfig.name,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text(
             widget.patientName,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
-              fontSize: 14,
-            ),
+            style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14),
           ),
         ],
       ),
@@ -384,33 +428,25 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
           ),
           child: Text(
             '${_condition.completionPercentage.toInt()}% Complete',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12),
           ),
         ),
       ],
     );
   }
 
-  // AI PDF Generation Dialog
   void _showAIPDFDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Container(
           constraints: const BoxConstraints(maxWidth: 500),
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header with animated icon
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -421,49 +457,24 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
                   ),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
-                    BoxShadow(
-                      color: Colors.blue.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
+                    BoxShadow(color: Colors.blue.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4)),
                   ],
                 ),
-                child: const Icon(
-                  Icons.auto_awesome,
-                  size: 48,
-                  color: Colors.white,
-                ),
+                child: const Icon(Icons.auto_awesome, size: 48, color: Colors.white),
               ),
-
               const SizedBox(height: 20),
-
-              // Title
               const Text(
                 '🤖 AI-Powered Medical Report',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
-                ),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                 textAlign: TextAlign.center,
               ),
-
               const SizedBox(height: 12),
-
-              // Description
               Text(
                 'Generate a comprehensive medical report with AI analysis of all patient data, labs, imaging, and treatment plans.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade700,
-                  height: 1.5,
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade700, height: 1.5),
               ),
-
               const SizedBox(height: 20),
-
-              // Feature highlights
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -473,50 +484,24 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
                 ),
                 child: Column(
                   children: [
-                    _buildFeatureItem(
-                      Icons.speed,
-                      'Lightning Fast',
-                      'Generated in seconds',
-                    ),
+                    _buildFeatureItem(Icons.speed, 'Lightning Fast', 'Generated in seconds'),
                     const SizedBox(height: 8),
-                    _buildFeatureItem(
-                      Icons.insights,
-                      'AI Analysis',
-                      'Smart insights and trends',
-                    ),
+                    _buildFeatureItem(Icons.insights, 'AI Analysis', 'Smart insights and trends'),
                     const SizedBox(height: 8),
-                    _buildFeatureItem(
-                      Icons.picture_as_pdf,
-                      'Professional PDF',
-                      'Ready to share',
-                    ),
+                    _buildFeatureItem(Icons.picture_as_pdf, 'Professional PDF', 'Ready to share'),
                   ],
                 ),
               ),
-
               const SizedBox(height: 24),
-
-              // AI PDF Generator Button
               AIPDFGeneratorButton(
                 condition: _condition,
                 patient: _patient,
-                onSuccess: () {
-                  Navigator.pop(context);
-                },
+                onSuccess: () => Navigator.pop(context),
               ),
-
               const SizedBox(height: 12),
-
-              // Cancel button
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: Text(
-                  'Cancel',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 16,
-                  ),
-                ),
+                child: Text('Cancel', style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
               ),
             ],
           ),
@@ -525,55 +510,29 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
     );
   }
 
-  // Helper method to build feature items
   Widget _buildFeatureItem(IconData icon, String title, String subtitle) {
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            icon,
-            color: Colors.blue.shade600,
-            size: 20,
-          ),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
+          child: Icon(icon, color: Colors.blue.shade600, size: 20),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  color: Color(0xFF1E293B),
-                ),
-              ),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey.shade600,
-                ),
-              ),
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF1E293B))),
+              Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
             ],
           ),
         ),
-        Icon(
-          Icons.check_circle,
-          color: Colors.green.shade400,
-          size: 18,
-        ),
+        Icon(Icons.check_circle, color: Colors.green.shade400, size: 18),
       ],
     );
   }
 
-  // ✅ UPDATED: Save method now actually saves to database
   Future<void> _saveCondition() async {
     await _saveConditionToDatabase();
     if (mounted) {
@@ -596,6 +555,8 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
   // ✅ NEW METHOD: Actually saves to database
   Future<void> _saveConditionToDatabase() async {
     try {
+      print('💾 Saving ${_condition.diseaseName} to database...');
+
       // Update the condition in the database
       await DatabaseHelper.instance.updateEndocrineCondition(_condition);
 
@@ -604,6 +565,8 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
       await DatabaseHelper.instance.saveEndocrineVisit(_condition, doctorId);
 
       setState(() => _hasUnsavedChanges = false);
+
+      print('✅ ${_condition.diseaseName} saved successfully (ID: ${_condition.id})');
     } catch (e) {
       print('❌ Error saving condition: $e');
       if (mounted) {
@@ -613,9 +576,7 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
               children: [
                 const Icon(Icons.error_outline, color: Colors.white),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: Text('Error saving: ${e.toString()}'),
-                ),
+                Expanded(child: Text('Error saving: ${e.toString()}')),
               ],
             ),
             backgroundColor: Colors.red,
