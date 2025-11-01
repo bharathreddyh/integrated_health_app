@@ -716,9 +716,8 @@ class _HomeScreenState extends State<HomeScreen> {
     // Show normal patient selection dialog
     final selectedPatient = await showDialog<Patient>(
       context: context,
-      builder: (context) => _buildPatientSelectionDialog(patients),
-    );
-
+      builder: (context) => _buildPatientSelectionDialog(patients),    );
+    
     if (selectedPatient != null && mounted) {
       Navigator.push(
         context,

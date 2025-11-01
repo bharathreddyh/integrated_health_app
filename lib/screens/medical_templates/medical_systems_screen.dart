@@ -5,6 +5,19 @@ import '../../models/patient.dart';
 import '../../config/medical_systems_config.dart';
 import 'system_disease_categories_screen.dart';
 
+// Search result model to track individual disease matches
+class DiseaseSearchResult {
+  final String diseaseName;
+  final DiseaseCategory category;
+  final MedicalSystemConfig system;
+
+  DiseaseSearchResult({
+    required this.diseaseName,
+    required this.category,
+    required this.system,
+  });
+}
+
 class MedicalSystemsScreen extends StatefulWidget {
   final Patient patient;
   final bool isQuickMode;
@@ -22,6 +35,8 @@ class MedicalSystemsScreen extends StatefulWidget {
 class _MedicalSystemsScreenState extends State<MedicalSystemsScreen> {
   final _searchController = TextEditingController();
   List<MedicalSystemConfig> _filteredSystems = [];
+  List<DiseaseSearchResult> _diseaseSearchResults = [];
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -33,8 +48,33 @@ class _MedicalSystemsScreenState extends State<MedicalSystemsScreen> {
     setState(() {
       if (query.isEmpty) {
         _filteredSystems = MedicalSystemsConfig.allSystems;
+        _diseaseSearchResults = [];
+        _isSearching = false;
       } else {
+        _isSearching = true;
         final queryLower = query.toLowerCase();
+
+        // Clear previous results
+        _diseaseSearchResults = [];
+
+        // Search through all systems, categories, and diseases
+        for (var system in MedicalSystemsConfig.allSystems) {
+          for (var category in system.categories) {
+            for (var disease in category.diseases) {
+              if (disease.toLowerCase().contains(queryLower)) {
+                _diseaseSearchResults.add(
+                  DiseaseSearchResult(
+                    diseaseName: disease,
+                    category: category,
+                    system: system,
+                  ),
+                );
+              }
+            }
+          }
+        }
+
+        // Also keep system-level filtering for when no specific diseases match
         _filteredSystems = MedicalSystemsConfig.allSystems.where((system) {
           // Search by system name
           if (system.name.toLowerCase().contains(queryLower)) {
@@ -43,17 +83,6 @@ class _MedicalSystemsScreenState extends State<MedicalSystemsScreen> {
           // Search by system description
           if (system.description.toLowerCase().contains(queryLower)) {
             return true;
-          }
-          // Search by disease names within the system
-          for (var category in system.categories) {
-            if (category.name.toLowerCase().contains(queryLower)) {
-              return true;
-            }
-            for (var disease in category.diseases) {
-              if (disease.toLowerCase().contains(queryLower)) {
-                return true;
-              }
-            }
           }
           return false;
         }).toList();
@@ -93,10 +122,10 @@ class _MedicalSystemsScreenState extends State<MedicalSystemsScreen> {
                 CircleAvatar(
                   radius: 24,
                   backgroundColor: widget.isQuickMode
-                      ? Colors.orange.shade700
+                      ? Colors.orange
                       : const Color(0xFF9333EA),
                   child: Icon(
-                    widget.isQuickMode ? Icons.flash_on : Icons.person,
+                    widget.isQuickMode ? Icons.flash_on : Icons.mic,
                     color: Colors.white,
                     size: 24,
                   ),
@@ -106,35 +135,13 @@ class _MedicalSystemsScreenState extends State<MedicalSystemsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Text(
-                            widget.patient.name,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          if (widget.isQuickMode) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.orange.shade200,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                'QUICK MODE',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.orange.shade900,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
+                      Text(
+                        widget.patient.name,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade900,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -193,54 +200,177 @@ class _MedicalSystemsScreenState extends State<MedicalSystemsScreen> {
             ),
           ),
 
-          // Systems Grid
+          // Content Area - Show either disease search results or system grid
           Expanded(
-            child: _filteredSystems.isEmpty
-                ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.search_off,
-                    size: 64,
-                    color: Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No systems or diseases found',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Try a different search term',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade500,
-                    ),
-                  ),
-                ],
+            child: _isSearching && _diseaseSearchResults.isNotEmpty
+                ? _buildDiseaseSearchResults()
+                : _isSearching && _diseaseSearchResults.isEmpty && _filteredSystems.isEmpty
+                ? _buildNoResults()
+                : _buildSystemsGrid(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Build individual disease search results
+  Widget _buildDiseaseSearchResults() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: _diseaseSearchResults.length,
+      itemBuilder: (context, index) {
+        final result = _diseaseSearchResults[index];
+        return _buildDiseaseSearchResultCard(result);
+      },
+    );
+  }
+
+  Widget _buildDiseaseSearchResultCard(DiseaseSearchResult result) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: () {
+          // Navigate directly to the system's disease categories screen
+          // This will show the disease within its category
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SystemDiseaseCategoriesScreen(
+                patient: widget.patient,
+                system: result.system,
+                isQuickMode: widget.isQuickMode,
+                initialSearchQuery: result.diseaseName, // Pass the disease name to highlight it
               ),
-            )
-                : GridView.builder(
-              padding: const EdgeInsets.all(24),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                childAspectRatio: 1.1,
-                crossAxisSpacing: 20,
-                mainAxisSpacing: 20,
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // System Icon
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: result.system.color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  result.system.icon,
+                  color: result.system.color,
+                  size: 28,
+                ),
               ),
-              itemCount: _filteredSystems.length,
-              itemBuilder: (context, index) {
-                final system = _filteredSystems[index];
-                return _buildSystemCard(system);
-              },
+              const SizedBox(width: 16),
+              // Disease and System Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Disease Name (Main result)
+                    Text(
+                      result.diseaseName,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // Category
+                    Text(
+                      result.category.name,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    // System Name (Parent)
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.folder_outlined,
+                          size: 14,
+                          color: Colors.grey.shade500,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          result.system.name,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Arrow Icon
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Colors.grey.shade400,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoResults() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search_off,
+            size: 64,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No systems or diseases found',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Try a different search term',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade500,
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSystemsGrid() {
+    return GridView.builder(
+      padding: const EdgeInsets.all(24),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 1.1,
+        crossAxisSpacing: 20,
+        mainAxisSpacing: 20,
+      ),
+      itemCount: _filteredSystems.length,
+      itemBuilder: (context, index) {
+        final system = _filteredSystems[index];
+        return _buildSystemCard(system);
+      },
     );
   }
 
@@ -262,80 +392,68 @@ class _MedicalSystemsScreenState extends State<MedicalSystemsScreen> {
         },
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.grey.shade200),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 8,
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Icon
+              // Icon Container
               Container(
-                width: 56,
-                height: 56,
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      system.color,
-                      system.color.withOpacity(0.7),
-                    ],
-                  ),
+                  color: system.color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   system.icon,
-                  color: Colors.white,
-                  size: 28,
+                  size: 36,
+                  color: system.color,
                 ),
               ),
-              const Spacer(),
-
-              // Title
+              const SizedBox(height: 12),
+              // System Name
               Text(
                 system.name,
+                textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 17,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1E293B),
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 6),
-
+              const SizedBox(height: 4),
               // Description
               Text(
                 system.description,
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 11,
                   color: Colors.grey.shade600,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 8),
-
-              // Condition count
+              // Condition Count
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: system.color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      Icons.article,
+                      Icons.list_alt,
                       size: 14,
                       color: system.color,
                     ),
@@ -344,8 +462,8 @@ class _MedicalSystemsScreenState extends State<MedicalSystemsScreen> {
                       '${system.totalDiseaseCount} conditions',
                       style: TextStyle(
                         fontSize: 11,
-                        fontWeight: FontWeight.w600,
                         color: system.color,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -356,11 +474,5 @@ class _MedicalSystemsScreenState extends State<MedicalSystemsScreen> {
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 }

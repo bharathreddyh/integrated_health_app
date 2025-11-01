@@ -15,7 +15,7 @@ import 'services/user_service.dart';
 import 'services/whisper_voice_service.dart';
 import 'widgets/floating_voice_button.dart';
 import 'screens/medical_templates/medical_systems_screen.dart';
-
+import 'screens/patient/visit_history_screen.dart';
 
 
 
@@ -95,6 +95,15 @@ class ClinicClarityApp extends StatelessWidget {
                   patient: patient,
                   isQuickMode: isQuickMode,
                 ),
+              );
+            }
+          }
+          if (settings.name == '/patient-history') {
+            final args = settings.arguments as Map<String, dynamic>?;
+            if (args != null && args['patient'] != null) {
+              final patient = args['patient'] as Patient;
+              return MaterialPageRoute(
+                builder: (context) => VisitHistoryScreen(patient: patient),
               );
             }
           }

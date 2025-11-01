@@ -1,4 +1,5 @@
 // lib/screens/medical_templates/patient_selection_dialog.dart
+// ✅ UPDATED: History + New Visit buttons for each patient
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -58,11 +59,31 @@ class _MedicalTemplatePatientSelectionDialogState
     });
   }
 
+  // Helper method to format last visit date
+  String _formatLastVisit(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) return 'Today';
+    if (difference.inDays == 1) return 'Yesterday';
+    if (difference.inDays < 7) return '${difference.inDays} days ago';
+    if (difference.inDays < 30) {
+      final weeks = (difference.inDays / 7).floor();
+      return '$weeks ${weeks == 1 ? "week" : "weeks"} ago';
+    }
+    if (difference.inDays < 365) {
+      final months = (difference.inDays / 30).floor();
+      return '$months ${months == 1 ? "month" : "months"} ago';
+    }
+    final years = (difference.inDays / 365).floor();
+    return '$years ${years == 1 ? "year" : "years"} ago';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
       child: Container(
-        width: 700,
+        width: 900, // ✅ INCREASED width to fit buttons
         height: 700,
         child: Column(
           children: [
@@ -271,68 +292,161 @@ class _MedicalTemplatePatientSelectionDialogState
                 itemCount: _filteredPatients.length,
                 itemBuilder: (context, index) {
                   final patient = _filteredPatients[index];
-                  return Card(
+
+                  // ✅ NEW: Updated patient card with History + New Visit buttons
+                  return Container(
                     margin: const EdgeInsets.only(bottom: 12),
-                    elevation: 1,
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.all(16),
-                      leading: CircleAvatar(
-                        radius: 28,
-                        backgroundColor: const Color(0xFF9333EA),
-                        child: Text(
-                          patient.name[0].toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          // Avatar
+                          CircleAvatar(
+                            radius: 28,
+                            backgroundColor: const Color(0xFF9333EA),
+                            child: Text(
+                              patient.name[0].toUpperCase(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      title: Text(
-                        patient.name,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      subtitle: Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Row(
-                          children: [
-                            Icon(Icons.badge,
-                                size: 14, color: Colors.grey.shade600),
-                            const SizedBox(width: 4),
-                            Text(patient.id,
-                                style: const TextStyle(fontSize: 12)),
-                            const SizedBox(width: 16),
-                            Icon(Icons.cake,
-                                size: 14, color: Colors.grey.shade600),
-                            const SizedBox(width: 4),
-                            Text('${patient.age} years',
-                                style: const TextStyle(fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      trailing: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context, {
-                            'patient': patient,
-                            'quickMode': false,
-                          });
-                        },
-                        icon: const Icon(Icons.arrow_forward, size: 18),
-                        label: const Text('Select'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF9333EA),
-                          foregroundColor: Colors.white,
-                        ),
+                          const SizedBox(width: 16),
+
+                          // Patient Info
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  patient.name,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Icon(Icons.badge, size: 14, color: Colors.grey.shade600),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      patient.id,
+                                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Icon(Icons.cake, size: 14, color: Colors.grey.shade600),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${patient.age} years',
+                                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                                    ),
+                                  ],
+                                ),
+                                // Optional: Show last visit if available
+                                // Uncomment if your Patient model has lastVisitDate
+                                // if (patient.lastVisitDate != null) ...[
+                                //   const SizedBox(height: 4),
+                                //   Row(
+                                //     children: [
+                                //       Icon(Icons.access_time, size: 12, color: Colors.orange.shade600),
+                                //       const SizedBox(width: 4),
+                                //       Text(
+                                //         'Last visit: ${_formatLastVisit(patient.lastVisitDate!)}',
+                                //         style: TextStyle(
+                                //           fontSize: 12,
+                                //           color: Colors.orange.shade700,
+                                //           fontWeight: FontWeight.w500,
+                                //         ),
+                                //       ),
+                                //     ],
+                                //   ),
+                                // ],
+                              ],
+                            ),
+                          ),
+
+                          // ✅ NEW: Two Action Buttons
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // History Button
+                              OutlinedButton.icon(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  // Navigate to patient history
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/patient-history',
+                                    arguments: {'patient': patient},
+                                  );
+                                },
+                                icon: const Icon(Icons.history, size: 16),
+                                label: const Text('History'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFF9333EA),
+                                  side: const BorderSide(
+                                    color: Color(0xFF9333EA),
+                                    width: 1.5,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+
+                              // New Visit Button
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  // Close dialog and return patient
+                                  Navigator.pop(context, {
+                                    'patient': patient,
+                                    'quickMode': false,
+                                  });
+                                },
+                                icon: const Icon(Icons.add, size: 16),
+                                label: const Text('New Visit'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF9333EA),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 12,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   );
                 },
               ),
             ),
-            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -355,7 +469,7 @@ class _MedicalTemplatePatientSelectionDialogState
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300),
+          border: Border.all(color: Colors.grey.shade200),
         ),
         child: Row(
           children: [
@@ -365,7 +479,7 @@ class _MedicalTemplatePatientSelectionDialogState
                 color: iconBg,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: iconColor, size: 28),
+              child: Icon(icon, color: iconColor, size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -379,7 +493,7 @@ class _MedicalTemplatePatientSelectionDialogState
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Text(
                     subtitle,
                     style: TextStyle(
@@ -390,7 +504,7 @@ class _MedicalTemplatePatientSelectionDialogState
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey.shade400),
+            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
           ],
         ),
       ),
