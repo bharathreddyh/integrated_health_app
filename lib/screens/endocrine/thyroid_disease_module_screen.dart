@@ -2,12 +2,14 @@
 // lib/screens/endocrine/thyroid_disease_module_screen.dart
 // ✅ All compilation errors fixed
 // ✅ AI PDF Generator integrated
-// ✅ CORRECTED IMPORT PATH
+// ✅ AUTOSAVE & BACK BUTTON FIX APPLIED
 
 import 'package:flutter/material.dart';
 import '../../models/endocrine/endocrine_condition.dart';
 import '../../models/patient.dart';
 import '../../config/thyroid_disease_config.dart';
+import '../../services/database_helper.dart';  // ✅ ADDED: For database operations
+import '../../services/user_service.dart';     // ✅ ADDED: For doctor ID
 import 'tabs/overview_tab.dart';
 import 'tabs/canvas_tab.dart';
 import 'tabs/labs_trends_tab.dart';
@@ -15,7 +17,7 @@ import 'tabs/clinical_features_tab.dart';
 import 'tabs/investigations_tab.dart';
 import 'tabs/treatment_tab.dart';
 import 'tabs/patient_data_tab.dart';
-import '../../widgets/ai_pdf_generator_button.dart';  // ✅ CORRECTED: Two levels up
+import '../../widgets/ai_pdf_generator_button.dart';
 
 class ThyroidDiseaseModuleScreen extends StatefulWidget {
   final String patientId;
@@ -49,22 +51,19 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
   @override
   void initState() {
     super.initState();
-    // CHANGED: Length from 8 to 7 (removed Anatomy tab)
     _tabController = TabController(length: 7, vsync: this);
     _diseaseConfig = ThyroidDiseaseConfig.getDiseaseConfig(widget.diseaseId)!;
 
-    // ✅ FIXED: Use correct Patient constructor parameters
     _patient = Patient(
       id: widget.patientId,
       name: widget.patientName,
-      age: 0,  // Or calculate from actual date of birth if available
-      phone: '',  // Required parameter
-      date: DateTime.now().toString(),  // Required parameter
+      age: 0,
+      phone: '',
+      date: DateTime.now().toString(),
     );
 
-    // ✅ FIXED: Add required 'id' parameter
     _condition = EndocrineCondition(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),  // Generate unique ID
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
       patientId: widget.patientId,
       patientName: widget.patientName,
       gland: 'thyroid',
@@ -97,31 +96,120 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
     return WillPopScope(
       onWillPop: () async {
         if (_hasUnsavedChanges) {
-          final shouldPop = await showDialog<bool>(
+          // ✅ UPDATED: New dialog with Save/Discard/Cancel options
+          final result = await showDialog<String>(
             context: context,
             builder: (context) => AlertDialog(
-              title: const Text('Unsaved Changes'),
-              content: const Text('You have unsaved changes. Do you want to discard them?'),
+              title: Row(
+                children: [
+                  Icon(Icons.save, color: Colors.blue.shade700, size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text('Save ${_condition.diseaseName}?'),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'You have unsaved changes in this medical record.',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.amber.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, size: 20, color: Colors.amber.shade700),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Changes made across all tabs will be saved',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.amber.shade900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'What would you like to do?',
+                    style: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context, false),
+                  onPressed: () => Navigator.pop(context, 'cancel'),
                   child: const Text('Cancel'),
                 ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Discard', style: TextStyle(color: Colors.red)),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.pop(context, 'discard'),
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('Discard'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.pop(context, 'save'),
+                  icon: const Icon(Icons.save),
+                  label: const Text('Save & Exit'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                  ),
                 ),
               ],
             ),
           );
-          return shouldPop ?? false;
+
+          if (result == 'save') {
+            // Save the condition before exiting
+            await _saveConditionToDatabase();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.white),
+                      const SizedBox(width: 8),
+                      Text('${_condition.diseaseName} data saved successfully'),
+                    ],
+                  ),
+                  backgroundColor: Colors.green,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            }
+            return true;
+          } else if (result == 'discard') {
+            return true;
+          }
+          return false; // Cancel
         }
         return true;
       },
       child: Scaffold(
         appBar: _buildAppBar(context),
 
-        // ✅ ADD THIS: Floating Action Button for AI PDF Generation
+        // Floating Action Button for AI PDF Generation
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => _showAIPDFDialog(),
           icon: const Icon(Icons.auto_awesome),
@@ -174,7 +262,7 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
                     onUpdate: _updateCondition,
                   ),
 
-                  // Tab 2: Canvas (Now with Anatomy & Diseases sub-tabs)
+                  // Tab 2: Canvas
                   CanvasTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
@@ -250,11 +338,11 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
       backgroundColor: const Color(0xFF2563EB),
       elevation: 0,
       flexibleSpace: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              const Color(0xFF2563EB),
-              const Color(0xFF1E40AF),
+              Color(0xFF2563EB),
+              Color(0xFF1E40AF),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -307,11 +395,11 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
     );
   }
 
-  // ✅ ADD THIS METHOD: Show AI PDF Generation Dialog
+  // AI PDF Generation Dialog
   void _showAIPDFDialog() {
     showDialog(
       context: context,
-      barrierDismissible: false, // Prevent dismissal during generation
+      barrierDismissible: false,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
@@ -408,12 +496,12 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
 
               const SizedBox(height: 24),
 
-              // AI PDF Generator Button (the actual widget)
+              // AI PDF Generator Button
               AIPDFGeneratorButton(
                 condition: _condition,
                 patient: _patient,
                 onSuccess: () {
-                  Navigator.pop(context); // Close dialog on success
+                  Navigator.pop(context);
                 },
               ),
 
@@ -485,11 +573,56 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
     );
   }
 
+  // ✅ UPDATED: Save method now actually saves to database
   Future<void> _saveCondition() async {
-    // Implement save logic here
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Changes saved successfully')),
-    );
-    setState(() => _hasUnsavedChanges = false);
+    await _saveConditionToDatabase();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 8),
+              Text('${_condition.diseaseName} saved'),
+            ],
+          ),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  // ✅ NEW METHOD: Actually saves to database
+  Future<void> _saveConditionToDatabase() async {
+    try {
+      // Update the condition in the database
+      await DatabaseHelper.instance.updateEndocrineCondition(_condition);
+
+      // Also save as a visit record for history
+      final doctorId = UserService.currentUserId ?? 'unknown';
+      await DatabaseHelper.instance.saveEndocrineVisit(_condition, doctorId);
+
+      setState(() => _hasUnsavedChanges = false);
+    } catch (e) {
+      print('❌ Error saving condition: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Error saving: ${e.toString()}'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 }

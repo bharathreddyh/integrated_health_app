@@ -1,6 +1,6 @@
 // lib/services/ai_medical_report_service.dart
-// ✅ FIXED VERSION - Uses native Flutter PDF generation instead of Python
-// No more ProcessException or permission errors!
+// ✅ FIXED VERSION - Resolves type '_ConstMap<String, dynamic>' is not a subtype of type 'String' error
+// All Map values are now properly converted to Strings before being passed to helper methods
 
 import 'dart:io';
 import 'dart:convert';
@@ -16,6 +16,14 @@ class AIMedicalReportService {
   // ✅ IMPORTANT: Replace with your actual OpenAI API key
   static const String _apiKey = 'YOUR_OPENAI_API_KEY_HERE';
   static const String _openAiEndpoint = 'https://api.openai.com/v1/chat/completions';
+
+  // Helper method to safely convert dynamic values to Strings
+  static String _safeStringValue(dynamic value, [String defaultValue = 'N/A']) {
+    if (value == null) return defaultValue;
+    if (value is String) return value;
+    if (value is Map || value is List) return jsonEncode(value);
+    return value.toString();
+  }
 
   // Step 1: Collect all data from tabs
   static Future<Map<String, dynamic>> collectAllData({
@@ -143,7 +151,6 @@ class AIMedicalReportService {
   }
 
   // Step 3: Generate PDF using native Flutter PDF package
-  // ✅ NO MORE PYTHON - Pure Dart/Flutter implementation!
   static Future<String> generatePDF({
     required Map<String, dynamic> collectedData,
     required Map<String, dynamic> aiInsights,
@@ -204,10 +211,11 @@ class AIMedicalReportService {
             _buildSection(
               title: 'PATIENT INFORMATION',
               content: [
-                _buildInfoRow('Name:', patient['name'] ?? 'N/A'),
-                _buildInfoRow('Patient ID:', patient['id'] ?? 'N/A'),
-                _buildInfoRow('Age:', '${patient['age']} years'),
-                _buildInfoRow('Contact:', patient['phone'] ?? 'N/A'),
+                // ✅ FIX: Use _safeStringValue to ensure all values are Strings
+                _buildInfoRow('Name:', _safeStringValue(patient['name'])),
+                _buildInfoRow('Patient ID:', _safeStringValue(patient['id'])),
+                _buildInfoRow('Age:', '${_safeStringValue(patient['age'])} years'),
+                _buildInfoRow('Contact:', _safeStringValue(patient['phone'])),
               ],
               bgColor: PdfColors.blue50,
               borderColor: PdfColors.blue300,
@@ -219,11 +227,12 @@ class AIMedicalReportService {
             _buildSection(
               title: 'DIAGNOSIS',
               content: [
-                _buildInfoRow('Disease:', disease['name'] ?? 'N/A'),
-                _buildInfoRow('Category:', disease['category'] ?? 'N/A'),
-                _buildInfoRow('Status:', disease['status'] ?? 'N/A'),
+                // ✅ FIX: Use _safeStringValue for all disease fields
+                _buildInfoRow('Disease:', _safeStringValue(disease['name'])),
+                _buildInfoRow('Category:', _safeStringValue(disease['category'])),
+                _buildInfoRow('Status:', _safeStringValue(disease['status'])),
                 if (disease['severity'] != null)
-                  _buildInfoRow('Severity:', disease['severity']),
+                  _buildInfoRow('Severity:', _safeStringValue(disease['severity'])),
               ],
               bgColor: PdfColors.yellow50,
               borderColor: PdfColors.yellow300,
@@ -236,16 +245,17 @@ class AIMedicalReportService {
               _buildSection(
                 title: 'CLINICAL HISTORY',
                 content: [
+                  // ✅ FIX: Use _safeStringValue for all history fields
                   if (history['chiefComplaint'] != null)
-                    _buildTextBlock('Chief Complaint:', history['chiefComplaint']),
+                    _buildTextBlock('Chief Complaint:', _safeStringValue(history['chiefComplaint'])),
                   if (history['historyOfPresentIllness'] != null)
-                    _buildTextBlock('Present Illness:', history['historyOfPresentIllness']),
+                    _buildTextBlock('Present Illness:', _safeStringValue(history['historyOfPresentIllness'])),
                   if (history['pastMedicalHistory'] != null)
-                    _buildTextBlock('Past Medical History:', history['pastMedicalHistory']),
+                    _buildTextBlock('Past Medical History:', _safeStringValue(history['pastMedicalHistory'])),
                   if (history['familyHistory'] != null)
-                    _buildTextBlock('Family History:', history['familyHistory']),
+                    _buildTextBlock('Family History:', _safeStringValue(history['familyHistory'])),
                   if (history['allergies'] != null)
-                    _buildTextBlock('Allergies:', history['allergies']),
+                    _buildTextBlock('Allergies:', _safeStringValue(history['allergies'])),
                 ],
                 bgColor: PdfColors.grey50,
                 borderColor: PdfColors.grey300,
@@ -266,12 +276,13 @@ class AIMedicalReportService {
               _buildSection(
                 title: 'TREATMENT PLAN',
                 content: [
+                  // ✅ FIX: Use _safeStringValue for all treatment plan fields
                   if (treatmentPlan['approach'] != null)
-                    _buildTextBlock('Approach:', treatmentPlan['approach']),
+                    _buildTextBlock('Approach:', _safeStringValue(treatmentPlan['approach'])),
                   if (treatmentPlan['goal'] != null)
-                    _buildTextBlock('Goal:', treatmentPlan['goal']),
+                    _buildTextBlock('Goal:', _safeStringValue(treatmentPlan['goal'])),
                   if (treatmentPlan['targets'] != null)
-                    _buildTextBlock('Targets:', treatmentPlan['targets']),
+                    _buildTextBlock('Targets:', _safeStringValue(treatmentPlan['targets'])),
                 ],
                 bgColor: PdfColors.orange50,
                 borderColor: PdfColors.orange300,
@@ -319,7 +330,8 @@ class AIMedicalReportService {
                   ),
                   pw.SizedBox(height: 16),
                   pw.Text(
-                    aiInsights['clinicalAnalysis']?.toString() ?? 'No analysis available',
+                    // ✅ FIX: Safely convert AI insights to String
+                    _safeStringValue(aiInsights['clinicalAnalysis'], 'No analysis available'),
                     style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey800),
                     textAlign: pw.TextAlign.justify,
                   ),
@@ -366,7 +378,8 @@ class AIMedicalReportService {
                   ),
                   pw.SizedBox(height: 16),
                   pw.Text(
-                    aiInsights['treatmentRecommendations']?.toString() ?? 'No recommendations available',
+                    // ✅ FIX: Safely convert treatment recommendations to String
+                    _safeStringValue(aiInsights['treatmentRecommendations'], 'No recommendations available'),
                     style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey800),
                     textAlign: pw.TextAlign.justify,
                   ),
@@ -534,9 +547,10 @@ class AIMedicalReportService {
               ? const pw.BoxDecoration(color: PdfColors.red50)
               : null,
           children: [
-            _buildTableCell(lab['testName'] ?? 'N/A'),
-            _buildTableCell('${lab['value'] ?? 'N/A'} ${lab['unit'] ?? ''}'),
-            _buildTableCell('${lab['normalMin'] ?? ''} - ${lab['normalMax'] ?? ''}'),
+            // ✅ FIX: Safely convert all lab values to Strings
+            _buildTableCell(_safeStringValue(lab['testName'])),
+            _buildTableCell('${_safeStringValue(lab['value'])} ${_safeStringValue(lab['unit'], '')}'),
+            _buildTableCell('${_safeStringValue(lab['normalMin'], '')} - ${_safeStringValue(lab['normalMax'], '')}'),
             _buildTableCell(lab['isAbnormal'] == true ? 'Abnormal' : 'Normal'),
           ],
         )).toList(),
