@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import '../../../models/endocrine/endocrine_condition.dart';
 import '../../../config/thyroid_disease_config.dart';
+import '../../../services/database_helper.dart';
 
 class OverviewTab extends StatefulWidget {
   final EndocrineCondition condition;
@@ -733,10 +734,18 @@ class _OverviewTabState extends State<OverviewTab> {
   }
 
   void _updateConditionCriteria() {
-    widget.onUpdate(widget.condition.copyWith(selectedDiagnosticCriteria: selectedCriteria.toList()));
+    final updatedCondition = widget.condition.copyWith(
+        selectedDiagnosticCriteria: selectedCriteria.toList()
+    );
+    widget.onUpdate(updatedCondition);
+    DatabaseHelper.instance.updateEndocrineCondition(updatedCondition);
   }
 
   void _updateConditionComplications() {
-    widget.onUpdate(widget.condition.copyWith(selectedComplications: selectedComplications.toList()));
+    final updatedCondition = widget.condition.copyWith(
+        selectedComplications: selectedComplications.toList()
+    );
+    widget.onUpdate(updatedCondition);
+    DatabaseHelper.instance.updateEndocrineCondition(updatedCondition);
   }
 }

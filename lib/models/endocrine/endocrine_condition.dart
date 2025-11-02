@@ -702,6 +702,8 @@ class TreatmentPlan {
   final String monitoringPlan;
   final List<String> patientEducation;
   final DateTime? nextReviewDate;
+  final String dietPlan;
+  final String lifestylePlan;
 
   TreatmentPlan({
     required this.approach,
@@ -710,6 +712,8 @@ class TreatmentPlan {
     this.monitoringPlan = '',
     this.patientEducation = const [],
     this.nextReviewDate,
+    this.dietPlan = '',
+    this.lifestylePlan = '',
   });
 
   Map<String, dynamic> toJson() => {
@@ -719,6 +723,8 @@ class TreatmentPlan {
     'monitoringPlan': monitoringPlan,
     'patientEducation': patientEducation,
     'nextReviewDate': nextReviewDate?.toIso8601String(),
+    'dietPlan': dietPlan,
+    'lifestylePlan': lifestylePlan,
   };
 
   factory TreatmentPlan.fromJson(Map<String, dynamic> json) {
@@ -730,6 +736,8 @@ class TreatmentPlan {
       patientEducation: List<String>.from(json['patientEducation'] ?? []),
       nextReviewDate:
       json['nextReviewDate'] != null ? DateTime.parse(json['nextReviewDate']) : null,
+      dietPlan: json['dietPlan'] ?? '',
+      lifestylePlan: json['lifestylePlan'] ?? '',
     );
   }
 }

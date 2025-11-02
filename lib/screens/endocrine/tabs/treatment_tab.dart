@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../../../models/endocrine/endocrine_condition.dart';
 import '../../../config/thyroid_disease_config.dart';
+import '../../../services/database_helper.dart';
 
 class TreatmentTab extends StatefulWidget {
   final EndocrineCondition condition;
@@ -113,6 +114,10 @@ class _TreatmentTabState extends State<TreatmentTab> {
     _monitoringPlanController.addListener(_onTextChanged);
     _dietPlanController.addListener(_onTextChanged);
     _lifestyleController.addListener(_onTextChanged);
+    _dietPlanController.text = widget.condition.treatmentPlan!.dietPlan;
+    _lifestyleController.text = widget.condition.treatmentPlan!.lifestylePlan;
+    _includeDiet = widget.condition.treatmentPlan!.dietPlan.isNotEmpty;
+    _includeLifestyle = widget.condition.treatmentPlan!.lifestylePlan.isNotEmpty;
   }
 
   void _loadExistingData() {
@@ -147,6 +152,8 @@ class _TreatmentTabState extends State<TreatmentTab> {
         approach: _treatmentApproach,
         goal: _treatmentGoalController.text,
         monitoringPlan: _monitoringPlanController.text,
+        dietPlan: _includeDiet ? _dietPlanController.text : '',
+        lifestylePlan: _includeLifestyle ? _lifestyleController.text : '',
       );
 
       // Save advanced treatment status to additionalData
@@ -155,10 +162,14 @@ class _TreatmentTabState extends State<TreatmentTab> {
       updatedAdditionalData['surgeryStatus'] = _surgeryStatus;
       updatedAdditionalData['surgeryType'] = _surgeryType;
 
-      widget.onUpdate(widget.condition.copyWith(
+      final updatedCondition = widget.condition.copyWith(
         treatmentPlan: updatedPlan,
         additionalData: updatedAdditionalData,
-      ));
+      );
+
+      widget.onUpdate(updatedCondition);
+
+      await DatabaseHelper.instance.updateEndocrineCondition(updatedCondition);
 
       setState(() {
         _lastSaved = DateTime.now();

@@ -1081,8 +1081,7 @@ class DatabaseHelper {
       whereArgs: [patientId],
       orderBy: 'visit_date DESC',
     );
-    return maps.map((map) => _endocrineConditionFromMap(map)).toList();
-  }
+    return maps.map((map) => EndocrineCondition.fromJson(map)).toList();  }
 
   Future<List<EndocrineCondition>> getEndocrineVisitsByDisease(String patientId, String diseaseId) async {
     final db = await this.database;
