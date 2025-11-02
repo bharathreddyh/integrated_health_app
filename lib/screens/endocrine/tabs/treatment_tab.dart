@@ -1,4 +1,4 @@
-// ==================== UPDATED TAB 4: TREATMENT ====================
+// ==================== COMPLETE TREATMENT TAB ====================
 // lib/screens/endocrine/tabs/treatment_tab.dart
 
 import 'package:flutter/material.dart';
@@ -114,10 +114,6 @@ class _TreatmentTabState extends State<TreatmentTab> {
     _monitoringPlanController.addListener(_onTextChanged);
     _dietPlanController.addListener(_onTextChanged);
     _lifestyleController.addListener(_onTextChanged);
-    _dietPlanController.text = widget.condition.treatmentPlan!.dietPlan;
-    _lifestyleController.text = widget.condition.treatmentPlan!.lifestylePlan;
-    _includeDiet = widget.condition.treatmentPlan!.dietPlan.isNotEmpty;
-    _includeLifestyle = widget.condition.treatmentPlan!.lifestylePlan.isNotEmpty;
   }
 
   void _loadExistingData() {
@@ -125,8 +121,12 @@ class _TreatmentTabState extends State<TreatmentTab> {
       _treatmentApproach = widget.condition.treatmentPlan!.approach;
       _treatmentGoalController.text = widget.condition.treatmentPlan!.goal;
       _monitoringPlanController.text = widget.condition.treatmentPlan!.monitoringPlan;
+      _dietPlanController.text = widget.condition.treatmentPlan!.dietPlan;
+      _lifestyleController.text = widget.condition.treatmentPlan!.lifestylePlan;
+      _includeDiet = widget.condition.treatmentPlan!.dietPlan.isNotEmpty;
+      _includeLifestyle = widget.condition.treatmentPlan!.lifestylePlan.isNotEmpty;
     } else if (widget.diseaseConfig.monitoringPlan != null) {
-      _monitoringPlanController.text = widget.diseaseConfig.monitoringPlan!;
+      _monitoringPlanController.text = widget.diseaseConfig.monitoringPlan ?? '';
     }
 
     // Load advanced treatment status from additionalData if available
@@ -329,211 +329,6 @@ class _TreatmentTabState extends State<TreatmentTab> {
     );
   }
 
-  Widget _buildToggleCard({
-    required String title,
-    required IconData icon,
-    required Color color,
-    required bool isSelected,
-    required Function(bool) onToggle,
-    Widget? content,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isSelected ? color : Colors.grey.shade300,
-          width: isSelected ? 2 : 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          InkWell(
-            onTap: () => onToggle(!isSelected),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isSelected ? color.withOpacity(0.1) : null,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(icon, color: color),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  Switch(
-                    value: isSelected,
-                    onChanged: onToggle,
-                    activeColor: color,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (isSelected && content != null)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: content,
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDietSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _dietTemplates.keys.map((key) {
-            return OutlinedButton(
-              onPressed: () {
-                setState(() {
-                  _dietPlanController.text = _dietTemplates[key]!;
-                });
-                _autoSave();
-              },
-              child: Text(key),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.orange,
-                side: const BorderSide(color: Colors.orange),
-              ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _dietPlanController,
-          maxLines: 6,
-          decoration: InputDecoration(
-            hintText: 'Enter diet recommendations...',
-            border: const OutlineInputBorder(),
-            filled: true,
-            fillColor: Colors.orange.shade50,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLifestyleSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _lifestyleTemplates.keys.map((key) {
-            return OutlinedButton(
-              onPressed: () {
-                setState(() {
-                  _lifestyleController.text = _lifestyleTemplates[key]!;
-                });
-                _autoSave();
-              },
-              child: Text(key),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.green,
-                side: const BorderSide(color: Colors.green),
-              ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _lifestyleController,
-          maxLines: 6,
-          decoration: InputDecoration(
-            hintText: 'Enter lifestyle recommendations...',
-            border: const OutlineInputBorder(),
-            filled: true,
-            fillColor: Colors.green.shade50,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTreatmentSummary() {
-    final totalItems = widget.condition.medications.length +
-        (_includeDiet ? 1 : 0) +
-        (_includeLifestyle ? 1 : 0);
-
-    final completionPercentage = totalItems > 0 ? (totalItems / 5 * 100).clamp(0, 100) : 0;
-
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.summarize, color: Color(0xFF2563EB)),
-                SizedBox(width: 8),
-                Text(
-                  'Treatment Summary',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            _buildSummaryRow('Medications', '${widget.condition.medications.length} prescribed'),
-            _buildSummaryRow('Diet Plan', _includeDiet ? 'Included' : 'Not included'),
-            _buildSummaryRow('Lifestyle', _includeLifestyle ? 'Included' : 'Not included'),
-
-            const Divider(height: 24),
-
-            LinearProgressIndicator(
-              value: completionPercentage / 100,
-              backgroundColor: Colors.grey.shade300,
-              color: Colors.green,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${completionPercentage.toInt()}% Treatment Plan Complete',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSummaryRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-          Text(value, style: TextStyle(color: Colors.grey.shade700)),
-        ],
-      ),
-    );
-  }
-
   Widget _buildTreatmentApproachCard() {
     return Card(
       elevation: 2,
@@ -566,7 +361,10 @@ class _TreatmentTabState extends State<TreatmentTab> {
   Widget _buildApproachOption(String value, String title, String subtitle, IconData icon) {
     final isSelected = _treatmentApproach == value;
     return InkWell(
-      onTap: () => setState(() => _treatmentApproach = value),
+      onTap: () {
+        setState(() => _treatmentApproach = value);
+        _autoSave();
+      },
       borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -585,7 +383,10 @@ class _TreatmentTabState extends State<TreatmentTab> {
             Radio<String>(
               value: value,
               groupValue: _treatmentApproach,
-              onChanged: (val) => setState(() => _treatmentApproach = val!),
+              onChanged: (val) {
+                setState(() => _treatmentApproach = val!);
+                _autoSave();
+              },
               activeColor: const Color(0xFF2563EB),
             ),
             Expanded(
@@ -787,6 +588,151 @@ class _TreatmentTabState extends State<TreatmentTab> {
     );
   }
 
+  Widget _buildToggleCard({
+    required String title,
+    required IconData icon,
+    required Color color,
+    required bool isSelected,
+    required Function(bool) onToggle,
+    Widget? content,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected ? color : Colors.grey.shade300,
+          width: isSelected ? 2 : 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () => onToggle(!isSelected),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isSelected ? color.withOpacity(0.1) : null,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(icon, color: color),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  Switch(
+                    value: isSelected,
+                    onChanged: onToggle,
+                    activeColor: color,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (isSelected && content != null)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: content,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDietSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _dietTemplates.keys.map((key) {
+            return OutlinedButton(
+              onPressed: () {
+                setState(() {
+                  _dietPlanController.text = _dietTemplates[key]!;
+                });
+                _autoSave();
+              },
+              child: Text(key),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.orange,
+                side: const BorderSide(color: Colors.orange),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _dietPlanController,
+          maxLines: 6,
+          decoration: InputDecoration(
+            hintText: 'Enter diet recommendations...',
+            border: const OutlineInputBorder(),
+            filled: true,
+            fillColor: Colors.orange.shade50,
+          ),
+          onChanged: (_) => _onTextChanged(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLifestyleSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _lifestyleTemplates.keys.map((key) {
+            return OutlinedButton(
+              onPressed: () {
+                setState(() {
+                  _lifestyleController.text = _lifestyleTemplates[key]!;
+                });
+                _autoSave();
+              },
+              child: Text(key),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.green,
+                side: const BorderSide(color: Colors.green),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _lifestyleController,
+          maxLines: 6,
+          decoration: InputDecoration(
+            hintText: 'Enter lifestyle recommendations...',
+            border: const OutlineInputBorder(),
+            filled: true,
+            fillColor: Colors.green.shade50,
+          ),
+          onChanged: (_) => _onTextChanged(),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTreatmentTargetsCard() {
     final targets = widget.diseaseConfig.targets;
     return Card(
@@ -803,6 +749,7 @@ class _TreatmentTabState extends State<TreatmentTab> {
               controller: _treatmentGoalController,
               decoration: const InputDecoration(labelText: 'Treatment Goal', hintText: 'e.g., Achieve euthyroid state', border: OutlineInputBorder()),
               maxLines: 2,
+              onChanged: (_) => _onTextChanged(),
             ),
             const SizedBox(height: 16),
             if (targets != null && targets.isNotEmpty) ...[
@@ -846,6 +793,7 @@ class _TreatmentTabState extends State<TreatmentTab> {
                 border: OutlineInputBorder(),
               ),
               maxLines: 4,
+              onChanged: (_) => _onTextChanged(),
             ),
             const SizedBox(height: 16),
             const Text('Regular Monitoring:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
@@ -922,6 +870,69 @@ class _TreatmentTabState extends State<TreatmentTab> {
     );
   }
 
+  Widget _buildTreatmentSummary() {
+    final totalItems = widget.condition.medications.length +
+        (_includeDiet ? 1 : 0) +
+        (_includeLifestyle ? 1 : 0);
+
+    final completionPercentage = totalItems > 0 ? (totalItems / 5 * 100).clamp(0, 100) : 0;
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.summarize, color: Color(0xFF2563EB)),
+                SizedBox(width: 8),
+                Text(
+                  'Treatment Summary',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            _buildSummaryRow('Medications', '${widget.condition.medications.length} prescribed'),
+            _buildSummaryRow('Diet Plan', _includeDiet ? 'Included' : 'Not included'),
+            _buildSummaryRow('Lifestyle', _includeLifestyle ? 'Included' : 'Not included'),
+
+            const Divider(height: 24),
+
+            LinearProgressIndicator(
+              value: completionPercentage / 100,
+              backgroundColor: Colors.grey.shade300,
+              color: Colors.green,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${completionPercentage.toInt()}% Treatment Plan Complete',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Text(value, style: TextStyle(color: Colors.grey.shade700)),
+        ],
+      ),
+    );
+  }
+
+  // Helper methods
   bool _showRadioiodineOption() => widget.condition.category == 'hyperthyroidism' || widget.condition.category == 'cancer';
   bool _showSurgeryOption() => widget.condition.category == 'hyperthyroidism' || widget.condition.category == 'nodules' || widget.condition.category == 'cancer';
   bool _showAdvancedTreatments() => _showRadioiodineOption() || _showSurgeryOption();
@@ -962,6 +973,14 @@ class _TreatmentTabState extends State<TreatmentTab> {
                 final updatedMeds = List<Medication>.from(widget.condition.medications)..add(newMed);
                 widget.onUpdate(widget.condition.copyWith(medications: updatedMeds));
                 Navigator.pop(context);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Medication added successfully'),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
               }
             },
             child: const Text('Add'),
@@ -1040,12 +1059,27 @@ class _TreatmentTabState extends State<TreatmentTab> {
     );
     final updatedMeds = List<Medication>.from(widget.condition.medications)..add(newMed);
     widget.onUpdate(widget.condition.copyWith(medications: updatedMeds));
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${newMed.name} added'), backgroundColor: Colors.green));
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${newMed.name} added'),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   void _removeMedication(Medication medication) {
     final updatedMeds = List<Medication>.from(widget.condition.medications)..remove(medication);
     widget.onUpdate(widget.condition.copyWith(medications: updatedMeds));
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Medication removed'),
+        backgroundColor: Colors.orange,
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> _selectFollowUpDate(BuildContext context) async {
@@ -1056,7 +1090,8 @@ class _TreatmentTabState extends State<TreatmentTab> {
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (date != null) {
-      // TODO: Update follow-up date in condition
+      widget.onUpdate(widget.condition.copyWith(nextVisit: date));
+      _autoSave();
     }
   }
 

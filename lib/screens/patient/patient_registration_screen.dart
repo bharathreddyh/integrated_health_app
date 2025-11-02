@@ -197,8 +197,11 @@ class _PatientRegistrationScreenState extends State<PatientRegistrationScreen> {
       // Navigate to 3-page consultation screen
       final result = await Navigator.pushNamed(
         context,
-        '/consultation',
-        arguments: patient,
+        '/medical-systems',
+        arguments: {
+          'patient': patient,
+          'isQuickMode': false,
+        },
       );
 
       print('📵 Returned from consultation screen');
