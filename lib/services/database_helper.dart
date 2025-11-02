@@ -1075,13 +1075,29 @@ class DatabaseHelper {
 
   Future<List<EndocrineCondition>> getEndocrineVisitsByPatient(String patientId) async {
     final db = await this.database;
+
+    print('🔍 Loading endocrine visits for patient: $patientId');
+
     final maps = await db.query(
       'endocrine_visits',
       where: 'patient_id = ?',
       whereArgs: [patientId],
       orderBy: 'visit_date DESC',
     );
-    return maps.map((map) => EndocrineCondition.fromJson(map)).toList();  }
+
+    print('   Found ${maps.length} visits in database');
+
+    try {
+      // ✅ FIXED: Use _endocrineConditionFromMap instead
+      final conditions = maps.map((map) => _endocrineConditionFromMap(map)).toList();
+      print('✅ Successfully parsed all ${conditions.length} conditions');
+      return conditions;
+    } catch (e, stackTrace) {
+      print('❌ Error parsing endocrine visits: $e');
+      print('   Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
 
   Future<List<EndocrineCondition>> getEndocrineVisitsByDisease(String patientId, String diseaseId) async {
     final db = await this.database;
@@ -1096,6 +1112,9 @@ class DatabaseHelper {
 
   Future<EndocrineCondition?> getLatestEndocrineVisit(String patientId, String diseaseId) async {
     final db = await this.database;
+
+    print('🔍 Loading latest visit for patient: $patientId, disease: $diseaseId');
+
     final maps = await db.query(
       'endocrine_visits',
       where: 'patient_id = ? AND disease_id = ?',
@@ -1103,8 +1122,22 @@ class DatabaseHelper {
       orderBy: 'visit_date DESC',
       limit: 1,
     );
-    if (maps.isEmpty) return null;
-    return _endocrineConditionFromMap(maps.first);
+
+    if (maps.isEmpty) {
+      print('   No existing visit found for this disease');
+      return null;
+    }
+
+    try {
+      final condition = _endocrineConditionFromMap(maps.first);
+      print('✅ Successfully loaded visit (ID: ${condition.id})');
+      return condition;
+    } catch (e, stackTrace) {
+      print('❌ Error loading endocrine visit: $e');
+      print('   Stack trace: $stackTrace');
+      // Return null instead of crashing
+      return null;
+    }
   }
 
   Future<List<Map<String, dynamic>>> getLabTrendsForPatient(String patientId, String testName) async {
@@ -1232,20 +1265,52 @@ class DatabaseHelper {
   }
 
   EndocrineCondition _endocrineConditionFromMap(Map<String, dynamic> map) {
+    // Helper function to safely decode JSON strings
+    T? _safeJsonDecode<T>(dynamic value, T Function(dynamic) parser)
+      {
+      if (value == null) return null;
+      if (value is String && value.isEmpty) return null;
+      try {
+        return parser(jsonDecode(value as String));
+      } catch (e) {
+        print('Error decoding JSON: $e');
+        return null;
+      }
+    }
+
+    // Helper function for list decoding
+    List<T> _safeJsonDecodeList<T>(dynamic value, T Function(dynamic) itemParser) {
+      if (value == null) return [];
+      if (value is String && value.isEmpty) return [];
+      try {
+        final decoded = jsonDecode(value as String);
+        if (decoded is! List) return [];
+        return (decoded as List).map((item) => itemParser(item)).toList();
+      } catch (e) {
+        print('Error decoding JSON list: $e');
+        return [];
+      }
+    }
+
     return EndocrineCondition(
       id: map['id'] as String,
       patientId: map['patient_id'] as String,
-      patientName: '',
+      patientName: map['patient_name'] as String? ?? '',
       gland: map['gland'] as String,
-      category: (map['category'] as String?) ?? '',
+      category: map['category'] as String? ?? '',
       diseaseId: map['disease_id'] as String,
       diseaseName: map['disease_name'] as String,
       status: DiagnosisStatus.values.firstWhere(
             (e) => e.toString().split('.').last == map['status'],
+        orElse: () => DiagnosisStatus.suspected,
       ),
+      diagnosisDate: map['diagnosis_date'] != null
+          ? DateTime.parse(map['diagnosis_date'])
+          : null,
       severity: map['severity'] != null
           ? DiseaseSeverity.values.firstWhere(
             (e) => e.toString().split('.').last == map['severity'],
+        orElse: () => DiseaseSeverity.mild,
       )
           : null,
       chiefComplaint: map['chief_complaint'] as String?,
@@ -1253,36 +1318,81 @@ class DatabaseHelper {
       pastMedicalHistory: map['past_medical_history'] as String?,
       familyHistory: map['family_history'] as String?,
       allergies: map['allergies'] as String?,
-      vitals: map['vitals'] != null ? Map<String, String>.from(jsonDecode(map['vitals'])) : null,
-      measurements: map['measurements'] != null ? Map<String, String>.from(jsonDecode(map['measurements'])) : null,
-      orderedLabTests: map['ordered_lab_tests'] != null ? List<Map<String, dynamic>>.from(jsonDecode(map['ordered_lab_tests'])) : null,
-      orderedInvestigations: map['ordered_investigations'] != null ? List<Map<String, dynamic>>.from(jsonDecode(map['ordered_investigations'])) : null,
-      clinicalFeatures: map['clinical_features'] != null
-          ? (jsonDecode(map['clinical_features']) as List).map((f) => ClinicalFeature.fromJson(f)).toList()
-          : [],
-      labReadings: map['lab_readings'] != null
-          ? (jsonDecode(map['lab_readings']) as List).map((r) => LabReading.fromJson(r)).toList()
-          : [],
-      investigationFindings: map['investigation_findings'] != null ? jsonDecode(map['investigation_findings']) : null,
-      images: map['images'] != null
-          ? (jsonDecode(map['images']) as List).map((i) => MedicalImage.fromJson(i)).toList()
-          : [],
-      medications: map['medications'] != null
-          ? (jsonDecode(map['medications']) as List).map((m) => Medication.fromJson(m)).toList()
-          : [],
-      treatmentPlan: map['treatment_plan'] != null ? TreatmentPlan.fromJson(jsonDecode(map['treatment_plan'])) : null,
-      complications: map['complications'] != null
-          ? (jsonDecode(map['complications']) as List).map((c) => Complication.fromJson(c)).toList()
-          : [],
+
+      // Safe JSON decoding for vitals
+      vitals: _safeJsonDecode(
+          map['vitals'],
+              (decoded) => Map<String, String>.from(decoded)
+      ),
+
+      // Safe JSON decoding for measurements
+      measurements: _safeJsonDecode(
+          map['measurements'],
+              (decoded) => Map<String, String>.from(decoded)
+      ),
+
+      // Safe JSON decoding for ordered tests
+      orderedLabTests: _safeJsonDecode(
+          map['ordered_lab_tests'],
+              (decoded) => List<Map<String, dynamic>>.from(decoded)
+      ),
+
+      orderedInvestigations: _safeJsonDecode(
+          map['ordered_investigations'],
+              (decoded) => List<Map<String, dynamic>>.from(decoded)
+      ),
+
+      // Safe list decoding for clinical features
+      clinicalFeatures: _safeJsonDecodeList(
+          map['clinical_features'],
+              (item) => ClinicalFeature.fromJson(item)
+      ),
+
+      // Safe list decoding for lab readings
+      labReadings: _safeJsonDecodeList(
+          map['lab_readings'],
+              (item) => LabReading.fromJson(item)
+      ),
+
+      investigationFindings: _safeJsonDecode(
+          map['investigation_findings'],
+              (decoded) => decoded
+      ),
+
+      // Safe list decoding for images
+      images: _safeJsonDecodeList(
+          map['images'],
+              (item) => MedicalImage.fromJson(item)
+      ),
+
+      // Safe list decoding for medications
+      medications: _safeJsonDecodeList(
+          map['medications'],
+              (item) => Medication.fromJson(item)
+      ),
+
+      // Safe decoding for treatment plan - THIS IS CRITICAL
+      treatmentPlan: _safeJsonDecode(
+          map['treatment_plan'],
+              (decoded) => TreatmentPlan.fromJson(decoded)
+      ),
+
+      // Safe list decoding for complications
+      complications: _safeJsonDecodeList(
+          map['complications'],
+              (item) => Complication.fromJson(item)
+      ),
+
       notes: map['notes'] as String? ?? '',
       followUpPlan: map['follow_up_plan'] as String? ?? '',
-      nextVisit: map['next_visit'] != null ? DateTime.parse(map['next_visit']) : null,
+      nextVisit: map['next_visit'] != null
+          ? DateTime.parse(map['next_visit'])
+          : null,
       createdAt: DateTime.parse(map['created_at']),
       lastUpdated: DateTime.parse(map['last_updated']),
       isActive: map['is_active'] == 1,
     );
   }
-
 // ==================== PATIENT DATA SNAPSHOT METHODS ====================
 
 // ✅ ADDED: Save patient data
