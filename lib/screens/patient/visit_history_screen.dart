@@ -1,12 +1,13 @@
-// ==================== VISIT HISTORY SCREEN ====================
+// ==================== UPDATED VISIT HISTORY SCREEN ====================
 // lib/screens/patient/visit_history_screen.dart
-// ✅ Now shows BOTH canvas visits AND endocrine/medical template visits
+// ✅ Shows BOTH canvas visits AND endocrine/medical template visits
+// ✅ EDIT/DELETE functionality for medical templates
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/patient.dart';
 import '../../models/visit.dart';
-import '../../models/endocrine/endocrine_condition.dart';  // ✅ NEW IMPORT
+import '../../models/endocrine/endocrine_condition.dart';
 import '../../services/database_helper.dart';
 import '../kidney/visit_view_screen.dart';
 
@@ -21,7 +22,7 @@ class VisitHistoryScreen extends StatefulWidget {
 
 class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
   List<Visit> _visits = [];
-  List<EndocrineCondition> _endocrineVisits = [];  // ✅ NEW: Store endocrine visits
+  List<EndocrineCondition> _endocrineVisits = [];
   bool _isLoading = true;
 
   @override
@@ -30,14 +31,11 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
     _loadVisits();
   }
 
-  // ✅ UPDATED: Load BOTH regular visits AND endocrine visits
+  // Load BOTH regular visits AND endocrine visits
   Future<void> _loadVisits() async {
     setState(() => _isLoading = true);
     try {
-      // Load regular visits (kidney/canvas)
       final regularVisits = await DatabaseHelper.instance.getPatientVisits(widget.patient.id);
-
-      // ✅ NEW: Load endocrine visits (medical templates)
       final endocrineVisits = await DatabaseHelper.instance.getEndocrineVisitsByPatient(widget.patient.id);
 
       if (mounted) {
@@ -75,7 +73,7 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
           : ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ✅ Show Endocrine/Medical Template Visits First
+          // Medical Templates Section
           if (_endocrineVisits.isNotEmpty) ...[
             _buildSectionHeader('Medical Templates', Icons.science, Colors.pink),
             const SizedBox(height: 12),
@@ -83,7 +81,7 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
             const SizedBox(height: 24),
           ],
 
-          // Show Regular Canvas Visits
+          // Canvas Diagrams Section
           if (_visits.isNotEmpty) ...[
             _buildSectionHeader('Canvas Diagrams', Icons.draw, Colors.blue),
             const SizedBox(height: 12),
@@ -94,7 +92,27 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
     );
   }
 
-  // ✅ NEW: Section header
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.history, size: 80, color: Colors.grey.shade300),
+          const SizedBox(height: 16),
+          Text(
+            'No visit history yet',
+            style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Start a new visit to see records here',
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSectionHeader(String title, IconData icon, Color color) {
     return Row(
       children: [
@@ -119,14 +137,14 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
     );
   }
 
-  // ✅ NEW: Build endocrine visit card
+  // ✅ UPDATED: Endocrine visit card with EDIT/DELETE options
   Widget _buildEndocrineVisitCard(EndocrineCondition condition) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
-        onTap: () => _openEndocrineVisit(condition),
+        onTap: () => _editEndocrineVisit(condition),  // ✅ Tap to edit
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -138,10 +156,10 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.pink.shade50,
+                      color: Colors.pink.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(Icons.science, color: Colors.pink.shade700, size: 24),
+                    child: const Icon(Icons.science, color: Colors.pink, size: 24),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -150,36 +168,53 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
                       children: [
                         Text(
                           condition.diseaseName,
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          _formatDate(condition.createdAt),
-                          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                          DateFormat('MMM dd, yyyy • hh:mm a').format(condition.createdAt),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  _buildStatusBadge(condition.status.toString().split('.').last),
+                  // ✅ EDIT/DELETE BUTTONS
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit, size: 20),
+                        color: Colors.blue,
+                        tooltip: 'Edit',
+                        onPressed: () => _editEndocrineVisit(condition),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, size: 20),
+                        color: Colors.red,
+                        tooltip: 'Delete',
+                        onPressed: () => _deleteEndocrineVisit(condition),
+                      ),
+                    ],
+                  ),
                 ],
               ),
-              if (condition.chiefComplaint != null && condition.chiefComplaint!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(
-                  condition.chiefComplaint!,
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
               const SizedBox(height: 12),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
-                  _buildInfoChip(Icons.medication, '${condition.medications.length} meds'),
-                  const SizedBox(width: 8),
-                  _buildInfoChip(Icons.science, '${condition.labReadings.length} labs'),
-                  const SizedBox(width: 8),
-                  _buildInfoChip(Icons.warning_amber, '${condition.complications.length} issues'),
+                  _buildStatusChip(condition.status.toString().split('.').last),
+                  if (condition.severity != null)
+                    _buildInfoChip(Icons.warning_amber, condition.severity.toString().split('.').last),
+                  if (condition.labReadings.isNotEmpty)
+                    _buildInfoChip(Icons.science, '${condition.labReadings.length} labs'),
+                  if (condition.medications.isNotEmpty)
+                    _buildInfoChip(Icons.medication, '${condition.medications.length} meds'),
                 ],
               ),
             ],
@@ -189,7 +224,7 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
     );
   }
 
-  Widget _buildStatusBadge(String status) {
+  Widget _buildStatusChip(String status) {
     final colors = {
       'suspected': Colors.orange,
       'provisional': Colors.blue,
@@ -233,10 +268,9 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
     );
   }
 
-  // ✅ NEW: Open endocrine visit
-  void _openEndocrineVisit(EndocrineCondition condition) {
-    // Navigate back to the thyroid module screen
-    Navigator.pushNamed(
+  // ✅ EDIT: Open endocrine visit for editing
+  void _editEndocrineVisit(EndocrineCondition condition) async {
+    final result = await Navigator.pushNamed(
       context,
       '/thyroid-module',
       arguments: {
@@ -246,9 +280,122 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
         'diseaseName': condition.diseaseName,
       },
     );
+
+    // Reload visits after returning
+    if (result != null) {
+      _loadVisits();
+    }
   }
 
-  // Existing method for regular visits
+  // ✅ DELETE: Delete endocrine visit with confirmation
+  void _deleteEndocrineVisit(EndocrineCondition condition) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.warning, color: Colors.red, size: 28),
+            const SizedBox(width: 12),
+            const Expanded(child: Text('Delete Template?')),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to delete this medical template?',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    condition.diseaseName,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    DateFormat('MMM dd, yyyy').format(condition.createdAt),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '⚠️ This action cannot be undone.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.red.shade700,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(context, true),
+            icon: const Icon(Icons.delete),
+            label: const Text('Delete'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        // ✅ Delete from database
+        await DatabaseHelper.instance.deleteEndocrineVisit(condition.id);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text('${condition.diseaseName} deleted successfully'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+
+          // Reload visits
+          _loadVisits();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting template: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  // Existing method for regular canvas visits
   Widget _buildVisitCard(Visit visit) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -264,10 +411,10 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
+                  color: Colors.blue.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.draw, color: Colors.blue.shade700, size: 24),
+                child: const Icon(Icons.draw, color: Colors.blue, size: 24),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -275,18 +422,24 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      visit.diagramType.replaceAll('_', ' ').toUpperCase(),
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      visit.system.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      _formatDate(visit.createdAt),
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                      DateFormat('MMM dd, yyyy • hh:mm a').format(visit.createdAt),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: Colors.grey.shade400),
+              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
             ],
           ),
         ),
@@ -304,41 +457,5 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
         ),
       ),
     );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.folder_open, size: 80, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
-          Text(
-            'No visits yet',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Visit history will appear here',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays == 0) {
-      return 'Today at ${DateFormat('HH:mm').format(date)}';
-    } else if (difference.inDays == 1) {
-      return 'Yesterday at ${DateFormat('HH:mm').format(date)}';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays} days ago';
-    } else {
-      return DateFormat('MMM dd, yyyy').format(date);
-    }
   }
 }

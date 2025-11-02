@@ -813,12 +813,61 @@ class DatabaseHelper {
   }
 
   // ==================== ENDOCRINE CONDITION METHODS ====================
-
   Future<int> saveEndocrineCondition(EndocrineCondition condition) async {
     final db = await database;
+
+    // ✅ FIX: Properly format data to match database schema
+    final data = {
+      'id': condition.id,
+      'patientId': condition.patientId,
+      'gland': condition.gland,
+      'category': condition.category,
+      'diseaseId': condition.diseaseId,
+      'diseaseName': condition.diseaseName,
+      'status': condition.status.toString().split('.').last,
+      'diagnosisDate': condition.diagnosisDate?.toIso8601String(),
+      'severity': condition.severity?.toString().split('.').last,
+
+      // Patient Data
+      'chiefComplaint': condition.chiefComplaint,
+      'historyOfPresentIllness': condition.historyOfPresentIllness,
+      'pastMedicalHistory': condition.pastMedicalHistory,
+      'familyHistory': condition.familyHistory,
+      'allergies': condition.allergies,
+      'vitals': condition.vitals != null ? jsonEncode(condition.vitals) : null,
+      'measurements': condition.measurements != null ? jsonEncode(condition.measurements) : null,
+      'orderedLabTests': condition.orderedLabTests != null ? jsonEncode(condition.orderedLabTests) : null,
+      'orderedInvestigations': condition.orderedInvestigations != null ? jsonEncode(condition.orderedInvestigations) : null,
+      'additionalData': condition.additionalData != null ? jsonEncode(condition.additionalData) : null,
+      'labTestResults': jsonEncode(condition.labTestResults),
+      'investigationFindings': jsonEncode(condition.investigationFindings),
+      'selectedSymptoms': jsonEncode(condition.selectedSymptoms),
+      'selectedDiagnosticCriteria': jsonEncode(condition.selectedDiagnosticCriteria),
+      'selectedComplications': jsonEncode(condition.selectedComplications),
+
+      // Clinical Data - JSON encoded
+      'labReadings': jsonEncode(condition.labReadings.map((x) => x.toJson()).toList()),
+      'clinicalFeatures': jsonEncode(condition.clinicalFeatures.map((x) => x.toJson()).toList()),
+      'complications': jsonEncode(condition.complications.map((x) => x.toJson()).toList()),
+      'medications': jsonEncode(condition.medications.map((x) => x.toJson()).toList()),
+      'images': jsonEncode(condition.images.map((x) => x.toJson()).toList()),
+
+      // Simple fields
+      'notes': condition.notes,
+      'treatmentPlan': condition.treatmentPlan != null ? jsonEncode(condition.treatmentPlan!.toJson()) : null,
+      'nextVisit': condition.nextVisit?.toIso8601String(),
+      'followUpPlan': condition.followUpPlan,
+
+      // Meta
+      'createdAt': condition.createdAt.toIso8601String(),
+      'lastUpdated': condition.lastUpdated.toIso8601String(),
+      // ✅ CRITICAL: Convert boolean to integer
+      'isActive': condition.isActive ? 1 : 0,
+    };
+
     return await db.insert(
       'endocrine_conditions',
-      condition.toJson(),
+      data,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
@@ -832,16 +881,87 @@ class DatabaseHelper {
     );
     return maps.map((map) => EndocrineCondition.fromJson(map)).toList();
   }
+  Future<int> deleteEndocrineVisit(String visitId) async {
+    final db = await database;
 
+    print('🗑️ Deleting endocrine visit with ID: $visitId');
+
+    // Delete from endocrine_visits table
+    final result = await db.delete(
+      'endocrine_visits',
+      where: 'id = ?',
+      whereArgs: [visitId],
+    );
+
+    // Also delete from endocrine_conditions table if it exists there
+    await db.delete(
+      'endocrine_conditions',
+      where: 'id = ?',
+      whereArgs: [visitId],
+    );
+
+    print('✅ Deleted endocrine visit: $visitId');
+    return result;
+  }
   // ✅ ADDED: Update endocrine condition
   Future<int> updateEndocrineCondition(EndocrineCondition condition) async {
     final db = await database;
+
+    // ✅ FIX: Properly format data to match database schema
+    final updateData = {
+      'patientId': condition.patientId,
+      'gland': condition.gland,
+      'category': condition.category,
+      'diseaseId': condition.diseaseId,
+      'diseaseName': condition.diseaseName,
+      'status': condition.status.toString().split('.').last,
+      'diagnosisDate': condition.diagnosisDate?.toIso8601String(),
+      'severity': condition.severity?.toString().split('.').last,
+
+      // Patient Data
+      'chiefComplaint': condition.chiefComplaint,
+      'historyOfPresentIllness': condition.historyOfPresentIllness,
+      'pastMedicalHistory': condition.pastMedicalHistory,
+      'familyHistory': condition.familyHistory,
+      'allergies': condition.allergies,
+      'vitals': condition.vitals != null ? jsonEncode(condition.vitals) : null,
+      'measurements': condition.measurements != null ? jsonEncode(condition.measurements) : null,
+      'orderedLabTests': condition.orderedLabTests != null ? jsonEncode(condition.orderedLabTests) : null,
+      'orderedInvestigations': condition.orderedInvestigations != null ? jsonEncode(condition.orderedInvestigations) : null,
+      'additionalData': condition.additionalData != null ? jsonEncode(condition.additionalData) : null,
+      'labTestResults': jsonEncode(condition.labTestResults),
+      'investigationFindings': jsonEncode(condition.investigationFindings),
+      'selectedSymptoms': jsonEncode(condition.selectedSymptoms),
+      'selectedDiagnosticCriteria': jsonEncode(condition.selectedDiagnosticCriteria),
+      'selectedComplications': jsonEncode(condition.selectedComplications),
+
+      // Clinical Data - JSON encoded
+      'labReadings': jsonEncode(condition.labReadings.map((x) => x.toJson()).toList()),
+      'clinicalFeatures': jsonEncode(condition.clinicalFeatures.map((x) => x.toJson()).toList()),
+      'complications': jsonEncode(condition.complications.map((x) => x.toJson()).toList()),
+      'medications': jsonEncode(condition.medications.map((x) => x.toJson()).toList()),
+      'images': jsonEncode(condition.images.map((x) => x.toJson()).toList()),
+
+      // Simple fields
+      'notes': condition.notes,
+      'treatmentPlan': condition.treatmentPlan != null ? jsonEncode(condition.treatmentPlan!.toJson()) : null,
+      'nextVisit': condition.nextVisit?.toIso8601String(),
+      'followUpPlan': condition.followUpPlan,
+
+      // Meta
+      'createdAt': condition.createdAt.toIso8601String(),
+      'lastUpdated': DateTime.now().toIso8601String(),
+      // ✅ CRITICAL: Convert boolean to integer
+      'isActive': condition.isActive ? 1 : 0,
+    };
+
     return await db.update(
       'endocrine_conditions',
-      condition.toJson(),
+      updateData,
       where: 'id = ?',
       whereArgs: [condition.id],
     );
+  }
   }
 
   // ==================== ENDOCRINE VISIT METHODS ====================
@@ -1210,4 +1330,3 @@ class DatabaseHelper {
       whereArgs: [patientId],
     );
   }
-}

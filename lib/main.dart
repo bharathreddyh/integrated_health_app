@@ -16,6 +16,7 @@ import 'services/whisper_voice_service.dart';
 import 'widgets/floating_voice_button.dart';
 import 'screens/medical_templates/medical_systems_screen.dart';
 import 'screens/patient/visit_history_screen.dart';
+import 'screens/endocrine/thyroid_disease_module_screen.dart';
 
 
 
@@ -104,6 +105,24 @@ class ClinicClarityApp extends StatelessWidget {
               final patient = args['patient'] as Patient;
               return MaterialPageRoute(
                 builder: (context) => VisitHistoryScreen(patient: patient),
+              );
+            }
+          }
+
+          if (settings.name == '/thyroid-module') {
+            final args = settings.arguments as Map<String, dynamic>?;
+            if (args != null) {
+              final patientId = args['patientId'] as String;
+              final patientName = args['patientName'] as String;
+              final diseaseId = args['diseaseId'] as String;
+              final diseaseName = args['diseaseName'] as String;
+              return MaterialPageRoute(
+                builder: (context) => ThyroidDiseaseModuleScreen(
+                  patientId: patientId,
+                  patientName: patientName,
+                  diseaseId: diseaseId,
+                  diseaseName: diseaseName,
+                ),
               );
             }
           }
