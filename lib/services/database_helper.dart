@@ -17,13 +17,15 @@ class DatabaseHelper {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('clinic.db');
+    _database = await _initDB('clinic_v2.db');
     return _database!;
   }
 
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
+    print('🔧 Database path: $path');
+    print('🔧 Database version: 13');
     return await openDatabase(
       path,
       version: 13,
@@ -33,6 +35,8 @@ class DatabaseHelper {
   }
 
   Future<void> _createDB(Database db, int version) async {
+    print('🔨 Creating NEW database with version $version');
+
     // Users table
     await db.execute('''
       CREATE TABLE users (
@@ -277,6 +281,9 @@ class DatabaseHelper {
       'specialty': 'General Medicine',
       'created_at': DateTime.now().toIso8601String(),
     });
+
+    print('✅ Database created successfully with all tables!');
+    print('✅ endocrine_conditions table has columns: patient_id, disease_id, chief_complaint, etc.');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -854,6 +861,10 @@ class DatabaseHelper {
   // ==================== ENDOCRINE CONDITION METHODS ====================
   Future<int> saveEndocrineCondition(EndocrineCondition condition) async {
     final db = await this.database;
+
+    print('💾 Saving endocrine condition to endocrine_conditions table');
+    print('💾 Patient ID: ${condition.patientId}');
+    print('💾 Disease: ${condition.diseaseName}');
 
     // ✅ FIX: Properly format data to match database schema
     final data = {
