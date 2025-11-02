@@ -432,7 +432,7 @@ class DatabaseHelper {
   // ==================== USER METHODS ====================
 
   Future<User?> authenticateUser(String email, String password) async {
-    final db = await database;
+    final db = await this.database;
     final passwordHash = _hashPassword(password);
 
     final maps = await db.query(
@@ -446,28 +446,28 @@ class DatabaseHelper {
   }
 
   Future<int> createUser(User user, String password) async {
-    final db = await database;
+    final db = await this.database;
     final userMap = user.toMap();
     userMap['password_hash'] = _hashPassword(password);
     return await db.insert('users', userMap);
   }
 
   Future<User?> getUserById(String id) async {
-    final db = await database;
+    final db = await this.database;
     final maps = await db.query('users', where: 'id = ?', whereArgs: [id]);
     if (maps.isEmpty) return null;
     return User.fromMap(maps.first);
   }
 
   Future<User?> getUserByEmail(String email) async {
-    final db = await database;
+    final db = await this.database;
     final maps = await db.query('users', where: 'email = ?', whereArgs: [email.toLowerCase()]);
     if (maps.isEmpty) return null;
     return User.fromMap(maps.first);
   }
 
   Future<List<User>> getAllDoctors() async {
-    final db = await database;
+    final db = await this.database;
     final maps = await db.query('users', where: 'role = ?', whereArgs: ['doctor']);
     return maps.map((map) => User.fromMap(map)).toList();
   }
@@ -475,7 +475,7 @@ class DatabaseHelper {
   // ==================== PATIENT METHODS ====================
 
   Future<int> createPatient(Patient patient) async {
-    final db = await database;
+    final db = await this.database;
     return await db.insert('patients', patient.toMap());
   }
 
@@ -484,20 +484,20 @@ class DatabaseHelper {
   }
 
   Future<List<Patient>> getAllPatients() async {
-    final db = await database;
+    final db = await this.database;
     final maps = await db.query('patients', orderBy: 'name ASC');
     return maps.map((map) => Patient.fromMap(map)).toList();
   }
 
   Future<Patient?> getPatient(String id) async {
-    final db = await database;
+    final db = await this.database;
     final maps = await db.query('patients', where: 'id = ?', whereArgs: [id]);
     if (maps.isEmpty) return null;
     return Patient.fromMap(maps.first);
   }
 
   Future<int> updatePatient(Patient patient) async {
-    final db = await database;
+    final db = await this.database;
     return await db.update(
       'patients',
       patient.toMap(),
@@ -507,12 +507,12 @@ class DatabaseHelper {
   }
 
   Future<int> deletePatient(String id) async {
-    final db = await database;
+    final db = await this.database;
     return await db.delete('patients', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<List<Patient>> searchPatients(String query) async {
-    final db = await database;
+    final db = await this.database;
     final maps = await db.query(
       'patients',
       where: 'name LIKE ? OR id LIKE ? OR phone LIKE ?',
@@ -524,7 +524,7 @@ class DatabaseHelper {
   // ==================== VISIT METHODS ====================
 
   Future<int> insertVisit(Visit visit, String doctorId) async {
-    final db = await database;
+    final db = await this.database;
     final visitMap = visit.toMap();
     visitMap['doctor_id'] = doctorId;
 
@@ -540,7 +540,7 @@ class DatabaseHelper {
   }
 
   Future<int> updateVisit(Visit visit, String doctorId) async {
-    final db = await database;
+    final db = await this.database;
     final visitMap = visit.toMap();
     visitMap['doctor_id'] = doctorId;
 
@@ -557,7 +557,7 @@ class DatabaseHelper {
   }
 
   Future<List<Visit>> getVisitsByPatient(String patientId) async {
-    final db = await database;
+    final db = await this.database;
     final maps = await db.query(
       'visits',
       where: 'patient_id = ?',
@@ -573,7 +573,7 @@ class DatabaseHelper {
 
   // ✅ ADDED: Get all visits for patient (for diagram gallery)
   Future<List<Visit>> getAllVisitsForPatient({required String patientId}) async {
-    final db = await database;
+    final db = await this.database;
     final maps = await db.query(
       'visits',
       where: 'patient_id = ?',
@@ -584,7 +584,7 @@ class DatabaseHelper {
   }
 
   Future<Visit?> getVisitById(int id) async {
-    final db = await database;
+    final db = await this.database;
     final maps = await db.query(
       'visits',
       where: 'id = ?',
@@ -595,7 +595,7 @@ class DatabaseHelper {
   }
 
   Future<Visit?> getLastVisit(String patientId, {String? diagramType}) async {
-    final db = await database;
+    final db = await this.database;
     String whereClause = 'patient_id = ?';
     List<dynamic> whereArgs = [patientId];
 
@@ -622,7 +622,7 @@ class DatabaseHelper {
     required String diagramType,
     String? system,
   }) async {
-    final db = await database;
+    final db = await this.database;
 
     String whereClause;
     List<dynamic> whereArgs;
@@ -651,7 +651,7 @@ class DatabaseHelper {
     required String patientId,
     required String system,
   }) async {
-    final db = await database;
+    final db = await this.database;
     final maps = await db.query(
       'visits',
       where: 'patient_id = ? AND system = ?',
@@ -666,7 +666,7 @@ class DatabaseHelper {
     required String system,
     required String diagramType,
   }) async {
-    final db = await database;
+    final db = await this.database;
     final maps = await db.query(
       'visits',
       where: 'patient_id = ? AND system = ? AND diagram_type = ?',
@@ -679,7 +679,7 @@ class DatabaseHelper {
   }
 
   Future<Map<String, List<Visit>>> getVisitsGroupedBySystem(String patientId) async {
-    final db = await database;
+    final db = await this.database;
     final maps = await db.query(
       'visits',
       where: 'patient_id = ?',
@@ -701,21 +701,21 @@ class DatabaseHelper {
   }
 
   Future<int> deleteVisit(int id) async {
-    final db = await database;
+    final db = await this.database;
     return await db.delete('visits', where: 'id = ?', whereArgs: [id]);
   }
 
   // ==================== PRESCRIPTION METHODS ====================
 
   Future<int> insertPrescription(Prescription prescription, String doctorId) async {
-    final db = await database;
+    final db = await this.database;
     final prescMap = prescription.toMap();
     prescMap['doctor_id'] = doctorId;
     return await db.insert('prescriptions', prescMap);
   }
 
   Future<int> updatePrescription(Prescription prescription, String doctorId) async {
-    final db = await database;
+    final db = await this.database;
     final prescMap = prescription.toMap();
     prescMap['doctor_id'] = doctorId;
     return await db.update(
@@ -727,12 +727,12 @@ class DatabaseHelper {
   }
 
   Future<int> deletePrescription(int id) async {
-    final db = await database;
+    final db = await this.database;
     return await db.delete('prescriptions', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<List<Prescription>> getPrescriptionsByVisit(int visitId) async {
-    final db = await database;
+    final db = await this.database;
     final maps = await db.query(
       'prescriptions',
       where: 'visit_id = ?',
@@ -743,7 +743,7 @@ class DatabaseHelper {
   }
 
   Future<List<Prescription>> getPrescriptionsByPatient(String patientId) async {
-    final db = await database;
+    final db = await this.database;
     final maps = await db.query(
       'prescriptions',
       where: 'patient_id = ?',
@@ -756,14 +756,14 @@ class DatabaseHelper {
   // ==================== LAB TEST METHODS ====================
 
   Future<int> insertLabTest(LabTest labTest, String doctorId) async {
-    final db = await database;
+    final db = await this.database;
     final testMap = labTest.toMap();
     testMap['doctor_id'] = doctorId;
     return await db.insert('lab_tests', testMap);
   }
 
   Future<int> updateLabTest(LabTest labTest, String doctorId) async {
-    final db = await database;
+    final db = await this.database;
     final testMap = labTest.toMap();
     testMap['doctor_id'] = doctorId;
     return await db.update(
@@ -775,12 +775,12 @@ class DatabaseHelper {
   }
 
   Future<int> deleteLabTest(int id) async {
-    final db = await database;
+    final db = await this.database;
     return await db.delete('lab_tests', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<List<LabTest>> getLabTestsByVisit(int visitId) async {
-    final db = await database;
+    final db = await this.database;
     final maps = await db.query(
       'lab_tests',
       where: 'visit_id = ?',
@@ -791,7 +791,7 @@ class DatabaseHelper {
   }
 
   Future<List<LabTest>> getLabTestsByPatient(String patientId) async {
-    final db = await database;
+    final db = await this.database;
     final maps = await db.query(
       'lab_tests',
       where: 'patient_id = ?',
@@ -802,7 +802,7 @@ class DatabaseHelper {
   }
 
   Future<List<LabTest>> getPendingLabTests(String patientId) async {
-    final db = await database;
+    final db = await this.database;
     final maps = await db.query(
       'lab_tests',
       where: 'patient_id = ? AND status = ?',
@@ -814,7 +814,7 @@ class DatabaseHelper {
 
   // ==================== ENDOCRINE CONDITION METHODS ====================
   Future<int> saveEndocrineCondition(EndocrineCondition condition) async {
-    final db = await database;
+    final db = await this.database;
 
     // ✅ FIX: Properly format data to match database schema
     final data = {
@@ -873,7 +873,7 @@ class DatabaseHelper {
   }
 
   Future<List<EndocrineCondition>> getEndocrineConditions(String patientId) async {
-    final db = await database;
+    final db = await this.database;
     final maps = await db.query(
       'endocrine_conditions',
       where: 'patientId = ? AND isActive = ?',
@@ -882,7 +882,7 @@ class DatabaseHelper {
     return maps.map((map) => EndocrineCondition.fromJson(map)).toList();
   }
   Future<int> deleteEndocrineVisit(String visitId) async {
-    final db = await database;
+    final db = await this.database;
 
     print('🗑️ Deleting endocrine visit with ID: $visitId');
 
@@ -905,7 +905,7 @@ class DatabaseHelper {
   }
   // ✅ ADDED: Update endocrine condition
   Future<int> updateEndocrineCondition(EndocrineCondition condition) async {
-    final db = await database;
+    final db = await this.database;
 
     // ✅ FIX: Properly format data to match database schema
     final updateData = {
@@ -962,371 +962,798 @@ class DatabaseHelper {
       whereArgs: [condition.id],
     );
   }
-  }
+}
 
-  // ==================== ENDOCRINE VISIT METHODS ====================
+// ==================== ENDOCRINE VISIT METHODS ====================
 
-  Future<String> saveEndocrineVisit(EndocrineCondition condition, String doctorId) async {
-    final db = await database;
+Future<String> saveEndocrineVisit(EndocrineCondition condition, String doctorId) async {
+  final db = await this.database;
 
-    final visitData = {
-      'id': condition.id,
-      'patient_id': condition.patientId,
-      'doctor_id': doctorId,
-      'visit_date': DateTime.now().toIso8601String(),
-      'gland': condition.gland,
-      'category': condition.category,
-      'disease_id': condition.diseaseId,
-      'disease_name': condition.diseaseName,
-      'status': condition.status.toString().split('.').last,
-      'severity': condition.severity?.toString().split('.').last,
+  final visitData = {
+    'id': condition.id,
+    'patient_id': condition.patientId,
+    'doctor_id': doctorId,
+    'visit_date': DateTime.now().toIso8601String(),
+    'gland': condition.gland,
+    'category': condition.category,
+    'disease_id': condition.diseaseId,
+    'disease_name': condition.diseaseName,
+    'status': condition.status.toString().split('.').last,
+    'severity': condition.severity?.toString().split('.').last,
 
-      // Patient Data
-      'chief_complaint': condition.chiefComplaint,
-      'history_present_illness': condition.historyOfPresentIllness,
-      'past_medical_history': condition.pastMedicalHistory,
-      'family_history': condition.familyHistory,
-      'allergies': condition.allergies,
-      'vitals': condition.vitals != null ? jsonEncode(condition.vitals) : null,
-      'measurements': condition.measurements != null ? jsonEncode(condition.measurements) : null,
-      'ordered_lab_tests': condition.orderedLabTests != null ? jsonEncode(condition.orderedLabTests) : null,
-      'ordered_investigations': condition.orderedInvestigations != null ? jsonEncode(condition.orderedInvestigations) : null,
+    // Patient Data
+    'chief_complaint': condition.chiefComplaint,
+    'history_present_illness': condition.historyOfPresentIllness,
+    'past_medical_history': condition.pastMedicalHistory,
+    'family_history': condition.familyHistory,
+    'allergies': condition.allergies,
+    'vitals': condition.vitals != null ? jsonEncode(condition.vitals) : null,
+    'measurements': condition.measurements != null ? jsonEncode(condition.measurements) : null,
+    'ordered_lab_tests': condition.orderedLabTests != null ? jsonEncode(condition.orderedLabTests) : null,
+    'ordered_investigations': condition.orderedInvestigations != null ? jsonEncode(condition.orderedInvestigations) : null,
 
-      // Clinical Features
-      'clinical_features': jsonEncode(condition.clinicalFeatures.map((f) => f.toJson()).toList()),
+    // Clinical Features
+    'clinical_features': jsonEncode(condition.clinicalFeatures.map((f) => f.toJson()).toList()),
 
-      // Lab Readings
-      'lab_readings': jsonEncode(condition.labReadings.map((r) => r.toJson()).toList()),
+    // Lab Readings
+    'lab_readings': jsonEncode(condition.labReadings.map((r) => r.toJson()).toList()),
 
-      // Investigations
-      'investigation_findings': condition.investigationFindings != null ? jsonEncode(condition.investigationFindings) : null,
-      'images': jsonEncode(condition.images.map((i) => i.toJson()).toList()),
+    // Investigations
+    'investigation_findings': condition.investigationFindings != null ? jsonEncode(condition.investigationFindings) : null,
+    'images': jsonEncode(condition.images.map((i) => i.toJson()).toList()),
 
-      // Treatment
-      'medications': jsonEncode(condition.medications.map((m) => m.toJson()).toList()),
-      'treatment_plan': condition.treatmentPlan != null ? jsonEncode(condition.treatmentPlan!.toJson()) : null,
+    // Treatment
+    'medications': jsonEncode(condition.medications.map((m) => m.toJson()).toList()),
+    'treatment_plan': condition.treatmentPlan != null ? jsonEncode(condition.treatmentPlan!.toJson()) : null,
 
-      // Complications
-      'complications': jsonEncode(condition.complications.map((c) => c.toJson()).toList()),
+    // Complications
+    'complications': jsonEncode(condition.complications.map((c) => c.toJson()).toList()),
 
-      // Notes
-      'notes': condition.notes,
-      'follow_up_plan': condition.followUpPlan,
-      'next_visit': condition.nextVisit?.toIso8601String(),
+    // Notes
+    'notes': condition.notes,
+    'follow_up_plan': condition.followUpPlan,
+    'next_visit': condition.nextVisit?.toIso8601String(),
 
-      // Meta
-      'created_at': condition.createdAt.toIso8601String(),
-      'last_updated': DateTime.now().toIso8601String(),
-      'is_active': condition.isActive ? 1 : 0,
-    };
+    // Meta
+    'created_at': condition.createdAt.toIso8601String(),
+    'last_updated': DateTime.now().toIso8601String(),
+    'is_active': condition.isActive ? 1 : 0,
+  };
 
-    await db.insert('endocrine_visits', visitData, conflictAlgorithm: ConflictAlgorithm.replace);
-    return condition.id;
-  }
+  await db.insert('endocrine_visits', visitData, conflictAlgorithm: ConflictAlgorithm.replace);
+  return condition.id;
+}
 
-  Future<List<EndocrineCondition>> getEndocrineVisitsByPatient(String patientId) async {
-    final db = await database;
-    final maps = await db.query(
-      'endocrine_visits',
-      where: 'patient_id = ?',
-      whereArgs: [patientId],
-      orderBy: 'visit_date DESC',
-    );
-    return maps.map((map) => _endocrineConditionFromMap(map)).toList();
-  }
+Future<List<EndocrineCondition>> getEndocrineVisitsByPatient(String patientId) async {
+  final db = await this.database;
+  final maps = await db.query(
+    'endocrine_visits',
+    where: 'patient_id = ?',
+    whereArgs: [patientId],
+    orderBy: 'visit_date DESC',
+  );
+  return maps.map((map) => _endocrineConditionFromMap(map)).toList();
+}
 
-  Future<List<EndocrineCondition>> getEndocrineVisitsByDisease(String patientId, String diseaseId) async {
-    final db = await database;
-    final maps = await db.query(
-      'endocrine_visits',
-      where: 'patient_id = ? AND disease_id = ?',
-      whereArgs: [patientId, diseaseId],
-      orderBy: 'visit_date DESC',
-    );
-    return maps.map((map) => _endocrineConditionFromMap(map)).toList();
-  }
+Future<List<EndocrineCondition>> getEndocrineVisitsByDisease(String patientId, String diseaseId) async {
+  final db = await this.database;
+  final maps = await db.query(
+    'endocrine_visits',
+    where: 'patient_id = ? AND disease_id = ?',
+    whereArgs: [patientId, diseaseId],
+    orderBy: 'visit_date DESC',
+  );
+  return maps.map((map) => _endocrineConditionFromMap(map)).toList();
+}
 
-  Future<EndocrineCondition?> getLatestEndocrineVisit(String patientId, String diseaseId) async {
-    final db = await database;
-    final maps = await db.query(
-      'endocrine_visits',
-      where: 'patient_id = ? AND disease_id = ?',
-      whereArgs: [patientId, diseaseId],
-      orderBy: 'visit_date DESC',
-      limit: 1,
-    );
-    if (maps.isEmpty) return null;
-    return _endocrineConditionFromMap(maps.first);
-  }
+Future<EndocrineCondition?> getLatestEndocrineVisit(String patientId, String diseaseId) async {
+  final db = await this.database;
+  final maps = await db.query(
+    'endocrine_visits',
+    where: 'patient_id = ? AND disease_id = ?',
+    whereArgs: [patientId, diseaseId],
+    orderBy: 'visit_date DESC',
+    limit: 1,
+  );
+  if (maps.isEmpty) return null;
+  return _endocrineConditionFromMap(maps.first);
+}
 
-  Future<List<Map<String, dynamic>>> getLabTrendsForPatient(String patientId, String testName) async {
-    final db = await database;
-    final maps = await db.query(
-      'endocrine_visits',
-      where: 'patient_id = ?',
-      whereArgs: [patientId],
-      orderBy: 'visit_date ASC',
-    );
+Future<List<Map<String, dynamic>>> getLabTrendsForPatient(String patientId, String testName) async {
+  final db = await this.database;
+  final maps = await db.query(
+    'endocrine_visits',
+    where: 'patient_id = ?',
+    whereArgs: [patientId],
+    orderBy: 'visit_date ASC',
+  );
 
-    List<Map<String, dynamic>> trends = [];
-    for (var map in maps) {
-      if (map['lab_readings'] != null) {
-        final readings = jsonDecode(map['lab_readings'] as String) as List;
-        for (var reading in readings) {
-          if (reading['testName'] == testName) {
-            trends.add({
-              'date': DateTime.parse(map['visit_date'] as String),
-              'value': reading['value'],
-              'unit': reading['unit'],
-              'status': reading['abnormalityType'] ?? 'normal',
-            });
-          }
+  List<Map<String, dynamic>> trends = [];
+  for (var map in maps) {
+    if (map['lab_readings'] != null) {
+      final readings = jsonDecode(map['lab_readings'] as String) as List;
+      for (var reading in readings) {
+        if (reading['testName'] == testName) {
+          trends.add({
+            'date': DateTime.parse(map['visit_date'] as String),
+            'value': reading['value'],
+            'unit': reading['unit'],
+            'status': reading['abnormalityType'] ?? 'normal',
+          });
         }
       }
     }
-    return trends;
+  }
+  return trends;
+}
+
+Future<Map<String, dynamic>> getComparisonData(String patientId, String diseaseId) async {
+  final visits = await getEndocrineVisitsByDisease(patientId, diseaseId);
+
+  if (visits.length < 2) {
+    return {'hasComparison': false};
   }
 
-  Future<Map<String, dynamic>> getComparisonData(String patientId, String diseaseId) async {
-    final visits = await getEndocrineVisitsByDisease(patientId, diseaseId);
+  final latest = visits[0];
+  final previous = visits[1];
 
-    if (visits.length < 2) {
-      return {'hasComparison': false};
+  return {
+    'hasComparison': true,
+    'currentVisit': {
+      'date': latest.createdAt,
+      'labReadings': latest.labReadings,
+      'clinicalFeatures': latest.clinicalFeatures,
+      'medications': latest.medications,
+    },
+    'previousVisit': {
+      'date': previous.createdAt,
+      'labReadings': previous.labReadings,
+      'clinicalFeatures': previous.clinicalFeatures,
+      'medications': previous.medications,
+    },
+    'changes': _calculateChanges(latest, previous),
+  };
+}
+
+Map<String, dynamic> _calculateChanges(EndocrineCondition current, EndocrineCondition previous) {
+  Map<String, dynamic> changes = {};
+
+  // Lab changes
+  Map<String, Map<String, dynamic>> labChanges = {};
+  for (var currentReading in current.labReadings) {
+    var previousReading = previous.labReadings.firstWhere(
+          (r) => r.testName == currentReading.testName,
+      orElse: () => currentReading,
+    );
+
+    if (previousReading != currentReading) {
+      labChanges[currentReading.testName] = {
+        'previous': previousReading.value,
+        'current': currentReading.value,
+        'change': currentReading.value - previousReading.value,
+        'percentChange': ((currentReading.value - previousReading.value) / previousReading.value * 100).toStringAsFixed(1),
+        'trend': currentReading.value > previousReading.value ? 'up' : 'down',
+      };
     }
+  }
+  changes['labs'] = labChanges;
 
-    final latest = visits[0];
-    final previous = visits[1];
+  // Feature changes
+  List<String> newFeatures = [];
+  List<String> resolvedFeatures = [];
 
-    return {
-      'hasComparison': true,
-      'currentVisit': {
-        'date': latest.createdAt,
-        'labReadings': latest.labReadings,
-        'clinicalFeatures': latest.clinicalFeatures,
-        'medications': latest.medications,
-      },
-      'previousVisit': {
-        'date': previous.createdAt,
-        'labReadings': previous.labReadings,
-        'clinicalFeatures': previous.clinicalFeatures,
-        'medications': previous.medications,
-      },
-      'changes': _calculateChanges(latest, previous),
-    };
+  for (var feature in current.clinicalFeatures) {
+    if (feature.isPresent && !previous.clinicalFeatures.any((f) => f.name == feature.name && f.isPresent)) {
+      newFeatures.add(feature.name);
+    }
   }
 
-  Map<String, dynamic> _calculateChanges(EndocrineCondition current, EndocrineCondition previous) {
-    Map<String, dynamic> changes = {};
+  for (var feature in previous.clinicalFeatures) {
+    if (feature.isPresent && !current.clinicalFeatures.any((f) => f.name == feature.name && f.isPresent)) {
+      resolvedFeatures.add(feature.name);
+    }
+  }
 
-    // Lab changes
-    Map<String, Map<String, dynamic>> labChanges = {};
-    for (var currentReading in current.labReadings) {
-      var previousReading = previous.labReadings.firstWhere(
-            (r) => r.testName == currentReading.testName,
-        orElse: () => currentReading,
-      );
+  changes['features'] = {
+    'new': newFeatures,
+    'resolved': resolvedFeatures,
+  };
 
-      if (previousReading != currentReading) {
-        labChanges[currentReading.testName] = {
-          'previous': previousReading.value,
-          'current': currentReading.value,
-          'change': currentReading.value - previousReading.value,
-          'percentChange': ((currentReading.value - previousReading.value) / previousReading.value * 100).toStringAsFixed(1),
-          'trend': currentReading.value > previousReading.value ? 'up' : 'down',
-        };
+  // Medication changes
+  List<String> newMeds = [];
+  List<String> stoppedMeds = [];
+
+  for (var med in current.medications) {
+    if (med.isActive && !previous.medications.any((m) => m.name == med.name && m.isActive)) {
+      newMeds.add(med.name);
+    }
+  }
+
+  for (var med in previous.medications) {
+    if (med.isActive && !current.medications.any((m) => m.name == med.name && m.isActive)) {
+      stoppedMeds.add(med.name);
+    }
+  }
+
+  changes['medications'] = {
+    'new': newMeds,
+    'stopped': stoppedMeds,
+  };
+
+  return changes;
+}
+
+EndocrineCondition _endocrineConditionFromMap(Map<String, dynamic> map) {
+  return EndocrineCondition(
+    id: map['id'] as String,
+    patientId: map['patient_id'] as String,
+    patientName: '',
+    gland: map['gland'] as String,
+    category: (map['category'] as String?) ?? '',
+    diseaseId: map['disease_id'] as String,
+    diseaseName: map['disease_name'] as String,
+    status: DiagnosisStatus.values.firstWhere(
+          (e) => e.toString().split('.').last == map['status'],
+    ),
+    severity: map['severity'] != null
+        ? DiseaseSeverity.values.firstWhere(
+          (e) => e.toString().split('.').last == map['severity'],
+    )
+        : null,
+    chiefComplaint: map['chief_complaint'] as String?,
+    historyOfPresentIllness: map['history_present_illness'] as String?,
+    pastMedicalHistory: map['past_medical_history'] as String?,
+    familyHistory: map['family_history'] as String?,
+    allergies: map['allergies'] as String?,
+    vitals: map['vitals'] != null ? Map<String, String>.from(jsonDecode(map['vitals'])) : null,
+    measurements: map['measurements'] != null ? Map<String, String>.from(jsonDecode(map['measurements'])) : null,
+    orderedLabTests: map['ordered_lab_tests'] != null ? List<Map<String, dynamic>>.from(jsonDecode(map['ordered_lab_tests'])) : null,
+    orderedInvestigations: map['ordered_investigations'] != null ? List<Map<String, dynamic>>.from(jsonDecode(map['ordered_investigations'])) : null,
+    clinicalFeatures: map['clinical_features'] != null
+        ? (jsonDecode(map['clinical_features']) as List).map((f) => ClinicalFeature.fromJson(f)).toList()
+        : [],
+    labReadings: map['lab_readings'] != null
+        ? (jsonDecode(map['lab_readings']) as List).map((r) => LabReading.fromJson(r)).toList()
+        : [],
+    investigationFindings: map['investigation_findings'] != null ? jsonDecode(map['investigation_findings']) : null,
+    images: map['images'] != null
+        ? (jsonDecode(map['images']) as List).map((i) => MedicalImage.fromJson(i)).toList()
+        : [],
+    medications: map['medications'] != null
+        ? (jsonDecode(map['medications']) as List).map((m) => Medication.fromJson(m)).toList()
+        : [],
+    treatmentPlan: map['treatment_plan'] != null ? TreatmentPlan.fromJson(jsonDecode(map['treatment_plan'])) : null,
+    complications: map['complications'] != null
+        ? (jsonDecode(map['complications']) as List).map((c) => Complication.fromJson(c)).toList()
+        : [],
+    notes: map['notes'] as String? ?? '',
+    followUpPlan: map['follow_up_plan'] as String? ?? '',
+    nextVisit: map['next_visit'] != null ? DateTime.parse(map['next_visit']) : null,
+    createdAt: DateTime.parse(map['created_at']),
+    lastUpdated: DateTime.parse(map['last_updated']),
+    isActive: map['is_active'] == 1,
+  );
+}
+
+// ==================== PATIENT DATA SNAPSHOT METHODS ====================
+
+// ✅ ADDED: Save patient data
+Future<void> savePatientData(Map<String, dynamic> data) async {
+  final db = await this.database;
+
+  final dataToSave = {
+    'patientId': data['patientId'],
+    'chiefComplaint': data['chiefComplaint'],
+    'historyOfPresentIllness': data['historyOfPresentIllness'],
+    'pastMedicalHistory': data['pastMedicalHistory'],
+    'familyHistory': data['familyHistory'],
+    'allergies': data['allergies'],
+    'vitals': jsonEncode(data['vitals']),
+    'height': data['height'],
+    'weight': data['weight'],
+    'bmi': data['bmi'],
+    'lastUpdated': data['lastUpdated'],
+    'updatedFrom': data['updatedFrom'],
+  };
+
+  await db.insert(
+    'patient_data_snapshots',
+    dataToSave,
+    conflictAlgorithm: ConflictAlgorithm.replace,
+  );
+}
+
+// ✅ ADDED: Get latest patient data
+Future<Map<String, dynamic>?> getLatestPatientData(String patientId) async {
+  final db = await this.database;
+
+  final results = await db.query(
+    'patient_data_snapshots',
+    where: 'patientId = ?',
+    whereArgs: [patientId],
+    orderBy: 'lastUpdated DESC',
+    limit: 1,
+  );
+
+  if (results.isNotEmpty) {
+    final data = results.first;
+    data['vitals'] = data['vitals'] != null
+        ? jsonDecode(data['vitals'] as String)
+        : {};
+    return data;
+  }
+  return null;
+}
+
+Future<List<Map<String, dynamic>>> getPatientDataHistory(String patientId) async {
+  final db = await this.database;
+  return await db.query(
+    'patient_data_snapshots',
+    where: 'patientId = ?',
+    whereArgs: [patientId],
+    orderBy: 'lastUpdated DESC',
+    limit: 10,
+  );
+}
+
+// ==================== CONSULTATION DRAFT METHODS ====================
+
+Future<void> saveDraftConsultation(String patientId, Map<String, dynamic> data) async {
+  final db = await this.database;
+  data['patientId'] = patientId;
+  data['isDraft'] = 1;
+  data['updatedAt'] = DateTime.now().toIso8601String();
+  await db.insert(
+    'consultation_drafts',
+    data,
+    conflictAlgorithm: ConflictAlgorithm.replace,
+  );
+}
+
+Future<Map<String, dynamic>?> loadDraftConsultation(String patientId) async {
+  final db = await this.database;
+  final results = await db.query(
+    'consultation_drafts',
+    where: 'patientId = ? AND isDraft = ?',
+    whereArgs: [patientId, 1],
+    orderBy: 'updatedAt DESC',
+    limit: 1,
+  );
+  return results.isNotEmpty ? results.first : null;
+}
+
+Future<void> deleteDraftConsultation(String patientId) async {
+  final db = await this.database;
+  await db.delete(
+    'consultation_drafts',
+    where: 'patientId = ?',
+    whereArgs: [patientId],
+  );
+}
+Future<Map<String, dynamic>?> loadDraftConsultation(String patientId) async {
+  final db = await this.database;
+  final maps = await db.query(
+    'consultation_drafts',
+    where: 'patientId = ?',
+    whereArgs: [patientId],
+  );
+
+  if (maps.isEmpty) return null;
+  return maps.first;
+}
+
+Future<void> saveDraftConsultation(String patientId, Map<String, dynamic> data) async {
+  final db = await this.database;
+
+  final draftData = {
+    'patientId': patientId,
+    'chiefComplaint': data['chiefComplaint'],
+    'historyOfPresentIllness': data['historyOfPresentIllness'],
+    'pastMedicalHistory': data['pastMedicalHistory'],
+    'familyHistory': data['familyHistory'],
+    'allergies': data['allergies'],
+    'bloodPressure': data['bloodPressure'],
+    'heartRate': data['heartRate'],
+    'temperature': data['temperature'],
+    'spo2': data['spo2'],
+    'respiratoryRate': data['respiratoryRate'],
+    'height': data['height'],
+    'weight': data['weight'],
+    'diagnosis': data['diagnosis'],
+    'dietPlan': data['dietPlan'],
+    'lifestylePlan': data['lifestylePlan'],
+    'prescriptionsJson': data['prescriptionsJson'],
+    'labResultsJson': data['labResultsJson'],
+    'isDraft': 1,
+    'lastSaved': DateTime.now().toIso8601String(),
+    'updatedAt': DateTime.now().toIso8601String(),
+  };
+
+  await db.insert(
+    'consultation_drafts',
+    draftData,
+    conflictAlgorithm: ConflictAlgorithm.replace,
+  );
+}
+
+Future<void> deleteDraftConsultation(String patientId) async {
+  final db = await this.database;
+  await db.delete(
+    'consultation_drafts',
+    where: 'patientId = ?',
+    whereArgs: [patientId],
+  );
+}
+
+// ==================== PATIENT DATA SNAPSHOT METHODS ====================
+
+Future<Map<String, dynamic>?> getLatestPatientData(String patientId) async {
+  final db = await this.database;
+  final maps = await db.query(
+    'patient_data_snapshots',
+    where: 'patientId = ?',
+    whereArgs: [patientId],
+    orderBy: 'lastUpdated DESC',
+    limit: 1,
+  );
+
+  if (maps.isEmpty) return null;
+  return maps.first;
+}
+
+Future<void> savePatientData(Map<String, dynamic> data) async {
+  final db = await this.database;
+  await db.insert(
+    'patient_data_snapshots',
+    data,
+    conflictAlgorithm: ConflictAlgorithm.replace,
+  );
+}
+
+// ==================== ENDOCRINE VISIT METHODS ====================
+
+Future<String> saveEndocrineVisit(EndocrineCondition condition, String doctorId) async {
+  final db = await this.database;
+
+  final visitData = {
+    'id': condition.id,
+    'patient_id': condition.patientId,
+    'doctor_id': doctorId,
+    'visit_date': DateTime.now().toIso8601String(),
+    'gland': condition.gland,
+    'category': condition.category,
+    'disease_id': condition.diseaseId,
+    'disease_name': condition.diseaseName,
+    'status': condition.status.toString().split('.').last,
+    'severity': condition.severity?.toString().split('.').last,
+
+    // Patient Data
+    'chief_complaint': condition.chiefComplaint,
+    'history_present_illness': condition.historyOfPresentIllness,
+    'past_medical_history': condition.pastMedicalHistory,
+    'family_history': condition.familyHistory,
+    'allergies': condition.allergies,
+    'vitals': condition.vitals != null ? jsonEncode(condition.vitals) : null,
+    'measurements': condition.measurements != null ? jsonEncode(condition.measurements) : null,
+    'ordered_lab_tests': condition.orderedLabTests != null ? jsonEncode(condition.orderedLabTests) : null,
+    'ordered_investigations': condition.orderedInvestigations != null ? jsonEncode(condition.orderedInvestigations) : null,
+
+    // Clinical Features
+    'clinical_features': jsonEncode(condition.clinicalFeatures.map((f) => f.toJson()).toList()),
+
+    // Lab Readings
+    'lab_readings': jsonEncode(condition.labReadings.map((r) => r.toJson()).toList()),
+
+    // Investigations
+    'investigation_findings': condition.investigationFindings != null ? jsonEncode(condition.investigationFindings) : null,
+    'images': jsonEncode(condition.images.map((i) => i.toJson()).toList()),
+
+    // Treatment
+    'medications': jsonEncode(condition.medications.map((m) => m.toJson()).toList()),
+    'treatment_plan': condition.treatmentPlan != null ? jsonEncode(condition.treatmentPlan!.toJson()) : null,
+
+    // Complications
+    'complications': jsonEncode(condition.complications.map((c) => c.toJson()).toList()),
+
+    // Notes
+    'notes': condition.notes,
+    'follow_up_plan': condition.followUpPlan,
+    'next_visit': condition.nextVisit?.toIso8601String(),
+
+    // Meta
+    'created_at': condition.createdAt.toIso8601String(),
+    'last_updated': DateTime.now().toIso8601String(),
+    'is_active': condition.isActive ? 1 : 0,
+  };
+
+  await db.insert('endocrine_visits', visitData, conflictAlgorithm: ConflictAlgorithm.replace);
+  return condition.id;
+}
+
+Future<List<EndocrineCondition>> getEndocrineVisitsByPatient(String patientId) async {
+  final db = await this.database;
+  final maps = await db.query(
+    'endocrine_visits',
+    where: 'patient_id = ?',
+    whereArgs: [patientId],
+    orderBy: 'visit_date DESC',
+  );
+  return maps.map((map) => _endocrineConditionFromMap(map)).toList();
+}
+
+Future<List<EndocrineCondition>> getEndocrineVisitsByDisease(String patientId, String diseaseId) async {
+  final db = await this.database;
+  final maps = await db.query(
+    'endocrine_visits',
+    where: 'patient_id = ? AND disease_id = ?',
+    whereArgs: [patientId, diseaseId],
+    orderBy: 'visit_date DESC',
+  );
+  return maps.map((map) => _endocrineConditionFromMap(map)).toList();
+}
+
+Future<EndocrineCondition?> getLatestEndocrineVisit(String patientId, String diseaseId) async {
+  final db = await this.database;
+  final maps = await db.query(
+    'endocrine_visits',
+    where: 'patient_id = ? AND disease_id = ?',
+    whereArgs: [patientId, diseaseId],
+    orderBy: 'visit_date DESC',
+    limit: 1,
+  );
+  if (maps.isEmpty) return null;
+  return _endocrineConditionFromMap(maps.first);
+}
+
+Future<int> deleteEndocrineVisit(String visitId) async {
+  final db = await this.database;
+
+  print('🗑️ Deleting endocrine visit with ID: $visitId');
+
+  // Delete from endocrine_visits table
+  final result = await db.delete(
+    'endocrine_visits',
+    where: 'id = ?',
+    whereArgs: [visitId],
+  );
+
+  // Also delete from endocrine_conditions table if it exists there
+  await db.delete(
+    'endocrine_conditions',
+    where: 'id = ?',
+    whereArgs: [visitId],
+  );
+
+  print('✅ Deleted endocrine visit: $visitId');
+  return result;
+}
+
+Future<Map<String, dynamic>> getComparisonData(String patientId, String diseaseId) async {
+  final visits = await getEndocrineVisitsByDisease(patientId, diseaseId);
+
+  if (visits.length < 2) {
+    return {'hasPrevious': false};
+  }
+
+  final current = visits[0];
+  final previous = visits[1];
+
+  return {
+    'hasPrevious': true,
+    'current': current.toJson(),
+    'previous': previous.toJson(),
+    'labComparison': _compareLabReadings(current.labReadings, previous.labReadings),
+  };
+}
+
+Map<String, dynamic> _compareLabReadings(List<dynamic> current, List<dynamic> previous) {
+  final comparison = <String, Map<String, dynamic>>{};
+
+  for (var currentLab in current) {
+    final testName = currentLab.testName;
+    final previousLab = previous.firstWhere(
+          (lab) => lab.testName == testName,
+      orElse: () => null,
+    );
+
+    if (previousLab != null) {
+      comparison[testName] = {
+        'current': currentLab.value,
+        'previous': previousLab.value,
+        'change': currentLab.value - previousLab.value,
+        'unit': currentLab.unit,
+      };
+    }
+  }
+
+  return comparison;
+}
+
+Future<List<Map<String, dynamic>>> getLabTrendsForPatient(String patientId, String testName) async {
+  final db = await this.database;
+  final maps = await db.query(
+    'endocrine_visits',
+    where: 'patient_id = ?',
+    whereArgs: [patientId],
+    orderBy: 'visit_date ASC',
+  );
+
+  List<Map<String, dynamic>> trends = [];
+  for (var map in maps) {
+    if (map['lab_readings'] != null) {
+      final readings = jsonDecode(map['lab_readings'] as String) as List;
+      for (var reading in readings) {
+        if (reading['testName'] == testName) {
+          trends.add({
+            'date': DateTime.parse(map['visit_date'] as String),
+            'value': reading['value'],
+            'unit': reading['unit'],
+            'status': reading['abnormalityType'] ?? 'normal',
+          });
+        }
       }
     }
-    changes['labs'] = labChanges;
-
-    // Feature changes
-    List<String> newFeatures = [];
-    List<String> resolvedFeatures = [];
-
-    for (var feature in current.clinicalFeatures) {
-      if (feature.isPresent && !previous.clinicalFeatures.any((f) => f.name == feature.name && f.isPresent)) {
-        newFeatures.add(feature.name);
-      }
-    }
-
-    for (var feature in previous.clinicalFeatures) {
-      if (feature.isPresent && !current.clinicalFeatures.any((f) => f.name == feature.name && f.isPresent)) {
-        resolvedFeatures.add(feature.name);
-      }
-    }
-
-    changes['features'] = {
-      'new': newFeatures,
-      'resolved': resolvedFeatures,
-    };
-
-    // Medication changes
-    List<String> newMeds = [];
-    List<String> stoppedMeds = [];
-
-    for (var med in current.medications) {
-      if (med.isActive && !previous.medications.any((m) => m.name == med.name && m.isActive)) {
-        newMeds.add(med.name);
-      }
-    }
-
-    for (var med in previous.medications) {
-      if (med.isActive && !current.medications.any((m) => m.name == med.name && m.isActive)) {
-        stoppedMeds.add(med.name);
-      }
-    }
-
-    changes['medications'] = {
-      'new': newMeds,
-      'stopped': stoppedMeds,
-    };
-
-    return changes;
   }
 
-  EndocrineCondition _endocrineConditionFromMap(Map<String, dynamic> map) {
-    return EndocrineCondition(
-      id: map['id'] as String,
-      patientId: map['patient_id'] as String,
-      patientName: '',
-      gland: map['gland'] as String,
-      category: (map['category'] as String?) ?? '',
-      diseaseId: map['disease_id'] as String,
-      diseaseName: map['disease_name'] as String,
-      status: DiagnosisStatus.values.firstWhere(
-            (e) => e.toString().split('.').last == map['status'],
-      ),
-      severity: map['severity'] != null
-          ? DiseaseSeverity.values.firstWhere(
-            (e) => e.toString().split('.').last == map['severity'],
-      )
-          : null,
-      chiefComplaint: map['chief_complaint'] as String?,
-      historyOfPresentIllness: map['history_present_illness'] as String?,
-      pastMedicalHistory: map['past_medical_history'] as String?,
-      familyHistory: map['family_history'] as String?,
-      allergies: map['allergies'] as String?,
-      vitals: map['vitals'] != null ? Map<String, String>.from(jsonDecode(map['vitals'])) : null,
-      measurements: map['measurements'] != null ? Map<String, String>.from(jsonDecode(map['measurements'])) : null,
-      orderedLabTests: map['ordered_lab_tests'] != null ? List<Map<String, dynamic>>.from(jsonDecode(map['ordered_lab_tests'])) : null,
-      orderedInvestigations: map['ordered_investigations'] != null ? List<Map<String, dynamic>>.from(jsonDecode(map['ordered_investigations'])) : null,
-      clinicalFeatures: map['clinical_features'] != null
-          ? (jsonDecode(map['clinical_features']) as List).map((f) => ClinicalFeature.fromJson(f)).toList()
-          : [],
-      labReadings: map['lab_readings'] != null
-          ? (jsonDecode(map['lab_readings']) as List).map((r) => LabReading.fromJson(r)).toList()
-          : [],
-      investigationFindings: map['investigation_findings'] != null ? jsonDecode(map['investigation_findings']) : null,
-      images: map['images'] != null
-          ? (jsonDecode(map['images']) as List).map((i) => MedicalImage.fromJson(i)).toList()
-          : [],
-      medications: map['medications'] != null
-          ? (jsonDecode(map['medications']) as List).map((m) => Medication.fromJson(m)).toList()
-          : [],
-      treatmentPlan: map['treatment_plan'] != null ? TreatmentPlan.fromJson(jsonDecode(map['treatment_plan'])) : null,
-      complications: map['complications'] != null
-          ? (jsonDecode(map['complications']) as List).map((c) => Complication.fromJson(c)).toList()
-          : [],
-      notes: map['notes'] as String? ?? '',
-      followUpPlan: map['follow_up_plan'] as String? ?? '',
-      nextVisit: map['next_visit'] != null ? DateTime.parse(map['next_visit']) : null,
-      createdAt: DateTime.parse(map['created_at']),
-      lastUpdated: DateTime.parse(map['last_updated']),
-      isActive: map['is_active'] == 1,
-    );
-  }
+  return trends;
+}
 
-  // ==================== PATIENT DATA SNAPSHOT METHODS ====================
+// Helper method to convert database map to EndocrineCondition
+EndocrineCondition _endocrineConditionFromMap(Map<String, dynamic> map) {
+  return EndocrineCondition(
+    id: map['id'] as String,
+    patientId: map['patient_id'] as String,
+    patientName: '', // Will be populated from patient lookup if needed
+    gland: map['gland'] as String,
+    category: map['category'] as String? ?? '',
+    diseaseId: map['disease_id'] as String,
+    diseaseName: map['disease_name'] as String,
+    status: DiagnosisStatus.values.firstWhere(
+          (e) => e.toString().split('.').last == map['status'],
+      orElse: () => DiagnosisStatus.suspected,
+    ),
+    severity: map['severity'] != null
+        ? DiseaseSeverity.values.firstWhere(
+          (e) => e.toString().split('.').last == map['severity'],
+      orElse: () => DiseaseSeverity.mild,
+    )
+        : null,
+    chiefComplaint: map['chief_complaint'] as String?,
+    historyOfPresentIllness: map['history_present_illness'] as String?,
+    pastMedicalHistory: map['past_medical_history'] as String?,
+    familyHistory: map['family_history'] as String?,
+    allergies: map['allergies'] as String?,
+    vitals: map['vitals'] != null ? Map<String, String>.from(jsonDecode(map['vitals'] as String)) : null,
+    measurements: map['measurements'] != null ? Map<String, String>.from(jsonDecode(map['measurements'] as String)) : null,
+    labReadings: map['lab_readings'] != null
+        ? (jsonDecode(map['lab_readings'] as String) as List).map((e) => LabReading.fromJson(e)).toList()
+        : [],
+    clinicalFeatures: map['clinical_features'] != null
+        ? (jsonDecode(map['clinical_features'] as String) as List).map((e) => ClinicalFeature.fromJson(e)).toList()
+        : [],
+    complications: map['complications'] != null
+        ? (jsonDecode(map['complications'] as String) as List).map((e) => Complication.fromJson(e)).toList()
+        : [],
+    medications: map['medications'] != null
+        ? (jsonDecode(map['medications'] as String) as List).map((e) => Medication.fromJson(e)).toList()
+        : [],
+    images: map['images'] != null
+        ? (jsonDecode(map['images'] as String) as List).map((e) => MedicalImage.fromJson(e)).toList()
+        : [],
+    notes: map['notes'] as String? ?? '',
+    followUpPlan: map['follow_up_plan'] as String?,
+    nextVisit: map['next_visit'] != null ? DateTime.parse(map['next_visit'] as String) : null,
+    createdAt: DateTime.parse(map['created_at'] as String),
+    isActive: map['is_active'] == 1,
+  );
+}
 
-  // ✅ ADDED: Save patient data
-  Future<void> savePatientData(Map<String, dynamic> data) async {
-    final db = await database;
+// ==================== DRAFT CONSULTATION METHODS ====================
 
-    final dataToSave = {
-      'patientId': data['patientId'],
-      'chiefComplaint': data['chiefComplaint'],
-      'historyOfPresentIllness': data['historyOfPresentIllness'],
-      'pastMedicalHistory': data['pastMedicalHistory'],
-      'familyHistory': data['familyHistory'],
-      'allergies': data['allergies'],
-      'vitals': jsonEncode(data['vitals']),
-      'height': data['height'],
-      'weight': data['weight'],
-      'bmi': data['bmi'],
-      'lastUpdated': data['lastUpdated'],
-      'updatedFrom': data['updatedFrom'],
-    };
+Future<Map<String, dynamic>?> loadDraftConsultation(String patientId) async {
+  final db = await this.database;
+  final maps = await db.query(
+    'consultation_drafts',
+    where: 'patientId = ?',
+    whereArgs: [patientId],
+  );
 
-    await db.insert(
-      'patient_data_snapshots',
-      dataToSave,
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
+  if (maps.isEmpty) return null;
+  return maps.first;
+}
 
-  // ✅ ADDED: Get latest patient data
-  Future<Map<String, dynamic>?> getLatestPatientData(String patientId) async {
-    final db = await database;
+Future<void> saveDraftConsultation(String patientId, Map<String, dynamic> data) async {
+  final db = await this.database;
 
-    final results = await db.query(
-      'patient_data_snapshots',
-      where: 'patientId = ?',
-      whereArgs: [patientId],
-      orderBy: 'lastUpdated DESC',
-      limit: 1,
-    );
+  final draftData = {
+    'patientId': patientId,
+    'chiefComplaint': data['chiefComplaint'],
+    'historyOfPresentIllness': data['historyOfPresentIllness'],
+    'pastMedicalHistory': data['pastMedicalHistory'],
+    'familyHistory': data['familyHistory'],
+    'allergies': data['allergies'],
+    'bloodPressure': data['bloodPressure'],
+    'heartRate': data['heartRate'],
+    'temperature': data['temperature'],
+    'spo2': data['spo2'],
+    'respiratoryRate': data['respiratoryRate'],
+    'height': data['height'],
+    'weight': data['weight'],
+    'diagnosis': data['diagnosis'],
+    'dietPlan': data['dietPlan'],
+    'lifestylePlan': data['lifestylePlan'],
+    'prescriptionsJson': data['prescriptionsJson'],
+    'labResultsJson': data['labResultsJson'],
+    'isDraft': 1,
+    'lastSaved': DateTime.now().toIso8601String(),
+    'updatedAt': DateTime.now().toIso8601String(),
+  };
 
-    if (results.isNotEmpty) {
-      final data = results.first;
-      data['vitals'] = data['vitals'] != null
-          ? jsonDecode(data['vitals'] as String)
-          : {};
-      return data;
-    }
-    return null;
-  }
+  await db.insert(
+    'consultation_drafts',
+    draftData,
+    conflictAlgorithm: ConflictAlgorithm.replace,
+  );
+}
 
-  Future<List<Map<String, dynamic>>> getPatientDataHistory(String patientId) async {
-    final db = await database;
-    return await db.query(
-      'patient_data_snapshots',
-      where: 'patientId = ?',
-      whereArgs: [patientId],
-      orderBy: 'lastUpdated DESC',
-      limit: 10,
-    );
-  }
+Future<void> deleteDraftConsultation(String patientId) async {
+  final db = await this.database;
+  await db.delete(
+    'consultation_drafts',
+    where: 'patientId = ?',
+    whereArgs: [patientId],
+  );
+}
 
-  // ==================== CONSULTATION DRAFT METHODS ====================
+// ==================== PATIENT DATA SNAPSHOT METHODS ====================
 
-  Future<void> saveDraftConsultation(String patientId, Map<String, dynamic> data) async {
-    final db = await database;
-    data['patientId'] = patientId;
-    data['isDraft'] = 1;
-    data['updatedAt'] = DateTime.now().toIso8601String();
-    await db.insert(
-      'consultation_drafts',
-      data,
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
+Future<Map<String, dynamic>?> getLatestPatientData(String patientId) async {
+  final db = await this.database;
+  final maps = await db.query(
+    'patient_data_snapshots',
+    where: 'patientId = ?',
+    whereArgs: [patientId],
+    orderBy: 'lastUpdated DESC',
+    limit: 1,
+  );
 
-  Future<Map<String, dynamic>?> loadDraftConsultation(String patientId) async {
-    final db = await database;
-    final results = await db.query(
-      'consultation_drafts',
-      where: 'patientId = ? AND isDraft = ?',
-      whereArgs: [patientId, 1],
-      orderBy: 'updatedAt DESC',
-      limit: 1,
-    );
-    return results.isNotEmpty ? results.first : null;
-  }
+  if (maps.isEmpty) return null;
+  return maps.first;
+}
 
-  Future<void> deleteDraftConsultation(String patientId) async {
-    final db = await database;
+Future<void> savePatientData(Map<String, dynamic> data) async {
+  final db = await this.database;
+  await db.insert(
+    'patient_data_snapshots',
+    data,
+    conflictAlgorithm: ConflictAlgorithm.replace,
+  );
+}
+
+Future<int> deleteEndocrineVisit(String visitId) async {
+  final db = await this.database;
+
+  print('🗑️ Deleting endocrine visit with ID: $visitId');
+
+  // Delete from endocrine_visits table
+  final result = await db.delete(
+    'endocrine_visits',
+    where: 'id = ?',
+    whereArgs: [visitId],
+  );
+
+  // Also delete from endocrine_conditions table if it exists there
+  try {
     await db.delete(
-      'consultation_drafts',
-      where: 'patientId = ?',
-      whereArgs: [patientId],
+      'endocrine_conditions',
+      where: 'id = ?',
+      whereArgs: [visitId],
     );
+  } catch (e) {
+    // Table may not exist, ignore
   }
+
+  print('✅ Deleted endocrine visit: $visitId');
+  return result;
+}
+}
