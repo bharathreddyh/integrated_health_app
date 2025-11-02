@@ -26,7 +26,7 @@ class DatabaseHelper {
     final path = join(dbPath, filePath);
     return await openDatabase(
       path,
-      version: 12,
+      version: 13,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -129,27 +129,42 @@ class DatabaseHelper {
     await db.execute('''
       CREATE TABLE endocrine_conditions (
         id TEXT PRIMARY KEY,
-        patientId TEXT NOT NULL,
+        patient_id TEXT NOT NULL,
         gland TEXT NOT NULL,
         category TEXT NOT NULL,
-        diseaseId TEXT NOT NULL,
-        diseaseName TEXT NOT NULL,
+        disease_id TEXT NOT NULL,
+        disease_name TEXT NOT NULL,
         status TEXT NOT NULL,
-        diagnosisDate TEXT,
+        diagnosis_date TEXT,
         severity TEXT,
-        labReadings TEXT,
-        clinicalFeatures TEXT,
+        chief_complaint TEXT,
+        history_present_illness TEXT,
+        past_medical_history TEXT,
+        family_history TEXT,
+        allergies TEXT,
+        vitals TEXT,
+        measurements TEXT,
+        ordered_lab_tests TEXT,
+        ordered_investigations TEXT,
+        additional_data TEXT,
+        lab_test_results TEXT,
+        investigation_findings TEXT,
+        selected_symptoms TEXT,
+        selected_diagnostic_criteria TEXT,
+        selected_complications TEXT,
+        lab_readings TEXT,
+        clinical_features TEXT,
         complications TEXT,
         medications TEXT,
         images TEXT,
         notes TEXT,
-        treatmentPlan TEXT,
-        nextVisit TEXT,
-        followUpPlan TEXT,
-        createdAt TEXT NOT NULL,
-        lastUpdated TEXT NOT NULL,
-        isActive INTEGER NOT NULL DEFAULT 1,
-        FOREIGN KEY (patientId) REFERENCES patients (id)
+        treatment_plan TEXT,
+        next_visit TEXT,
+        follow_up_plan TEXT,
+        created_at TEXT NOT NULL,
+        last_updated TEXT NOT NULL,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        FOREIGN KEY (patient_id) REFERENCES patients (id)
       )
     ''');
 
@@ -420,6 +435,30 @@ class DatabaseHelper {
         print('✅ Added original_visit_id column to visits table');
       } catch (e) {
         print('original_visit_id column may already exist: $e');
+      }
+    }
+
+    // Version 13: Add patient data columns to endocrine_conditions
+    if (oldVersion < 13) {
+      try {
+        await db.execute('ALTER TABLE endocrine_conditions ADD COLUMN chief_complaint TEXT');
+        await db.execute('ALTER TABLE endocrine_conditions ADD COLUMN history_present_illness TEXT');
+        await db.execute('ALTER TABLE endocrine_conditions ADD COLUMN past_medical_history TEXT');
+        await db.execute('ALTER TABLE endocrine_conditions ADD COLUMN family_history TEXT');
+        await db.execute('ALTER TABLE endocrine_conditions ADD COLUMN allergies TEXT');
+        await db.execute('ALTER TABLE endocrine_conditions ADD COLUMN vitals TEXT');
+        await db.execute('ALTER TABLE endocrine_conditions ADD COLUMN measurements TEXT');
+        await db.execute('ALTER TABLE endocrine_conditions ADD COLUMN ordered_lab_tests TEXT');
+        await db.execute('ALTER TABLE endocrine_conditions ADD COLUMN ordered_investigations TEXT');
+        await db.execute('ALTER TABLE endocrine_conditions ADD COLUMN additional_data TEXT');
+        await db.execute('ALTER TABLE endocrine_conditions ADD COLUMN lab_test_results TEXT');
+        await db.execute('ALTER TABLE endocrine_conditions ADD COLUMN investigation_findings TEXT');
+        await db.execute('ALTER TABLE endocrine_conditions ADD COLUMN selected_symptoms TEXT');
+        await db.execute('ALTER TABLE endocrine_conditions ADD COLUMN selected_diagnostic_criteria TEXT');
+        await db.execute('ALTER TABLE endocrine_conditions ADD COLUMN selected_complications TEXT');
+        print('✅ Added patient data columns to endocrine_conditions table');
+      } catch (e) {
+        print('Some columns may already exist in endocrine_conditions: $e');
       }
     }
   }
@@ -819,50 +858,50 @@ class DatabaseHelper {
     // ✅ FIX: Properly format data to match database schema
     final data = {
       'id': condition.id,
-      'patientId': condition.patientId,
+      'patient_id': condition.patientId,
       'gland': condition.gland,
       'category': condition.category,
-      'diseaseId': condition.diseaseId,
-      'diseaseName': condition.diseaseName,
+      'disease_id': condition.diseaseId,
+      'disease_name': condition.diseaseName,
       'status': condition.status.toString().split('.').last,
-      'diagnosisDate': condition.diagnosisDate?.toIso8601String(),
+      'diagnosis_date': condition.diagnosisDate?.toIso8601String(),
       'severity': condition.severity?.toString().split('.').last,
 
       // Patient Data
-      'chiefComplaint': condition.chiefComplaint,
-      'historyOfPresentIllness': condition.historyOfPresentIllness,
-      'pastMedicalHistory': condition.pastMedicalHistory,
-      'familyHistory': condition.familyHistory,
+      'chief_complaint': condition.chiefComplaint,
+      'history_present_illness': condition.historyOfPresentIllness,
+      'past_medical_history': condition.pastMedicalHistory,
+      'family_history': condition.familyHistory,
       'allergies': condition.allergies,
       'vitals': condition.vitals != null ? jsonEncode(condition.vitals) : null,
       'measurements': condition.measurements != null ? jsonEncode(condition.measurements) : null,
-      'orderedLabTests': condition.orderedLabTests != null ? jsonEncode(condition.orderedLabTests) : null,
-      'orderedInvestigations': condition.orderedInvestigations != null ? jsonEncode(condition.orderedInvestigations) : null,
-      'additionalData': condition.additionalData != null ? jsonEncode(condition.additionalData) : null,
-      'labTestResults': jsonEncode(condition.labTestResults),
-      'investigationFindings': jsonEncode(condition.investigationFindings),
-      'selectedSymptoms': jsonEncode(condition.selectedSymptoms),
-      'selectedDiagnosticCriteria': jsonEncode(condition.selectedDiagnosticCriteria),
-      'selectedComplications': jsonEncode(condition.selectedComplications),
+      'ordered_lab_tests': condition.orderedLabTests != null ? jsonEncode(condition.orderedLabTests) : null,
+      'ordered_investigations': condition.orderedInvestigations != null ? jsonEncode(condition.orderedInvestigations) : null,
+      'additional_data': condition.additionalData != null ? jsonEncode(condition.additionalData) : null,
+      'lab_test_results': jsonEncode(condition.labTestResults),
+      'investigation_findings': jsonEncode(condition.investigationFindings),
+      'selected_symptoms': jsonEncode(condition.selectedSymptoms),
+      'selected_diagnostic_criteria': jsonEncode(condition.selectedDiagnosticCriteria),
+      'selected_complications': jsonEncode(condition.selectedComplications),
 
       // Clinical Data - JSON encoded
-      'labReadings': jsonEncode(condition.labReadings.map((x) => x.toJson()).toList()),
-      'clinicalFeatures': jsonEncode(condition.clinicalFeatures.map((x) => x.toJson()).toList()),
+      'lab_readings': jsonEncode(condition.labReadings.map((x) => x.toJson()).toList()),
+      'clinical_features': jsonEncode(condition.clinicalFeatures.map((x) => x.toJson()).toList()),
       'complications': jsonEncode(condition.complications.map((x) => x.toJson()).toList()),
       'medications': jsonEncode(condition.medications.map((x) => x.toJson()).toList()),
       'images': jsonEncode(condition.images.map((x) => x.toJson()).toList()),
 
       // Simple fields
       'notes': condition.notes,
-      'treatmentPlan': condition.treatmentPlan != null ? jsonEncode(condition.treatmentPlan!.toJson()) : null,
-      'nextVisit': condition.nextVisit?.toIso8601String(),
-      'followUpPlan': condition.followUpPlan,
+      'treatment_plan': condition.treatmentPlan != null ? jsonEncode(condition.treatmentPlan!.toJson()) : null,
+      'next_visit': condition.nextVisit?.toIso8601String(),
+      'follow_up_plan': condition.followUpPlan,
 
       // Meta
-      'createdAt': condition.createdAt.toIso8601String(),
-      'lastUpdated': condition.lastUpdated.toIso8601String(),
+      'created_at': condition.createdAt.toIso8601String(),
+      'last_updated': condition.lastUpdated.toIso8601String(),
       // ✅ CRITICAL: Convert boolean to integer
-      'isActive': condition.isActive ? 1 : 0,
+      'is_active': condition.isActive ? 1 : 0,
     };
 
     return await db.insert(
@@ -876,7 +915,7 @@ class DatabaseHelper {
     final db = await this.database;
     final maps = await db.query(
       'endocrine_conditions',
-      where: 'patientId = ? AND isActive = ?',
+      where: 'patient_id = ? AND is_active = ?',
       whereArgs: [patientId, 1],
     );
     return maps.map((map) => EndocrineCondition.fromJson(map)).toList();
@@ -909,50 +948,50 @@ class DatabaseHelper {
 
     // ✅ FIX: Properly format data to match database schema
     final updateData = {
-      'patientId': condition.patientId,
+      'patient_id': condition.patientId,
       'gland': condition.gland,
       'category': condition.category,
-      'diseaseId': condition.diseaseId,
-      'diseaseName': condition.diseaseName,
+      'disease_id': condition.diseaseId,
+      'disease_name': condition.diseaseName,
       'status': condition.status.toString().split('.').last,
-      'diagnosisDate': condition.diagnosisDate?.toIso8601String(),
+      'diagnosis_date': condition.diagnosisDate?.toIso8601String(),
       'severity': condition.severity?.toString().split('.').last,
 
       // Patient Data
-      'chiefComplaint': condition.chiefComplaint,
-      'historyOfPresentIllness': condition.historyOfPresentIllness,
-      'pastMedicalHistory': condition.pastMedicalHistory,
-      'familyHistory': condition.familyHistory,
+      'chief_complaint': condition.chiefComplaint,
+      'history_present_illness': condition.historyOfPresentIllness,
+      'past_medical_history': condition.pastMedicalHistory,
+      'family_history': condition.familyHistory,
       'allergies': condition.allergies,
       'vitals': condition.vitals != null ? jsonEncode(condition.vitals) : null,
       'measurements': condition.measurements != null ? jsonEncode(condition.measurements) : null,
-      'orderedLabTests': condition.orderedLabTests != null ? jsonEncode(condition.orderedLabTests) : null,
-      'orderedInvestigations': condition.orderedInvestigations != null ? jsonEncode(condition.orderedInvestigations) : null,
-      'additionalData': condition.additionalData != null ? jsonEncode(condition.additionalData) : null,
-      'labTestResults': jsonEncode(condition.labTestResults),
-      'investigationFindings': jsonEncode(condition.investigationFindings),
-      'selectedSymptoms': jsonEncode(condition.selectedSymptoms),
-      'selectedDiagnosticCriteria': jsonEncode(condition.selectedDiagnosticCriteria),
-      'selectedComplications': jsonEncode(condition.selectedComplications),
+      'ordered_lab_tests': condition.orderedLabTests != null ? jsonEncode(condition.orderedLabTests) : null,
+      'ordered_investigations': condition.orderedInvestigations != null ? jsonEncode(condition.orderedInvestigations) : null,
+      'additional_data': condition.additionalData != null ? jsonEncode(condition.additionalData) : null,
+      'lab_test_results': jsonEncode(condition.labTestResults),
+      'investigation_findings': jsonEncode(condition.investigationFindings),
+      'selected_symptoms': jsonEncode(condition.selectedSymptoms),
+      'selected_diagnostic_criteria': jsonEncode(condition.selectedDiagnosticCriteria),
+      'selected_complications': jsonEncode(condition.selectedComplications),
 
       // Clinical Data - JSON encoded
-      'labReadings': jsonEncode(condition.labReadings.map((x) => x.toJson()).toList()),
-      'clinicalFeatures': jsonEncode(condition.clinicalFeatures.map((x) => x.toJson()).toList()),
+      'lab_readings': jsonEncode(condition.labReadings.map((x) => x.toJson()).toList()),
+      'clinical_features': jsonEncode(condition.clinicalFeatures.map((x) => x.toJson()).toList()),
       'complications': jsonEncode(condition.complications.map((x) => x.toJson()).toList()),
       'medications': jsonEncode(condition.medications.map((x) => x.toJson()).toList()),
       'images': jsonEncode(condition.images.map((x) => x.toJson()).toList()),
 
       // Simple fields
       'notes': condition.notes,
-      'treatmentPlan': condition.treatmentPlan != null ? jsonEncode(condition.treatmentPlan!.toJson()) : null,
-      'nextVisit': condition.nextVisit?.toIso8601String(),
-      'followUpPlan': condition.followUpPlan,
+      'treatment_plan': condition.treatmentPlan != null ? jsonEncode(condition.treatmentPlan!.toJson()) : null,
+      'next_visit': condition.nextVisit?.toIso8601String(),
+      'follow_up_plan': condition.followUpPlan,
 
       // Meta
-      'createdAt': condition.createdAt.toIso8601String(),
-      'lastUpdated': DateTime.now().toIso8601String(),
+      'created_at': condition.createdAt.toIso8601String(),
+      'last_updated': DateTime.now().toIso8601String(),
       // ✅ CRITICAL: Convert boolean to integer
-      'isActive': condition.isActive ? 1 : 0,
+      'is_active': condition.isActive ? 1 : 0,
     };
 
     return await db.update(
