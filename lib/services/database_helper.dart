@@ -929,8 +929,49 @@ class DatabaseHelper {
       where: 'patient_id = ? AND is_active = ?',
       whereArgs: [patientId, 1],
     );
-    return maps.map((map) => EndocrineCondition.fromJson(map)).toList();
+    return maps.map((map) => _endocrineConditionFromMap(map)).toList();
   }
+
+  // ✅ NEW: Get specific active condition by disease
+  Future<EndocrineCondition?> getActiveEndocrineCondition(String patientId, String diseaseId) async {
+    final db = await this.database;
+
+    print('🔍 DB QUERY: getActiveEndocrineCondition');
+    print('   patient_id = "$patientId"');
+    print('   disease_id = "$diseaseId"');
+
+    final maps = await db.query(
+      'endocrine_conditions',
+      where: 'patient_id = ? AND disease_id = ? AND is_active = ?',
+      whereArgs: [patientId, diseaseId, 1],
+      orderBy: 'last_updated DESC',
+      limit: 1,
+    );
+
+    print('   Found ${maps.length} active conditions in endocrine_conditions table');
+
+    if (maps.isEmpty) {
+      print('   ⚠️  No active condition found in endocrine_conditions');
+      return null;
+    }
+
+    print('   ✅ Found active condition');
+
+    try {
+      final condition = _endocrineConditionFromMap(maps.first);
+      print('   ✅ Successfully parsed condition');
+      print('      Chief complaint: "${condition.chiefComplaint ?? "null"}"');
+      print('      Has vitals: ${condition.vitals != null}');
+      print('      Vitals keys: ${condition.vitals?.keys.toList()}');
+      return condition;
+    } catch (e, stackTrace) {
+      print('   ❌ ERROR PARSING CONDITION');
+      print('      Error: $e');
+      print('      Stack: ${stackTrace.toString().split('\n').take(5).join('\n      ')}');
+      rethrow;
+    }
+  }
+
   Future<int> deleteEndocrineVisit(String visitId) async {
     final db = await this.database;
 
@@ -1113,7 +1154,9 @@ class DatabaseHelper {
   Future<EndocrineCondition?> getLatestEndocrineVisit(String patientId, String diseaseId) async {
     final db = await this.database;
 
-    print('🔍 Loading latest visit for patient: $patientId, disease: $diseaseId');
+    print('🔍 DB QUERY: getLatestEndocrineVisit');
+    print('   patient_id = "$patientId"');
+    print('   disease_id = "$diseaseId"');
 
     final maps = await db.query(
       'endocrine_visits',
@@ -1123,20 +1166,41 @@ class DatabaseHelper {
       limit: 1,
     );
 
+    print('   Found ${maps.length} records');
+
     if (maps.isEmpty) {
-      print('   No existing visit found for this disease');
+      print('   ⚠️  No matching records');
+
+      // DEBUG: Check what's actually in the database
+      final allForPatient = await db.query(
+        'endocrine_visits',
+        where: 'patient_id = ?',
+        whereArgs: [patientId],
+      );
+      print('   DEBUG: Patient has ${allForPatient.length} total visits');
+      for (var record in allForPatient) {
+        print('      - disease_id: "${record['disease_id']}" (${record['disease_name']})');
+      }
+
       return null;
     }
 
+    print('   ✅ Found matching record');
+
     try {
       final condition = _endocrineConditionFromMap(maps.first);
-      print('✅ Successfully loaded visit (ID: ${condition.id})');
+      print('   ✅ Successfully parsed condition');
+      print('      Chief complaint: "${condition.chiefComplaint ?? "null"}"');
+      print('      Has vitals: ${condition.vitals != null}');
       return condition;
     } catch (e, stackTrace) {
-      print('❌ Error loading endocrine visit: $e');
-      print('   Stack trace: $stackTrace');
-      // Return null instead of crashing
-      return null;
+      print('   ❌ ERROR PARSING CONDITION');
+      print('      Error: $e');
+      print('      This will cause blank screen!');
+      print('      Stack: ${stackTrace.toString().split('\n').take(5).join('\n      ')}');
+
+      // ⚠️ DO NOT return null - rethrow so we see the error
+      rethrow;
     }
   }
 
@@ -1265,133 +1329,200 @@ class DatabaseHelper {
   }
 
   EndocrineCondition _endocrineConditionFromMap(Map<String, dynamic> map) {
-    // Helper function to safely decode JSON strings
-    T? _safeJsonDecode<T>(dynamic value, T Function(dynamic) parser)
-      {
+    // ==================== SAFE JSON PARSING HELPERS ====================
+
+    T? _safeJsonDecode<T>(dynamic value, T Function(dynamic) parser) {
       if (value == null) return null;
-      if (value is String && value.isEmpty) return null;
-      try {
-        return parser(jsonDecode(value as String));
-      } catch (e) {
-        print('Error decoding JSON: $e');
-        return null;
+      if (value is String) {
+        if (value.isEmpty) return null;
+        try {
+          final decoded = jsonDecode(value);
+          return parser(decoded);
+        } catch (e) {
+          print('⚠️ JSON decode error: $e');
+          return null;
+        }
       }
+      return null;
     }
 
-    // Helper function for list decoding
     List<T> _safeJsonDecodeList<T>(dynamic value, T Function(dynamic) itemParser) {
       if (value == null) return [];
-      if (value is String && value.isEmpty) return [];
-      try {
-        final decoded = jsonDecode(value as String);
-        if (decoded is! List) return [];
-        return (decoded as List).map((item) => itemParser(item)).toList();
-      } catch (e) {
-        print('Error decoding JSON list: $e');
-        return [];
+      if (value is String) {
+        if (value.isEmpty) return [];
+        try {
+          final decoded = jsonDecode(value);
+          if (decoded is! List) return [];
+          return (decoded as List)
+              .map((item) {
+            try {
+              return itemParser(item);
+            } catch (e) {
+              return null;
+            }
+          })
+              .where((item) => item != null)
+              .cast<T>()
+              .toList();
+        } catch (e) {
+          print('⚠️ JSON list decode error: $e');
+          return [];
+        }
       }
+      return [];
     }
 
-    return EndocrineCondition(
-      id: map['id'] as String,
-      patientId: map['patient_id'] as String,
-      patientName: map['patient_name'] as String? ?? '',
-      gland: map['gland'] as String,
-      category: map['category'] as String? ?? '',
-      diseaseId: map['disease_id'] as String,
-      diseaseName: map['disease_name'] as String,
-      status: DiagnosisStatus.values.firstWhere(
-            (e) => e.toString().split('.').last == map['status'],
-        orElse: () => DiagnosisStatus.suspected,
-      ),
-      diagnosisDate: map['diagnosis_date'] != null
-          ? DateTime.parse(map['diagnosis_date'])
-          : null,
-      severity: map['severity'] != null
-          ? DiseaseSeverity.values.firstWhere(
-            (e) => e.toString().split('.').last == map['severity'],
-        orElse: () => DiseaseSeverity.mild,
-      )
-          : null,
-      chiefComplaint: map['chief_complaint'] as String?,
-      historyOfPresentIllness: map['history_present_illness'] as String?,
-      pastMedicalHistory: map['past_medical_history'] as String?,
-      familyHistory: map['family_history'] as String?,
-      allergies: map['allergies'] as String?,
+    // ==================== BUILD CONDITION WITH FIELD CHECKING ====================
 
-      // Safe JSON decoding for vitals
-      vitals: _safeJsonDecode(
+    try {
+      // Debug: Print available fields
+      print('📋 Database fields: ${map.keys.toList()}');
+
+      // Helper to safely get string fields
+      String? _safeString(String key) => map[key] as String?;
+
+      return EndocrineCondition(
+        // Required fields - will crash if missing (as they should)
+        id: map['id'] as String,
+        patientId: map['patient_id'] as String,
+        patientName: _safeString('patient_name') ?? '',
+        gland: _safeString('gland') ?? 'thyroid',
+        category: _safeString('category') ?? '',
+        diseaseId: _safeString('disease_id') ?? '',
+        diseaseName: _safeString('disease_name') ?? '',
+
+        // Enum with safe parsing
+        status: DiagnosisStatus.values.firstWhere(
+              (e) => e.toString().split('.').last == map['status'],
+          orElse: () => DiagnosisStatus.suspected,
+        ),
+
+        severity: _safeString('severity') != null
+            ? DiseaseSeverity.values.firstWhere(
+              (e) => e.toString().split('.').last == map['severity'],
+          orElse: () => DiseaseSeverity.mild,
+        )
+            : null,
+
+        // Date fields
+        diagnosisDate: _safeString('diagnosis_date') != null
+            ? DateTime.tryParse(_safeString('diagnosis_date')!)
+            : null,
+
+        // Text fields (Patient Data Tab)
+        chiefComplaint: _safeString('chief_complaint'),
+        historyOfPresentIllness: _safeString('history_present_illness'),
+        pastMedicalHistory: _safeString('past_medical_history'),
+        familyHistory: _safeString('family_history'),
+        allergies: _safeString('allergies'),
+
+        // JSON fields
+        vitals: _safeJsonDecode(
           map['vitals'],
-              (decoded) => Map<String, String>.from(decoded)
-      ),
+              (decoded) => Map<String, String>.from(decoded as Map),
+        ),
 
-      // Safe JSON decoding for measurements
-      measurements: _safeJsonDecode(
+        measurements: _safeJsonDecode(
           map['measurements'],
-              (decoded) => Map<String, String>.from(decoded)
-      ),
+              (decoded) => Map<String, String>.from(decoded as Map),
+        ),
 
-      // Safe JSON decoding for ordered tests
-      orderedLabTests: _safeJsonDecode(
+        orderedLabTests: _safeJsonDecode(
           map['ordered_lab_tests'],
-              (decoded) => List<Map<String, dynamic>>.from(decoded)
-      ),
+              (decoded) => List<Map<String, dynamic>>.from(decoded as List),
+        ),
 
-      orderedInvestigations: _safeJsonDecode(
+        orderedInvestigations: _safeJsonDecode(
           map['ordered_investigations'],
-              (decoded) => List<Map<String, dynamic>>.from(decoded)
-      ),
+              (decoded) => List<Map<String, dynamic>>.from(decoded as List),
+        ),
 
-      // Safe list decoding for clinical features
-      clinicalFeatures: _safeJsonDecodeList(
-          map['clinical_features'],
-              (item) => ClinicalFeature.fromJson(item)
-      ),
+        additionalData: _safeJsonDecode(
+          map['additional_data'],
+              (decoded) => Map<String, dynamic>.from(decoded as Map),
+        ),
 
-      // Safe list decoding for lab readings
-      labReadings: _safeJsonDecodeList(
-          map['lab_readings'],
-              (item) => LabReading.fromJson(item)
-      ),
-
-      investigationFindings: _safeJsonDecode(
+        investigationFindings: _safeJsonDecode(
           map['investigation_findings'],
-              (decoded) => decoded
-      ),
+              (decoded) => decoded,
+        ),
 
-      // Safe list decoding for images
-      images: _safeJsonDecodeList(
+        // These fields might not exist in older database versions
+        labTestResults: map.containsKey('lab_test_results')
+            ? _safeJsonDecodeList(map['lab_test_results'], (item) => item)
+            : [],
+
+        selectedSymptoms: map.containsKey('selected_symptoms')
+            ? _safeJsonDecodeList(map['selected_symptoms'], (item) => item.toString())
+            : [],
+
+        selectedDiagnosticCriteria: map.containsKey('selected_diagnostic_criteria')
+            ? _safeJsonDecodeList(map['selected_diagnostic_criteria'], (item) => item.toString())
+            : [],
+
+        selectedComplications: map.containsKey('selected_complications')
+            ? _safeJsonDecodeList(map['selected_complications'], (item) => item.toString())
+            : [],
+
+        // Complex object lists
+        clinicalFeatures: _safeJsonDecodeList(
+          map['clinical_features'],
+              (item) => ClinicalFeature.fromJson(item as Map<String, dynamic>),
+        ),
+
+        labReadings: _safeJsonDecodeList(
+          map['lab_readings'],
+              (item) => LabReading.fromJson(item as Map<String, dynamic>),
+        ),
+
+        images: _safeJsonDecodeList(
           map['images'],
-              (item) => MedicalImage.fromJson(item)
-      ),
+              (item) => MedicalImage.fromJson(item as Map<String, dynamic>),
+        ),
 
-      // Safe list decoding for medications
-      medications: _safeJsonDecodeList(
+        medications: _safeJsonDecodeList(
           map['medications'],
-              (item) => Medication.fromJson(item)
-      ),
+              (item) => Medication.fromJson(item as Map<String, dynamic>),
+        ),
 
-      // Safe decoding for treatment plan - THIS IS CRITICAL
-      treatmentPlan: _safeJsonDecode(
-          map['treatment_plan'],
-              (decoded) => TreatmentPlan.fromJson(decoded)
-      ),
-
-      // Safe list decoding for complications
-      complications: _safeJsonDecodeList(
+        complications: _safeJsonDecodeList(
           map['complications'],
-              (item) => Complication.fromJson(item)
-      ),
+              (item) => Complication.fromJson(item as Map<String, dynamic>),
+        ),
 
-      notes: map['notes'] as String? ?? '',
-      followUpPlan: map['follow_up_plan'] as String? ?? '',
-      nextVisit: map['next_visit'] != null
-          ? DateTime.parse(map['next_visit'])
-          : null,
-      createdAt: DateTime.parse(map['created_at']),
-      lastUpdated: DateTime.parse(map['last_updated']),
-      isActive: map['is_active'] == 1,
-    );
+        // Treatment plan
+        treatmentPlan: _safeJsonDecode(
+          map['treatment_plan'],
+              (decoded) => TreatmentPlan.fromJson(decoded as Map<String, dynamic>),
+        ),
+
+        // Remaining fields
+        notes: _safeString('notes') ?? '',
+        followUpPlan: _safeString('follow_up_plan') ?? '',
+
+        nextVisit: _safeString('next_visit') != null
+            ? DateTime.tryParse(_safeString('next_visit')!)
+            : null,
+
+        createdAt: DateTime.parse(map['created_at'] as String),
+        lastUpdated: DateTime.parse(map['last_updated'] as String),
+        isActive: (map['is_active'] as int?) == 1,
+      );
+    } catch (e, stackTrace) {
+      print('❌ CRITICAL ERROR in _endocrineConditionFromMap:');
+      print('   Error: $e');
+      print('   Available fields: ${map.keys.toList()}');
+      print('   Stack trace: $stackTrace');
+
+      // ⚠️ IMPORTANT: Print specific field that caused error
+      if (e is TypeError) {
+        print('   This looks like a field type mismatch');
+      } else if (e is FormatException) {
+        print('   This looks like a date/JSON parsing error');
+      }
+
+      rethrow;
+    }
   }
 // ==================== PATIENT DATA SNAPSHOT METHODS ====================
 

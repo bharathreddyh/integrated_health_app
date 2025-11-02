@@ -70,31 +70,106 @@ class _PatientDataTabState extends State<PatientDataTab> {
     _heightController.addListener(_calculateBMI);
     _weightController.addListener(_calculateBMI);
   }
+  @override
+  void didUpdateWidget(PatientDataTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    print('');
+    print('🔄 ═══════════════════════════════════════');
+    print('🔄 PatientDataTab didUpdateWidget');
+    print('   Old condition ID: ${oldWidget.condition.id}');
+    print('   New condition ID: ${widget.condition.id}');
+    print('   Old Chief Complaint: "${oldWidget.condition.chiefComplaint ?? "empty"}"');
+    print('   New Chief Complaint: "${widget.condition.chiefComplaint ?? "empty"}"');
+    print('   Condition changed: ${oldWidget.condition.id != widget.condition.id}');
+    print('   Data changed: ${oldWidget.condition.chiefComplaint != widget.condition.chiefComplaint}');
+
+    // ✅ FIX: Reload data whenever condition changes OR condition object is different
+    if (oldWidget.condition.id != widget.condition.id ||
+        oldWidget.condition != widget.condition) {
+      print('   ✅ Reloading data because condition changed');
+      _loadExistingData();
+      _loadLabTestResults();
+      _loadInvestigationFindings();
+    } else {
+      print('   ℹ️  No changes detected - keeping current state');
+    }
+    print('🔄 ═══════════════════════════════════════');
+    print('');
+  }
 
   void _loadExistingData() async {
+    print('');
+    print('📝 ═══════════════════════════════════════');
+    print('📝 LOADING EXISTING DATA IN PATIENT DATA TAB');
+    print('   Condition ID: ${widget.condition.id}');
+    print('   Patient: ${widget.condition.patientName}');
+    print('   Disease: ${widget.condition.diseaseName}');
+    print('📝 ═══════════════════════════════════════');
+
+    // ✅ FIX: Force update text controllers even if they have text
+    print('   Loading text fields...');
     _chiefComplaintController.text = widget.condition.chiefComplaint ?? '';
     _historyController.text = widget.condition.historyOfPresentIllness ?? '';
     _pastHistoryController.text = widget.condition.pastMedicalHistory ?? '';
     _familyHistoryController.text = widget.condition.familyHistory ?? '';
     _allergiesController.text = widget.condition.allergies ?? '';
 
-    if (widget.condition.vitals != null) {
+    print('   ✅ Chief Complaint: "${widget.condition.chiefComplaint ?? "empty"}"');
+    print('   ✅ History: "${widget.condition.historyOfPresentIllness ?? "empty"}"');
+
+    // Load vitals
+    if (widget.condition.vitals != null && widget.condition.vitals!.isNotEmpty) {
+      print('   ✅ Loading vitals: ${widget.condition.vitals!.keys.toList()}');
       _bpController.text = widget.condition.vitals!['bloodPressure'] ?? '';
       _hrController.text = widget.condition.vitals!['heartRate'] ?? '';
       _tempController.text = widget.condition.vitals!['temperature'] ?? '';
       _spo2Controller.text = widget.condition.vitals!['spo2'] ?? '';
       _rrController.text = widget.condition.vitals!['respiratoryRate'] ?? '';
+      print('   ✅ Vitals loaded: BP=${_bpController.text}, HR=${_hrController.text}');
+    } else {
+      print('   ⚠️  No vitals found - clearing fields');
+      _bpController.clear();
+      _hrController.clear();
+      _tempController.clear();
+      _spo2Controller.clear();
+      _rrController.clear();
     }
 
-    if (widget.condition.measurements != null) {
+    // Load measurements
+    if (widget.condition.measurements != null && widget.condition.measurements!.isNotEmpty) {
+      print('   ✅ Loading measurements: ${widget.condition.measurements!.keys.toList()}');
       _heightController.text = widget.condition.measurements!['height'] ?? '';
       _weightController.text = widget.condition.measurements!['weight'] ?? '';
       _calculateBMI();
+      print('   ✅ Measurements loaded: Height=${_heightController.text}, Weight=${_weightController.text}');
+    } else {
+      print('   ⚠️  No measurements found - clearing fields');
+      _heightController.clear();
+      _weightController.clear();
+      _calculatedBMI = null;
     }
 
-    if (widget.condition.chiefComplaint == null ||
-        widget.condition.vitals == null ||
-        widget.condition.vitals!.isEmpty) {
+    print('📝 ═══════════════════════════════════════');
+    print('📝 LOAD COMPLETE - Controllers updated');
+    print('   Chief Complaint Controller: "${_chiefComplaintController.text}"');
+    print('   BP Controller: "${_bpController.text}"');
+    print('📝 ═══════════════════════════════════════');
+    print('');
+
+    // ✅ CRITICAL: Force UI rebuild to show updated values
+    if (mounted) {
+      setState(() {});
+    }
+
+    // ✅ FIXED: Only check for auto-fill if data is truly empty
+    // AND only do this on first load, not on updates
+    if (mounted &&
+        (widget.condition.chiefComplaint == null || widget.condition.chiefComplaint!.isEmpty) &&
+        (widget.condition.vitals == null || widget.condition.vitals!.isEmpty)) {
+
+      print('   ℹ️  Data is empty - checking for auto-fill...');
+
       final snapshot = await PatientDataService.instance
           .getLatestPatientData(widget.condition.patientId);
 
@@ -107,12 +182,14 @@ class _PatientDataTabState extends State<PatientDataTab> {
           updatedFrom: snapshot.updatedFrom,
         );
 
-        if (shouldAutoFill) {
+        if (shouldAutoFill && mounted) {
           final updatedCondition = await PatientDataService.instance
               .autoFillEndocrineCondition(widget.condition);
-          widget.onUpdate(updatedCondition);
-          setState(() => _loadExistingData());
 
+          // ✅ FIXED: Update parent first, then reload
+          widget.onUpdate(updatedCondition);
+
+          // The didUpdateWidget will handle reloading when parent updates
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -129,6 +206,8 @@ class _PatientDataTabState extends State<PatientDataTab> {
           }
         }
       }
+    } else {
+      print('   ✅ Data already present - skipping auto-fill check');
     }
   }
 
@@ -415,10 +494,11 @@ class _PatientDataTabState extends State<PatientDataTab> {
           'bmi': _calculatedBMI ?? '',
         },
         labTestResults: _labTestResults,
-        investigationFindings: _investigationFindings, // 🆕 ADD THIS LINE
+        investigationFindings: _investigationFindings,
       );
 
-      await DatabaseHelper.instance.updateEndocrineCondition(updatedCondition);
+      // ✅ FIX: Use saveEndocrineCondition instead of updateEndocrineCondition
+      await DatabaseHelper.instance.saveEndocrineCondition(updatedCondition);
       widget.onUpdate(updatedCondition);
       await PatientDataService.instance.updateFromEndocrine(updatedCondition);
 
@@ -461,6 +541,8 @@ class _PatientDataTabState extends State<PatientDataTab> {
   }
 
   void _saveData() async {
+    print('💾 [Patient Data Tab] Saving data...');
+
     final updatedCondition = widget.condition.copyWith(
       chiefComplaint: _chiefComplaintController.text,
       historyOfPresentIllness: _historyController.text,
@@ -480,11 +562,29 @@ class _PatientDataTabState extends State<PatientDataTab> {
         'bmi': _calculatedBMI ?? '',
       },
       labTestResults: _labTestResults,
-      investigationFindings: _investigationFindings, // 🆕 ADD THIS LINE
+      investigationFindings: _investigationFindings,
     );
 
+    print('   Chief Complaint: "${updatedCondition.chiefComplaint}"');
+    print('   Vitals: ${updatedCondition.vitals?.keys.toList()}');
+
+    // ✅ FIX 1: Save to database (endocrine_conditions table)
+    try {
+      await DatabaseHelper.instance.saveEndocrineCondition(updatedCondition);
+      print('   ✅ Saved to endocrine_conditions table');
+    } catch (e) {
+      print('   ❌ Error saving to database: $e');
+    }
+
+    // ✅ FIX 2: Update parent state
     widget.onUpdate(updatedCondition);
+    print('   ✅ Updated parent state');
+
+    // ✅ FIX 3: Update patient data snapshot
     await PatientDataService.instance.updateFromEndocrine(updatedCondition);
+    print('   ✅ Updated patient data snapshot');
+
+    print('💾 [Patient Data Tab] Save complete!');
   }
 
   @override

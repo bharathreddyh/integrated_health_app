@@ -75,24 +75,78 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
   // ✅ NEW METHOD: Load existing condition from database or create new
   Future<void> _loadOrCreateCondition() async {
     try {
-      print('🔍 Checking for existing ${widget.diseaseName} condition...');
+      print('');
+      print('═══════════════════════════════════════');
+      print('🔍 LOADING CONDITION');
+      print('   Patient ID: ${widget.patientId}');
+      print('   Patient Name: ${widget.patientName}');
+      print('   Disease ID: ${widget.diseaseId}');
+      print('   Disease Name: ${widget.diseaseName}');
+      print('═══════════════════════════════════════');
 
-      // Check if there's an existing condition for this patient + disease
-      final existing = await DatabaseHelper.instance.getLatestEndocrineVisit(
+      // ✅ FIX: Check endocrine_conditions table FIRST (active working condition)
+      print('   Step 1: Checking endocrine_conditions table...');
+      final activeCondition = await DatabaseHelper.instance.getActiveEndocrineCondition(
         widget.patientId,
         widget.diseaseId,
       );
 
-      if (existing != null) {
-        // Found existing - load it
+      if (activeCondition != null) {
+        // Found active condition in main table
+        print('✅ FOUND ACTIVE CONDITION in endocrine_conditions');
+        print('   Condition ID: ${activeCondition.id}');
+        print('   Created: ${activeCondition.createdAt}');
+        print('   Last Updated: ${activeCondition.lastUpdated}');
+        print('   Chief Complaint: "${activeCondition.chiefComplaint ?? "null"}"');
+        print('   Vitals: ${activeCondition.vitals != null ? "Present (${activeCondition.vitals!.keys.length} items)" : "null"}');
+        print('   Measurements: ${activeCondition.measurements != null ? "Present (${activeCondition.measurements!.keys.length} items)" : "null"}');
+        print('');
+
         setState(() {
-          _condition = existing;
-          _hasUnsavedChanges = false;  // Already saved
+          _condition = activeCondition;
+          _hasUnsavedChanges = false;
           _isLoadingCondition = false;
         });
-        print('✅ Loaded existing ${widget.diseaseName} condition (ID: ${existing.id})');
+
+        print('✅ STATE UPDATED - Active condition loaded successfully');
+        print('═══════════════════════════════════════');
+        print('');
+        return;
+      }
+
+      // ✅ If not in main table, check visit history as fallback
+      print('   Step 2: Not in endocrine_conditions, checking endocrine_visits...');
+      final historyVisit = await DatabaseHelper.instance.getLatestEndocrineVisit(
+        widget.patientId,
+        widget.diseaseId,
+      );
+
+      if (historyVisit != null) {
+        // Found in history - load it
+        print('✅ FOUND IN VISIT HISTORY (endocrine_visits)');
+        print('   Condition ID: ${historyVisit.id}');
+        print('   Created: ${historyVisit.createdAt}');
+        print('   Last Updated: ${historyVisit.lastUpdated}');
+        print('   Chief Complaint: "${historyVisit.chiefComplaint ?? "null"}"');
+        print('   Vitals: ${historyVisit.vitals != null ? "Present (${historyVisit.vitals!.keys.length} items)" : "null"}');
+        print('   Measurements: ${historyVisit.measurements != null ? "Present (${historyVisit.measurements!.keys.length} items)" : "null"}');
+        print('');
+
+        setState(() {
+          _condition = historyVisit;
+          _hasUnsavedChanges = false;
+          _isLoadingCondition = false;
+        });
+
+        print('✅ STATE UPDATED - History visit loaded successfully');
+        print('═══════════════════════════════════════');
+        print('');
       } else {
         // No existing - create new
+        print('⚠️  NO EXISTING CONDITION FOUND IN ANY TABLE');
+        print('   Creating new blank condition...');
+        print('');
+
         setState(() {
           _condition = EndocrineCondition(
             id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -104,13 +158,23 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
             diseaseName: widget.diseaseName,
             status: DiagnosisStatus.suspected,
           );
-          _hasUnsavedChanges = false;  // Fresh start
+          _hasUnsavedChanges = false;
           _isLoadingCondition = false;
         });
-        print('✅ Created new ${widget.diseaseName} condition');
+
+        print('✅ STATE UPDATED - New blank condition created');
+        print('═══════════════════════════════════════');
+        print('');
       }
-    } catch (e) {
-      print('❌ Error loading condition: $e');
+    } catch (e, stackTrace) {
+      print('');
+      print('❌❌❌ ERROR IN _loadOrCreateCondition ❌❌❌');
+      print('   Error: $e');
+      print('   Stack trace:');
+      print('   ${stackTrace.toString().split('\n').take(10).join('\n   ')}');
+      print('═══════════════════════════════════════');
+      print('');
+
       // Fallback: create new condition
       setState(() {
         _condition = EndocrineCondition(
@@ -552,13 +616,14 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
     }
   }
 
-  // ✅ NEW METHOD: Actually saves to database
+  // ✅ FIXED METHOD: Ensures condition is properly saved to database
   Future<void> _saveConditionToDatabase() async {
     try {
       print('💾 Saving ${_condition.diseaseName} to database...');
 
-      // Update the condition in the database
-      await DatabaseHelper.instance.updateEndocrineCondition(_condition);
+      // ✅ FIX: Use saveEndocrineCondition which does INSERT OR REPLACE
+      // This ensures the record exists in endocrine_conditions table
+      await DatabaseHelper.instance.saveEndocrineCondition(_condition);
 
       // Also save as a visit record for history
       final doctorId = UserService.currentUserId ?? 'unknown';
@@ -566,7 +631,10 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
 
       setState(() => _hasUnsavedChanges = false);
 
-      print('✅ ${_condition.diseaseName} saved successfully (ID: ${_condition.id})');
+      print('✅ ${_condition.diseaseName} saved successfully to both tables');
+      print('   - endocrine_conditions (active working version)');
+      print('   - endocrine_visits (history/visit log)');
+      print('   Condition ID: ${_condition.id}');
     } catch (e) {
       print('❌ Error saving condition: $e');
       if (mounted) {
