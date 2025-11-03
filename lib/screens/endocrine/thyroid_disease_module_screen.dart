@@ -1,16 +1,18 @@
 // ==================== THYROID DISEASE MODULE SCREEN ====================
 // lib/screens/endocrine/thyroid_disease_module_screen.dart
-// ✅ ALL 3 ISSUES FIXED:
-// ✅ 1. Back button now prompts for save
-// ✅ 2. Loads existing data from database
-// ✅ 3. Data persists across app restarts
+// ✅ COMPREHENSIVE FIX FOR DATA PERSISTENCE
+// ✅ 1. Auto-save functionality added
+// ✅ 2. Improved data loading with migration
+// ✅ 3. WillPopScope for handling unsaved changes
+// ✅ 4. Better error handling and logging
+// ✅ 5. Immediate save of new conditions
 
 import 'package:flutter/material.dart';
 import '../../models/endocrine/endocrine_condition.dart';
 import '../../models/patient.dart';
 import '../../config/thyroid_disease_config.dart';
-import '../../services/database_helper.dart';  // ✅ For database operations
-import '../../services/user_service.dart';     // ✅ For doctor ID
+import '../../services/database_helper.dart';
+import '../../services/user_service.dart';
 import 'tabs/overview_tab.dart';
 import 'tabs/canvas_tab.dart';
 import 'tabs/labs_trends_tab.dart';
@@ -48,7 +50,8 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
   late ThyroidDiseaseConfig _diseaseConfig;
   late Patient _patient;
   bool _hasUnsavedChanges = false;
-  bool _isLoadingCondition = true;  // ✅ NEW: Track loading state
+  bool _isLoadingCondition = true;
+  DateTime? _lastAutoSave;
 
   @override
   void initState() {
@@ -64,7 +67,7 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
       date: DateTime.now().toString(),
     );
 
-    // ✅ CRITICAL FIX: Load existing condition or create new
+    // Load existing condition or create new
     _loadOrCreateCondition();
 
     _tabController.addListener(() {
@@ -72,7 +75,7 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
     });
   }
 
-  // ✅ NEW METHOD: Load existing condition from database or create new
+  // IMPROVED METHOD: Load existing condition with better error handling and migration
   Future<void> _loadOrCreateCondition() async {
     try {
       print('');
@@ -84,7 +87,7 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
       print('   Disease Name: ${widget.diseaseName}');
       print('═══════════════════════════════════════');
 
-      // ✅ FIX: Check endocrine_conditions table FIRST (active working condition)
+      // Step 1: Check endocrine_conditions table FIRST (active working condition)
       print('   Step 1: Checking endocrine_conditions table...');
       final activeCondition = await DatabaseHelper.instance.getActiveEndocrineCondition(
         widget.patientId,
@@ -92,15 +95,24 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
       );
 
       if (activeCondition != null) {
-        // Found active condition in main table
         print('✅ FOUND ACTIVE CONDITION in endocrine_conditions');
         print('   Condition ID: ${activeCondition.id}');
-        print('   Created: ${activeCondition.createdAt}');
-        print('   Last Updated: ${activeCondition.lastUpdated}');
         print('   Chief Complaint: "${activeCondition.chiefComplaint ?? "null"}"');
-        print('   Vitals: ${activeCondition.vitals != null ? "Present (${activeCondition.vitals!.keys.length} items)" : "null"}');
-        print('   Measurements: ${activeCondition.measurements != null ? "Present (${activeCondition.measurements!.keys.length} items)" : "null"}');
-        print('');
+
+        // Verify data integrity
+        if (activeCondition.vitals != null) {
+          print('   Vitals keys: ${activeCondition.vitals!.keys.toList()}');
+          print('   Vitals values: ${activeCondition.vitals!.values.toList()}');
+        } else {
+          print('   Vitals: null');
+        }
+
+        if (activeCondition.measurements != null) {
+          print('   Measurements keys: ${activeCondition.measurements!.keys.toList()}');
+          print('   Measurements values: ${activeCondition.measurements!.values.toList()}');
+        } else {
+          print('   Measurements: null');
+        }
 
         setState(() {
           _condition = activeCondition;
@@ -110,11 +122,10 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
 
         print('✅ STATE UPDATED - Active condition loaded successfully');
         print('═══════════════════════════════════════');
-        print('');
         return;
       }
 
-      // ✅ If not in main table, check visit history as fallback
+      // Step 2: If not in main table, check visit history as fallback
       print('   Step 2: Not in endocrine_conditions, checking endocrine_visits...');
       final historyVisit = await DatabaseHelper.instance.getLatestEndocrineVisit(
         widget.patientId,
@@ -122,15 +133,11 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
       );
 
       if (historyVisit != null) {
-        // Found in history - load it
         print('✅ FOUND IN VISIT HISTORY (endocrine_visits)');
-        print('   Condition ID: ${historyVisit.id}');
-        print('   Created: ${historyVisit.createdAt}');
-        print('   Last Updated: ${historyVisit.lastUpdated}');
-        print('   Chief Complaint: "${historyVisit.chiefComplaint ?? "null"}"');
-        print('   Vitals: ${historyVisit.vitals != null ? "Present (${historyVisit.vitals!.keys.length} items)" : "null"}');
-        print('   Measurements: ${historyVisit.measurements != null ? "Present (${historyVisit.measurements!.keys.length} items)" : "null"}');
-        print('');
+        print('   Migrating to active condition...');
+
+        // IMPORTANT: Migrate to active conditions table for future use
+        await DatabaseHelper.instance.saveEndocrineCondition(historyVisit);
 
         setState(() {
           _condition = historyVisit;
@@ -138,34 +145,37 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
           _isLoadingCondition = false;
         });
 
-        print('✅ STATE UPDATED - History visit loaded successfully');
+        print('✅ Migrated visit to active condition');
         print('═══════════════════════════════════════');
-        print('');
-      } else {
-        // No existing - create new
-        print('⚠️  NO EXISTING CONDITION FOUND IN ANY TABLE');
-        print('   Creating new blank condition...');
-        print('');
-
-        setState(() {
-          _condition = EndocrineCondition(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            patientId: widget.patientId,
-            patientName: widget.patientName,
-            gland: 'thyroid',
-            category: _diseaseConfig.category,
-            diseaseId: widget.diseaseId,
-            diseaseName: widget.diseaseName,
-            status: DiagnosisStatus.suspected,
-          );
-          _hasUnsavedChanges = false;
-          _isLoadingCondition = false;
-        });
-
-        print('✅ STATE UPDATED - New blank condition created');
-        print('═══════════════════════════════════════');
-        print('');
+        return;
       }
+
+      // Step 3: No existing condition found - create new
+      print('⚠️  NO EXISTING CONDITION FOUND');
+      print('   Creating new blank condition...');
+
+      final newCondition = EndocrineCondition(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        patientId: widget.patientId,
+        patientName: widget.patientName,
+        gland: 'thyroid',
+        category: _diseaseConfig.category,
+        diseaseId: widget.diseaseId,
+        diseaseName: widget.diseaseName,
+        status: DiagnosisStatus.suspected,
+      );
+
+      // IMPORTANT: Save the new condition immediately to prevent future issues
+      await DatabaseHelper.instance.saveEndocrineCondition(newCondition);
+
+      setState(() {
+        _condition = newCondition;
+        _hasUnsavedChanges = false;
+        _isLoadingCondition = false;
+      });
+
+      print('✅ Created and saved new condition');
+      print('═══════════════════════════════════════');
     } catch (e, stackTrace) {
       print('');
       print('❌❌❌ ERROR IN _loadOrCreateCondition ❌❌❌');
@@ -173,7 +183,6 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
       print('   Stack trace:');
       print('   ${stackTrace.toString().split('\n').take(10).join('\n   ')}');
       print('═══════════════════════════════════════');
-      print('');
 
       // Fallback: create new condition
       setState(() {
@@ -195,37 +204,71 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
 
   @override
   void dispose() {
+    // Save any unsaved changes before disposing
+    if (_hasUnsavedChanges) {
+      _saveConditionToDatabase();
+    }
     _tabController.dispose();
     super.dispose();
   }
 
-  void _updateCondition(EndocrineCondition updated) {
+  // IMPROVED: Update condition with auto-save functionality
+  void _updateCondition(EndocrineCondition updated) async {
     setState(() {
       _condition = updated;
-      _hasUnsavedChanges = true;  // ✅ Always mark as changed
+      _hasUnsavedChanges = true;
     });
-    print('🔄 Condition updated, has unsaved changes: true');
+
+    // Auto-save after 2 seconds of no changes to prevent data loss
+    _debounceAutoSave();
+  }
+
+  // NEW: Debounced auto-save to prevent excessive saves
+  void _debounceAutoSave() async {
+    final now = DateTime.now();
+    _lastAutoSave = now;
+
+    await Future.delayed(const Duration(seconds: 2));
+
+    // Only save if no newer save has been initiated
+    if (_lastAutoSave == now && _hasUnsavedChanges) {
+      try {
+        await DatabaseHelper.instance.saveEndocrineCondition(_condition);
+        setState(() {
+          _hasUnsavedChanges = false;
+        });
+        print('✅ Auto-saved condition at ${DateTime.now()}');
+      } catch (e) {
+        print('⚠️ Auto-save failed: $e');
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Show loading state while checking for existing data
+    // Show loading state while checking for existing data
     if (_isLoadingCondition) {
       return Scaffold(
         backgroundColor: Colors.grey.shade50,
         appBar: AppBar(
-          title: Text(widget.diseaseName),
           backgroundColor: const Color(0xFF2563EB),
+          title: const Text('Loading...', style: TextStyle(color: Colors.white)),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
         ),
-        body: Center(
+        body: const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(),
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
+              ),
               SizedBox(height: 16),
               Text(
-                'Loading ${widget.diseaseName}...',
-                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                'Loading patient data...',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
             ],
           ),
@@ -233,155 +276,121 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
       );
     }
 
+    // IMPORTANT: WillPopScope to handle unsaved changes on back button
     return WillPopScope(
       onWillPop: () async {
         if (_hasUnsavedChanges) {
-          // ✅ NEW: 3-option dialog (Save/Discard/Cancel)
-          final result = await showDialog<String>(
+          final shouldSave = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               title: Row(
                 children: [
-                  Icon(Icons.save, color: Colors.blue.shade700, size: 28),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text('Save ${_condition.diseaseName}?'),
-                  ),
+                  Icon(Icons.warning, color: Colors.orange.shade600),
+                  const SizedBox(width: 8),
+                  const Text('Unsaved Changes'),
                 ],
               ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'You have unsaved changes in this medical record.',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.amber.shade200),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.info_outline, size: 20, color: Colors.amber.shade700),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Changes made across all tabs will be saved',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.amber.shade900,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'What would you like to do?',
-                    style: TextStyle(
-                      color: Colors.grey.shade700,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
+              content: const Text(
+                'You have unsaved changes. Do you want to save them before leaving?',
+                style: TextStyle(fontSize: 16),
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context, 'cancel'),
-                  child: const Text('Cancel'),
-                ),
-                OutlinedButton.icon(
-                  onPressed: () => Navigator.pop(context, 'discard'),
-                  icon: const Icon(Icons.delete_outline),
-                  label: const Text('Discard'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text(
+                    'Discard',
+                    style: TextStyle(color: Colors.red),
                   ),
                 ),
-                ElevatedButton.icon(
-                  onPressed: () => Navigator.pop(context, 'save'),
-                  icon: const Icon(Icons.save),
-                  label: const Text('Save & Exit'),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, null),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    await _saveConditionToDatabase();
+                    if (mounted) {
+                      Navigator.pop(context, true);
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
+                    backgroundColor: const Color(0xFF2563EB),
+                  ),
+                  child: const Text(
+                    'Save & Exit',
+                    style: TextStyle(color: Colors.white),
                   ),
                 ),
               ],
             ),
           );
 
-          if (result == 'save') {
-            await _saveConditionToDatabase();
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
-                    children: [
-                      const Icon(Icons.check_circle, color: Colors.white),
-                      const SizedBox(width: 8),
-                      Text('${_condition.diseaseName} data saved successfully'),
-                    ],
-                  ),
-                  backgroundColor: Colors.green,
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            }
-            return true;
-          } else if (result == 'discard') {
-            return true;
-          }
-          return false;
+          // If null (cancelled), don't pop
+          // If false (discard), pop without saving
+          // If true (saved), pop after saving
+          return shouldSave ?? false;
         }
         return true;
       },
       child: Scaffold(
+        backgroundColor: Colors.grey.shade50,
         appBar: _buildAppBar(context),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => _showAIPDFDialog(),
-          icon: const Icon(Icons.auto_awesome),
-          label: const Text('AI Report'),
-          backgroundColor: Colors.blue.shade600,
-          heroTag: 'ai_report_fab',
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         body: Column(
           children: [
+            // Tabs
             Container(
-              color: Colors.white,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
               child: TabBar(
                 controller: _tabController,
                 isScrollable: true,
                 indicatorColor: const Color(0xFF2563EB),
+                indicatorWeight: 3,
                 labelColor: const Color(0xFF2563EB),
-                unselectedLabelColor: Colors.grey,
-                labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                tabs: const [
-                  Tab(text: 'Patient Data'),
-                  Tab(text: 'Clinical Features'),
-                  Tab(text: 'Canvas'),
-                  Tab(text: 'Labs & Trends'),
-                  Tab(text: 'Overview'),
-                  Tab(text: 'Investigations'),
-                  Tab(text: 'Treatment'),
+                unselectedLabelColor: Colors.grey.shade600,
+                labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+                tabs: [
+                  Tab(text: 'Overview', icon: Icon(Icons.dashboard, size: 18)),
+                  Tab(text: 'Patient Data', icon: Icon(Icons.person, size: 18)),
+                  Tab(text: 'Diagram', icon: Icon(Icons.draw, size: 18)),
+                  Tab(text: 'Clinical', icon: Icon(Icons.medical_services, size: 18)),
+                  Tab(text: 'Labs & Trends', icon: Icon(Icons.analytics, size: 18)),
+                  Tab(text: 'Investigations', icon: Icon(Icons.science, size: 18)),
+                  Tab(text: 'Treatment', icon: Icon(Icons.healing, size: 18)),
                 ],
               ),
             ),
+
+            // Tab Content
             Expanded(
               child: TabBarView(
                 controller: _tabController,
                 children: [
+                  OverviewTab(
+                    condition: _condition,
+                    diseaseConfig: _diseaseConfig,
+                    onUpdate: _updateCondition,
+                  ),
                   PatientDataTab(
+                    condition: _condition,
+                    diseaseConfig: _diseaseConfig,
+                    onUpdate: _updateCondition,
+                  ),
+                  CanvasTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
@@ -391,18 +400,7 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
                   ),
-                  CanvasTab(
-                    condition: _condition,
-                    diseaseConfig: _diseaseConfig,
-                    onUpdate: _updateCondition,
-                    patient: _patient,
-                  ),
                   LabsTrendsTab(
-                    condition: _condition,
-                    diseaseConfig: _diseaseConfig,
-                    onUpdate: _updateCondition,
-                  ),
-                  OverviewTab(
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
@@ -420,33 +418,53 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
                 ],
               ),
             ),
-            if (_hasUnsavedChanges)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.shade300,
-                      blurRadius: 4,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
-                ),
-                child: ElevatedButton(
-                  onPressed: _saveCondition,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    minimumSize: const Size(double.infinity, 48),
-                  ),
-                  child: const Text(
-                    'Save Changes',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ],
+        ),
+        // Bottom save button - shows when there are unsaved changes
+        bottomNavigationBar: _hasUnsavedChanges
+            ? Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'You have unsaved changes',
+                  style: TextStyle(
+                    color: Colors.orange.shade700,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
-          ],
-        ),
+              ElevatedButton.icon(
+                onPressed: _saveCondition,
+                icon: const Icon(Icons.save, size: 20),
+                label: const Text(
+                  'Save Changes',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        )
+            : null,
       ),
     );
   }
@@ -466,7 +484,35 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
       ),
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: Colors.white),
-        onPressed: () => Navigator.pop(context),
+        onPressed: () async {
+          // Handle unsaved changes on back button
+          if (_hasUnsavedChanges) {
+            final shouldSave = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Save changes?'),
+                content: const Text('You have unsaved changes. Save before leaving?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Discard'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Save'),
+                  ),
+                ],
+              ),
+            );
+
+            if (shouldSave == true) {
+              await _saveConditionToDatabase();
+            }
+          }
+          if (mounted) {
+            Navigator.pop(context);
+          }
+        },
       ),
       title: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -483,6 +529,13 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
         ],
       ),
       actions: [
+        // AI PDF Button
+        IconButton(
+          icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
+          tooltip: 'Generate AI Report',
+          onPressed: _showAIPDFDialog,
+        ),
+        // Completion indicator
         Container(
           margin: const EdgeInsets.only(right: 16),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -598,15 +651,37 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
   }
 
   Future<void> _saveCondition() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Saving...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
     await _saveConditionToDatabase();
+
     if (mounted) {
+      Navigator.pop(context); // Close loading dialog
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
               const Icon(Icons.check_circle, color: Colors.white),
               const SizedBox(width: 8),
-              Text('${_condition.diseaseName} saved'),
+              Text('${_condition.diseaseName} saved successfully'),
             ],
           ),
           backgroundColor: Colors.green,
@@ -616,27 +691,38 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
     }
   }
 
-  // ✅ FIXED METHOD: Ensures condition is properly saved to database
+  // IMPROVED: Save condition with better error handling and logging
   Future<void> _saveConditionToDatabase() async {
     try {
       print('💾 Saving ${_condition.diseaseName} to database...');
+      print('   Condition ID: ${_condition.id}');
+      print('   Patient: ${_condition.patientName}');
+      print('   Chief Complaint: "${_condition.chiefComplaint ?? "empty"}"');
 
-      // ✅ FIX: Use saveEndocrineCondition which does INSERT OR REPLACE
-      // This ensures the record exists in endocrine_conditions table
+      if (_condition.vitals != null) {
+        print('   Vitals to save: ${_condition.vitals!.keys.toList()}');
+      }
+      if (_condition.measurements != null) {
+        print('   Measurements to save: ${_condition.measurements!.keys.toList()}');
+      }
+
+      // Save to endocrine_conditions table (active working version)
       await DatabaseHelper.instance.saveEndocrineCondition(_condition);
+      print('   ✅ Saved to endocrine_conditions table');
 
       // Also save as a visit record for history
       final doctorId = UserService.currentUserId ?? 'unknown';
       await DatabaseHelper.instance.saveEndocrineVisit(_condition, doctorId);
+      print('   ✅ Saved to endocrine_visits table (history)');
 
       setState(() => _hasUnsavedChanges = false);
 
-      print('✅ ${_condition.diseaseName} saved successfully to both tables');
-      print('   - endocrine_conditions (active working version)');
-      print('   - endocrine_visits (history/visit log)');
-      print('   Condition ID: ${_condition.id}');
-    } catch (e) {
+      print('✅ Save complete - Data persisted to database');
+      print('═══════════════════════════════════════');
+    } catch (e, stackTrace) {
       print('❌ Error saving condition: $e');
+      print('Stack trace: ${stackTrace.toString().split('\n').take(5).join('\n')}');
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

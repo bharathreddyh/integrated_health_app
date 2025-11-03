@@ -20,7 +20,80 @@ class DatabaseHelper {
     _database = await _initDB('clinic_v2.db');
     return _database!;
   }
+  Future<void> migrateEndocrineConditionsData() async {
+    final db = await this.database;
 
+    try {
+      print('🔧 Starting endocrine_conditions data migration...');
+
+      // Get all endocrine conditions
+      final conditions = await db.query('endocrine_conditions');
+      print('Found ${conditions.length} conditions to migrate');
+
+      for (var condition in conditions) {
+        bool needsUpdate = false;
+        Map<String, dynamic> updates = {};
+
+        // Check if vitals needs re-encoding
+        if (condition['vitals'] != null && condition['vitals'] is String) {
+          try {
+            // Try to decode to verify it's valid JSON
+            final vitalsStr = condition['vitals'] as String;
+            if (vitalsStr.isNotEmpty) {
+              jsonDecode(vitalsStr);
+              // If successful, no update needed for this field
+            }
+          } catch (e) {
+            // If decode fails, the data might be corrupted
+            print('⚠️ Corrupted vitals data for condition ${condition['id']}, will reset');
+            updates['vitals'] = null;
+            needsUpdate = true;
+          }
+        }
+
+        // Check if measurements needs re-encoding
+        if (condition['measurements'] != null && condition['measurements'] is String) {
+          try {
+            // Try to decode to verify it's valid JSON
+            final measurementsStr = condition['measurements'] as String;
+            if (measurementsStr.isNotEmpty) {
+              jsonDecode(measurementsStr);
+              // If successful, no update needed for this field
+            }
+          } catch (e) {
+            // If decode fails, the data might be corrupted
+            print('⚠️ Corrupted measurements data for condition ${condition['id']}, will reset');
+            updates['measurements'] = null;
+            needsUpdate = true;
+          }
+        }
+
+        // Ensure is_active is an integer
+        if (condition['is_active'] != null) {
+          final isActive = condition['is_active'];
+          if (isActive is bool) {
+            updates['is_active'] = isActive ? 1 : 0;
+            needsUpdate = true;
+          }
+        }
+
+        // Update if needed
+        if (needsUpdate) {
+          await db.update(
+            'endocrine_conditions',
+            updates,
+            where: 'id = ?',
+            whereArgs: [condition['id']],
+          );
+          print('✅ Migrated condition ${condition['id']}');
+        }
+      }
+
+      print('✅ Migration complete');
+    } catch (e) {
+      print('❌ Migration error: $e');
+    }
+  }
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
@@ -28,7 +101,7 @@ class DatabaseHelper {
     print('🔧 Database version: 13');
     return await openDatabase(
       path,
-      version: 13,
+      version: 14,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -468,7 +541,12 @@ class DatabaseHelper {
         print('Some columns may already exist in endocrine_conditions: $e');
       }
     }
-  }
+
+
+    if (oldVersion < 14) {
+      await migrateEndocrineConditionsData();
+      print('✅ Migrated to version 14');
+    }
 
   // PASSWORD HASHING
   String _hashPassword(String password) {
@@ -1129,7 +1207,7 @@ class DatabaseHelper {
     print('   Found ${maps.length} visits in database');
 
     try {
-      // ✅ FIXED: Use _endocrineConditionFromMap instead
+
       final conditions = maps.map((map) => _endocrineConditionFromMap(map)).toList();
       print('✅ Successfully parsed all ${conditions.length} conditions');
       return conditions;
@@ -1333,13 +1411,24 @@ class DatabaseHelper {
 
     T? _safeJsonDecode<T>(dynamic value, T Function(dynamic) parser) {
       if (value == null) return null;
+      // Handle both String (JSON) and direct Map/List values
+      if (value is T) return value;
       if (value is String) {
         if (value.isEmpty) return null;
         try {
           final decoded = jsonDecode(value);
           return parser(decoded);
         } catch (e) {
-          print('⚠️ JSON decode error: $e');
+          print('⚠️ JSON decode error for value: $value');
+          print('   Error: $e');
+          return null;
+        }
+      }
+      if (value is Map || value is List) {
+        try {
+          return parser(value);
+        } catch (e) {
+          print('⚠️ Parse error for direct value: $e');
           return null;
         }
       }
@@ -1348,6 +1437,21 @@ class DatabaseHelper {
 
     List<T> _safeJsonDecodeList<T>(dynamic value, T Function(dynamic) itemParser) {
       if (value == null) return [];
+      // Handle both String (JSON) and direct List values
+      if (value is List) {
+        return value
+            .map((item) {
+          try {
+            return itemParser(item);
+          } catch (e) {
+            print('⚠️ Item parse error: $e');
+            return null;
+          }
+        })
+            .where((item) => item != null)
+            .cast<T>()
+            .toList();
+      }
       if (value is String) {
         if (value.isEmpty) return [];
         try {
@@ -1375,14 +1479,66 @@ class DatabaseHelper {
     // ==================== BUILD CONDITION WITH FIELD CHECKING ====================
 
     try {
-      // Debug: Print available fields
-      print('📋 Database fields: ${map.keys.toList()}');
+      // Debug: Print available fields and their values for patient data
+      print('📋 Loading condition from database:');
+      print('   ID: ${map['id']}');
+      print('   Patient: ${map['patient_id']}');
+      print('   Disease: ${map['disease_name']}');
+      print('   Chief Complaint: "${map['chief_complaint'] ?? "null"}"');
+
+      // Debug vitals parsing
+      if (map['vitals'] != null) {
+        print('   Vitals raw type: ${map['vitals'].runtimeType}');
+        print('   Vitals raw value: ${map['vitals']}');
+      }
+
+      // Debug measurements parsing
+      if (map['measurements'] != null) {
+        print('   Measurements raw type: ${map['measurements'].runtimeType}');
+        print('   Measurements raw value: ${map['measurements']}');
+      }
 
       // Helper to safely get string fields
       String? _safeString(String key) => map[key] as String?;
 
-      return EndocrineCondition(
-        // Required fields - will crash if missing (as they should)
+      // Parse vitals with better error handling
+      Map<String, String>? parsedVitals;
+      if (map['vitals'] != null) {
+        parsedVitals = _safeJsonDecode(
+          map['vitals'],
+              (decoded) {
+            if (decoded is Map) {
+              // Convert all values to strings
+              return Map<String, String>.from(
+                  decoded.map((key, value) => MapEntry(key.toString(), value.toString()))
+              );
+            }
+            return null;
+          },
+        );
+        print('   Parsed vitals: ${parsedVitals?.keys.toList()}');
+      }
+
+      // Parse measurements with better error handling
+      Map<String, String>? parsedMeasurements;
+      if (map['measurements'] != null) {
+        parsedMeasurements = _safeJsonDecode(
+          map['measurements'],
+              (decoded) {
+            if (decoded is Map) {
+              // Convert all values to strings
+              return Map<String, String>.from(
+                  decoded.map((key, value) => MapEntry(key.toString(), value.toString()))
+              );
+            }
+            return null;
+          },
+        );
+        print('   Parsed measurements: ${parsedMeasurements?.keys.toList()}');
+      }
+
+      final condition = EndocrineCondition(
+        // Required fields
         id: map['id'] as String,
         patientId: map['patient_id'] as String,
         patientName: _safeString('patient_name') ?? '',
@@ -1409,37 +1565,45 @@ class DatabaseHelper {
             ? DateTime.tryParse(_safeString('diagnosis_date')!)
             : null,
 
-        // Text fields (Patient Data Tab)
+        // Text fields (Patient Data Tab) - CRITICAL: These must be loaded correctly
         chiefComplaint: _safeString('chief_complaint'),
         historyOfPresentIllness: _safeString('history_present_illness'),
         pastMedicalHistory: _safeString('past_medical_history'),
         familyHistory: _safeString('family_history'),
         allergies: _safeString('allergies'),
 
-        // JSON fields
-        vitals: _safeJsonDecode(
-          map['vitals'],
-              (decoded) => Map<String, String>.from(decoded as Map),
-        ),
-
-        measurements: _safeJsonDecode(
-          map['measurements'],
-              (decoded) => Map<String, String>.from(decoded as Map),
-        ),
+        // JSON fields - CRITICAL: Use the parsed values
+        vitals: parsedVitals,
+        measurements: parsedMeasurements,
 
         orderedLabTests: _safeJsonDecode(
           map['ordered_lab_tests'],
-              (decoded) => List<Map<String, dynamic>>.from(decoded as List),
+              (decoded) {
+            if (decoded is List) {
+              return List<Map<String, dynamic>>.from(decoded);
+            }
+            return null;
+          },
         ),
 
         orderedInvestigations: _safeJsonDecode(
           map['ordered_investigations'],
-              (decoded) => List<Map<String, dynamic>>.from(decoded as List),
+              (decoded) {
+            if (decoded is List) {
+              return List<Map<String, dynamic>>.from(decoded);
+            }
+            return null;
+          },
         ),
 
         additionalData: _safeJsonDecode(
           map['additional_data'],
-              (decoded) => Map<String, dynamic>.from(decoded as Map),
+              (decoded) {
+            if (decoded is Map) {
+              return Map<String, dynamic>.from(decoded);
+            }
+            return null;
+          },
         ),
 
         investigationFindings: _safeJsonDecode(
@@ -1464,63 +1628,80 @@ class DatabaseHelper {
             ? _safeJsonDecodeList(map['selected_complications'], (item) => item.toString())
             : [],
 
-        // Complex object lists
-        clinicalFeatures: _safeJsonDecodeList(
-          map['clinical_features'],
-              (item) => ClinicalFeature.fromJson(item as Map<String, dynamic>),
-        ),
-
-        labReadings: _safeJsonDecodeList(
+        // Complex JSON arrays
+        labReadings: map.containsKey('lab_readings')
+            ? _safeJsonDecodeList(
           map['lab_readings'],
-              (item) => LabReading.fromJson(item as Map<String, dynamic>),
-        ),
+              (item) => LabReading.fromJson(Map<String, dynamic>.from(item)),
+        )
+            : [],
 
-        images: _safeJsonDecodeList(
-          map['images'],
-              (item) => MedicalImage.fromJson(item as Map<String, dynamic>),
-        ),
+        clinicalFeatures: map.containsKey('clinical_features')
+            ? _safeJsonDecodeList(
+          map['clinical_features'],
+              (item) => ClinicalFeature.fromJson(Map<String, dynamic>.from(item)),
+        )
+            : [],
 
-        medications: _safeJsonDecodeList(
-          map['medications'],
-              (item) => Medication.fromJson(item as Map<String, dynamic>),
-        ),
-
-        complications: _safeJsonDecodeList(
+        complications: map.containsKey('complications')
+            ? _safeJsonDecodeList(
           map['complications'],
-              (item) => Complication.fromJson(item as Map<String, dynamic>),
-        ),
+              (item) => Complication.fromJson(Map<String, dynamic>.from(item)),
+        )
+            : [],
 
-        // Treatment plan
+        medications: map.containsKey('medications')
+            ? _safeJsonDecodeList(
+          map['medications'],
+              (item) => Medication.fromJson(Map<String, dynamic>.from(item)),
+        )
+            : [],
+
+        images: map.containsKey('images')
+            ? _safeJsonDecodeList(
+          map['images'],
+              (item) => MedicalImage.fromJson(Map<String, dynamic>.from(item)),
+        )
+            : [],
+
+        // Simple fields
+        notes: _safeString('notes') ?? '',
+
         treatmentPlan: _safeJsonDecode(
           map['treatment_plan'],
-              (decoded) => TreatmentPlan.fromJson(decoded as Map<String, dynamic>),
+              (decoded) => TreatmentPlan.fromJson(Map<String, dynamic>.from(decoded)),
         ),
-
-        // Remaining fields
-        notes: _safeString('notes') ?? '',
-        followUpPlan: _safeString('follow_up_plan') ?? '',
 
         nextVisit: _safeString('next_visit') != null
             ? DateTime.tryParse(_safeString('next_visit')!)
             : null,
 
-        createdAt: DateTime.parse(map['created_at'] as String),
-        lastUpdated: DateTime.parse(map['last_updated'] as String),
-        isActive: (map['is_active'] as int?) == 1,
+        followUpPlan: _safeString('follow_up_plan') ?? '',
+
+        // Timestamps
+        createdAt: _safeString('created_at') != null
+            ? DateTime.parse(_safeString('created_at')!)
+            : DateTime.now(),
+
+        lastUpdated: _safeString('last_updated') != null
+            ? DateTime.parse(_safeString('last_updated')!)
+            : DateTime.now(),
+
+        // Active flag - handle both integer (from DB) and boolean
+        isActive: map['is_active'] == 1 || map['is_active'] == true,
       );
+
+      print('✅ Successfully parsed condition:');
+      print('   Chief Complaint: "${condition.chiefComplaint ?? "null"}"');
+      print('   Vitals: ${condition.vitals?.keys.toList() ?? "null"}');
+      print('   Measurements: ${condition.measurements?.keys.toList() ?? "null"}');
+
+      return condition;
     } catch (e, stackTrace) {
-      print('❌ CRITICAL ERROR in _endocrineConditionFromMap:');
+      print('❌ ERROR in _endocrineConditionFromMap');
+      print('   Map keys: ${map.keys.toList()}');
       print('   Error: $e');
-      print('   Available fields: ${map.keys.toList()}');
-      print('   Stack trace: $stackTrace');
-
-      // ⚠️ IMPORTANT: Print specific field that caused error
-      if (e is TypeError) {
-        print('   This looks like a field type mismatch');
-      } else if (e is FormatException) {
-        print('   This looks like a date/JSON parsing error');
-      }
-
+      print('   Stack: ${stackTrace.toString().split('\n').take(10).join('\n   ')}');
       rethrow;
     }
   }
@@ -1618,5 +1799,5 @@ class DatabaseHelper {
       where: 'patientId = ?',
       whereArgs: [patientId],
     );
-  }
+  }}
 }
