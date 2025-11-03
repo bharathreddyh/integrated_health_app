@@ -394,6 +394,7 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
+                    patient: _patient,  // ← ADD THIS LINE
                   ),
                   ClinicalFeaturesTab(
                     condition: _condition,
