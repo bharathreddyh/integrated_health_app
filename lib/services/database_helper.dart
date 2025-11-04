@@ -1112,45 +1112,7 @@ class DatabaseHelper {
         maps.map((map) => EndocrineCondition.fromJson(map))
     );
   }
-  Future<EndocrineCondition?> getEndocrineConditionById(String conditionId) async {
-    final db = await this.database;
 
-    print('🔍 DatabaseHelper: Looking for condition with ID: $conditionId');
-
-    // First check endocrine_conditions table (active conditions)
-    final conditionMaps = await db.query(
-      'endocrine_conditions',
-      where: 'id = ?',
-      whereArgs: [conditionId],
-      limit: 1,
-    );
-
-    if (conditionMaps.isNotEmpty) {
-      print('✅ Found in endocrine_conditions table');
-      print('   Disease: ${conditionMaps.first['disease_name']}');
-      print('   Status: ${conditionMaps.first['status']}');
-      return EndocrineCondition.fromJson(conditionMaps.first);
-    }
-
-    // If not found, check endocrine_visits table (historical visits)
-    print('   Not in endocrine_conditions, checking endocrine_visits...');
-    final visitMaps = await db.query(
-      'endocrine_visits',
-      where: 'id = ?',
-      whereArgs: [conditionId],
-      limit: 1,
-    );
-
-    if (visitMaps.isNotEmpty) {
-      print('✅ Found in endocrine_visits table');
-      print('   Disease: ${visitMaps.first['disease_name']}');
-      print('   Visit date: ${visitMaps.first['visit_date']}');
-      return _endocrineConditionFromMap(visitMaps.first);
-    }
-
-    print('❌ Condition not found in either table');
-    return null;
-  }
 
 
   Future<EndocrineCondition?> getActiveEndocrineCondition(String patientId, String diseaseId) async {
@@ -1164,7 +1126,36 @@ class DatabaseHelper {
     if (maps.isEmpty) return null;
     return EndocrineCondition.fromJson(maps.first);
   }
+// ✅ NEW METHOD: Get specific condition by ID
+  Future<EndocrineCondition?> getEndocrineConditionById(String conditionId) async {
+    final db = await this.database;
 
+    // Check endocrine_conditions table
+    final conditionMaps = await db.query(
+      'endocrine_conditions',
+      where: 'id = ?',
+      whereArgs: [conditionId],
+      limit: 1,
+    );
+
+    if (conditionMaps.isNotEmpty) {
+      return EndocrineCondition.fromJson(conditionMaps.first);
+    }
+
+    // Check endocrine_visits table
+    final visitMaps = await db.query(
+      'endocrine_visits',
+      where: 'id = ?',
+      whereArgs: [conditionId],
+      limit: 1,
+    );
+
+    if (visitMaps.isNotEmpty) {
+      return _endocrineConditionFromMap(visitMaps.first);
+    }
+
+    return null;
+  }
   Future<int> updateEndocrineCondition(EndocrineCondition condition) async {
     final db = await this.database;
 

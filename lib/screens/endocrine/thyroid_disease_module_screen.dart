@@ -1,11 +1,10 @@
 // ==================== THYROID DISEASE MODULE SCREEN ====================
 // lib/screens/endocrine/thyroid_disease_module_screen.dart
-// ✅ COMPREHENSIVE FIX FOR DATA PERSISTENCE
-// ✅ 1. Auto-save functionality added
-// ✅ 2. Improved data loading with migration
+// ✅ COMPLETE FIX FOR DATA PERSISTENCE
+// ✅ 1. Loads SPECIFIC condition by ID when clicked from history
+// ✅ 2. Auto-save functionality added
 // ✅ 3. WillPopScope for handling unsaved changes
 // ✅ 4. Better error handling and logging
-// ✅ 5. Immediate save of new conditions
 
 import 'package:flutter/material.dart';
 import '../../models/endocrine/endocrine_condition.dart';
@@ -28,6 +27,7 @@ class ThyroidDiseaseModuleScreen extends StatefulWidget {
   final String diseaseId;
   final String diseaseName;
   final bool isQuickMode;
+  final String? conditionId;  // ✅ CRITICAL: Specific condition ID from visit history
 
   const ThyroidDiseaseModuleScreen({
     super.key,
@@ -36,6 +36,7 @@ class ThyroidDiseaseModuleScreen extends StatefulWidget {
     required this.diseaseId,
     required this.diseaseName,
     this.isQuickMode = false,
+    this.conditionId,  // ✅ Accept conditionId parameter
   });
 
   @override
@@ -75,7 +76,7 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
     });
   }
 
-  // IMPROVED METHOD: Load existing condition with better error handling and migration
+  // ✅ FIXED METHOD: Now checks for specific conditionId FIRST
   Future<void> _loadOrCreateCondition() async {
     try {
       print('');
@@ -85,10 +86,46 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
       print('   Patient Name: ${widget.patientName}');
       print('   Disease ID: ${widget.diseaseId}');
       print('   Disease Name: ${widget.diseaseName}');
+      print('   Condition ID from history: ${widget.conditionId ?? "none - will search"}');
       print('═══════════════════════════════════════');
 
-      // Step 1: Check endocrine_conditions table FIRST (active working condition)
-      print('   Step 1: Checking endocrine_conditions table...');
+      // ✅ PRIORITY 1: If specific conditionId provided, load THAT exact condition
+      if (widget.conditionId != null) {
+        print('📌 PRIORITY 1: Loading SPECIFIC condition by ID...');
+        print('   Searching for condition ID: ${widget.conditionId}');
+
+        final specificCondition = await DatabaseHelper.instance.getEndocrineConditionById(
+          widget.conditionId!,
+        );
+
+        if (specificCondition != null) {
+          print('✅ SUCCESS: Found specific condition!');
+          print('   Condition ID: ${specificCondition.id}');
+          print('   Disease: ${specificCondition.diseaseName}');
+          print('   Status: ${specificCondition.status}');
+          print('   Chief Complaint: "${specificCondition.chiefComplaint ?? "null"}"');
+          print('   Has vitals: ${specificCondition.vitals != null}');
+          print('   Vitals data: ${specificCondition.vitals}');
+          print('   Lab readings count: ${specificCondition.labReadings.length}');
+          print('   Medications count: ${specificCondition.medications.length}');
+
+          setState(() {
+            _condition = specificCondition;
+            _hasUnsavedChanges = false;
+            _isLoadingCondition = false;
+          });
+
+          print('✅ STATE UPDATED - Specific condition loaded successfully');
+          print('═══════════════════════════════════════');
+          return;
+        } else {
+          print('⚠️ WARNING: Condition ID provided but not found!');
+          print('   Falling back to search by patient + disease...');
+        }
+      }
+
+      // PRIORITY 2: Check endocrine_conditions table (active working condition)
+      print('📌 PRIORITY 2: Checking endocrine_conditions table...');
       final activeCondition = await DatabaseHelper.instance.getActiveEndocrineCondition(
         widget.patientId,
         widget.diseaseId,
@@ -125,8 +162,8 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
         return;
       }
 
-      // Step 2: If not in main table, check visit history as fallback
-      print('   Step 2: Not in endocrine_conditions, checking endocrine_visits...');
+      // PRIORITY 3: If not in main table, check visit history as fallback
+      print('📌 PRIORITY 3: Not in endocrine_conditions, checking endocrine_visits...');
       final historyVisit = await DatabaseHelper.instance.getLatestEndocrineVisit(
         widget.patientId,
         widget.diseaseId,
@@ -150,8 +187,8 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
         return;
       }
 
-      // Step 3: No existing condition found - create new
-      print('⚠️  NO EXISTING CONDITION FOUND');
+      // PRIORITY 4: No existing condition found - create new
+      print('📌 PRIORITY 4: NO EXISTING CONDITION FOUND');
       print('   Creating new blank condition...');
 
       final newCondition = EndocrineCondition(
@@ -363,7 +400,7 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
                 labelColor: const Color(0xFF2563EB),
                 unselectedLabelColor: Colors.grey.shade600,
                 labelStyle: const TextStyle(fontWeight: FontWeight.w600),
-                tabs: [
+                tabs: const [
                   Tab(text: 'Overview', icon: Icon(Icons.dashboard, size: 18)),
                   Tab(text: 'Patient Data', icon: Icon(Icons.person, size: 18)),
                   Tab(text: 'Diagram', icon: Icon(Icons.draw, size: 18)),
@@ -394,7 +431,7 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
                     condition: _condition,
                     diseaseConfig: _diseaseConfig,
                     onUpdate: _updateCondition,
-                    patient: _patient,  // ← ADD THIS LINE
+                    patient: _patient,
                   ),
                   ClinicalFeaturesTab(
                     condition: _condition,
@@ -695,31 +732,44 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
   // IMPROVED: Save condition with better error handling and logging
   Future<void> _saveConditionToDatabase() async {
     try {
-      print('💾 Saving ${_condition.diseaseName} to database...');
-      print('   Condition ID: ${_condition.id}');
-      print('   Patient: ${_condition.patientName}');
-      print('   Chief Complaint: "${_condition.chiefComplaint ?? "empty"}"');
+      print('');
+      print('═══════════════════════════════════════');
+      print('💾 SAVING CONDITION TO DATABASE');
+      print('═══════════════════════════════════════');
+      print('Disease: ${_condition.diseaseName}');
+      print('Patient: ${_condition.patientName}');
+      print('Condition ID: ${_condition.id}');
+      print('Chief Complaint: "${_condition.chiefComplaint ?? "empty"}"');
 
       if (_condition.vitals != null) {
-        print('   Vitals to save: ${_condition.vitals!.keys.toList()}');
+        print('Vitals to save: ${_condition.vitals}');
+      } else {
+        print('⚠️ No vitals to save');
       }
+
       if (_condition.measurements != null) {
-        print('   Measurements to save: ${_condition.measurements!.keys.toList()}');
+        print('Measurements to save: ${_condition.measurements}');
+      } else {
+        print('⚠️ No measurements to save');
       }
+
+      print('Lab readings count: ${_condition.labReadings.length}');
+      print('Medications count: ${_condition.medications.length}');
 
       // Save to endocrine_conditions table (active working version)
       await DatabaseHelper.instance.saveEndocrineCondition(_condition);
-      print('   ✅ Saved to endocrine_conditions table');
+      print('✅ Saved to endocrine_conditions table');
 
       // Also save as a visit record for history
       final doctorId = UserService.currentUserId ?? 'unknown';
       await DatabaseHelper.instance.saveEndocrineVisit(_condition, doctorId);
-      print('   ✅ Saved to endocrine_visits table (history)');
+      print('✅ Saved to endocrine_visits table (history)');
 
       setState(() => _hasUnsavedChanges = false);
 
       print('✅ Save complete - Data persisted to database');
       print('═══════════════════════════════════════');
+      print('');
     } catch (e, stackTrace) {
       print('❌ Error saving condition: $e');
       print('Stack trace: ${stackTrace.toString().split('\n').take(5).join('\n')}');
