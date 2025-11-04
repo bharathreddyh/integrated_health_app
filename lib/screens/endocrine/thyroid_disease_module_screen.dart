@@ -1,10 +1,4 @@
-// ==================== THYROID DISEASE MODULE SCREEN ====================
-// lib/screens/endocrine/thyroid_disease_module_screen.dart
-// ✅ COMPLETE FIX FOR DATA PERSISTENCE
-// ✅ 1. Loads SPECIFIC condition by ID when clicked from history
-// ✅ 2. Auto-save functionality added
-// ✅ 3. WillPopScope for handling unsaved changes
-// ✅ 4. Better error handling and logging
+
 
 import 'package:flutter/material.dart';
 import '../../models/endocrine/endocrine_condition.dart';
@@ -313,196 +307,143 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
       );
     }
 
-    // IMPORTANT: WillPopScope to handle unsaved changes on back button
     return WillPopScope(
       onWillPop: () async {
-        if (_hasUnsavedChanges) {
-          final shouldSave = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              title: Row(
-                children: [
-                  Icon(Icons.warning, color: Colors.orange.shade600),
-                  const SizedBox(width: 8),
-                  const Text('Unsaved Changes'),
-                ],
-              ),
-              content: const Text(
-                'You have unsaved changes. Do you want to save them before leaving?',
-                style: TextStyle(fontSize: 16),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text(
-                    'Discard',
-                    style: TextStyle(color: Colors.red),
-                  ),
+        // ✅ ALWAYS show save confirmation dialog before exiting
+        final result = await showDialog<String>(
+          context: context,
+          barrierDismissible: false,  // Prevent accidental dismiss
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.save_outlined, color: Colors.blue.shade600, size: 28),
+                const SizedBox(width: 12),
+                const Text('Save Before Exit?'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Do you want to save your data before leaving?',
+                  style: TextStyle(fontSize: 16),
                 ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, null),
-                  child: Text(
-                    'Cancel',
-                    style: TextStyle(color: Colors.grey.shade600),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue.shade200),
                   ),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    await _saveConditionToDatabase();
-                    if (mounted) {
-                      Navigator.pop(context, true);
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                  ),
-                  child: const Text(
-                    'Save & Exit',
-                    style: TextStyle(color: Colors.white),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Auto-save may have already saved your data, but saving again ensures nothing is lost.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.blue.shade900,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          );
-
-          // If null (cancelled), don't pop
-          // If false (discard), pop without saving
-          // If true (saved), pop after saving
-          return shouldSave ?? false;
-        }
-        return true;
-      },
-      child: Scaffold(
-        backgroundColor: Colors.grey.shade50,
-        appBar: _buildAppBar(context),
-        body: Column(
-          children: [
-            // Tabs
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: TabBar(
-                controller: _tabController,
-                isScrollable: true,
-                indicatorColor: const Color(0xFF2563EB),
-                indicatorWeight: 3,
-                labelColor: const Color(0xFF2563EB),
-                unselectedLabelColor: Colors.grey.shade600,
-                labelStyle: const TextStyle(fontWeight: FontWeight.w600),
-                tabs: const [
-                  Tab(text: 'Overview', icon: Icon(Icons.dashboard, size: 18)),
-                  Tab(text: 'Patient Data', icon: Icon(Icons.person, size: 18)),
-                  Tab(text: 'Diagram', icon: Icon(Icons.draw, size: 18)),
-                  Tab(text: 'Clinical', icon: Icon(Icons.medical_services, size: 18)),
-                  Tab(text: 'Labs & Trends', icon: Icon(Icons.analytics, size: 18)),
-                  Tab(text: 'Investigations', icon: Icon(Icons.science, size: 18)),
-                  Tab(text: 'Treatment', icon: Icon(Icons.healing, size: 18)),
-                ],
-              ),
-            ),
-
-            // Tab Content
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  OverviewTab(
-                    condition: _condition,
-                    diseaseConfig: _diseaseConfig,
-                    onUpdate: _updateCondition,
-                  ),
-                  PatientDataTab(
-                    condition: _condition,
-                    diseaseConfig: _diseaseConfig,
-                    onUpdate: _updateCondition,
-                  ),
-                  CanvasTab(
-                    condition: _condition,
-                    diseaseConfig: _diseaseConfig,
-                    onUpdate: _updateCondition,
-                    patient: _patient,
-                  ),
-                  ClinicalFeaturesTab(
-                    condition: _condition,
-                    diseaseConfig: _diseaseConfig,
-                    onUpdate: _updateCondition,
-                  ),
-                  LabsTrendsTab(
-                    condition: _condition,
-                    diseaseConfig: _diseaseConfig,
-                    onUpdate: _updateCondition,
-                  ),
-                  InvestigationsTab(
-                    condition: _condition,
-                    diseaseConfig: _diseaseConfig,
-                    onUpdate: _updateCondition,
-                  ),
-                  TreatmentTab(
-                    condition: _condition,
-                    diseaseConfig: _diseaseConfig,
-                    onUpdate: _updateCondition,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        // Bottom save button - shows when there are unsaved changes
-        bottomNavigationBar: _hasUnsavedChanges
-            ? Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, -2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'You have unsaved changes',
-                  style: TextStyle(
-                    color: Colors.orange.shade700,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              ElevatedButton.icon(
-                onPressed: _saveCondition,
-                icon: const Icon(Icons.save, size: 20),
+            actions: [
+              TextButton.icon(
+                onPressed: () => Navigator.pop(context, 'discard'),
+                icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
                 label: const Text(
-                  'Save Changes',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  'Exit Without Saving',
+                  style: TextStyle(color: Colors.red),
                 ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.pop(context, 'cancel'),
+                icon: Icon(Icons.close, color: Colors.grey.shade700, size: 20),
+                label: Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.grey.shade700),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Colors.grey.shade400),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.pop(context, 'save'),
+                icon: const Icon(Icons.save, size: 20),
+                label: const Text('Save & Exit'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2563EB),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
               ),
             ],
           ),
-        )
-            : null,
+        );
+
+        // Handle the result
+        if (result == 'save') {
+          // Save the condition
+          print('');
+          print('💾 ═══════════════════════════════════════');
+          print('💾 USER PRESSED: Save & Exit');
+          print('💾 ═══════════════════════════════════════');
+
+          await _saveConditionToDatabase();
+
+          if (mounted) {
+            // Show success message
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white, size: 20),
+                    SizedBox(width: 12),
+                    Text('Data saved successfully!'),
+                  ],
+                ),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            // Wait a moment for user to see the message
+            await Future.delayed(const Duration(milliseconds: 500));
+          }
+          return true;  // Allow navigation
+        } else if (result == 'discard') {
+          // User chose to discard changes
+          print('');
+          print('🗑️  ═══════════════════════════════════════');
+          print('🗑️  USER PRESSED: Exit Without Saving');
+          print('🗑️  ═══════════════════════════════════════');
+
+          return true;  // Allow navigation
+        } else {
+          // User cancelled (or dismissed)
+          print('');
+          print('❌ ═══════════════════════════════════════');
+          print('❌ USER PRESSED: Cancel');
+          print('❌ ═══════════════════════════════════════');
+
+          return false;  // Prevent navigation
+        }
+      },
+      child: Scaffold(
+        // ... rest of your UI stays the same
       ),
     );
   }

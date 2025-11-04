@@ -9,6 +9,7 @@ import '../../../models/endocrine/lab_test_result.dart';
 import '../../../config/thyroid_disease_config.dart';
 import '../../../services/patient_data_service.dart';
 import '../../../services/database_helper.dart';
+import '../../../services/user_service.dart';
 import '../../../widgets/lab_test_result_card.dart';
 import '../../../dialogs/add_lab_test_dialog.dart';
 import '../../../models/endocrine/investigation_finding.dart';
@@ -475,6 +476,30 @@ class _PatientDataTabState extends State<PatientDataTab> {
     setState(() => _isSaving = true);
 
     try {
+      print('');
+      print('🔄 ═════════════════════════════════════════════════════════════');
+      print('🔄 AUTO-SAVE TRIGGERED');
+      print('🔄 ═════════════════════════════════════════════════════════════');
+      print('📍 CURRENT STATE:');
+      print('   Condition ID: ${widget.condition.id}');
+      print('   Patient ID: ${widget.condition.patientId}');
+      print('   Patient Name: ${widget.condition.patientName}');
+      print('   Disease: ${widget.condition.diseaseName}');
+      print('');
+      print('📝 DATA TO SAVE:');
+      print('   Chief Complaint: "${_chiefComplaintController.text}"');
+      print('   History: "${_historyController.text.substring(0, _historyController.text.length > 50 ? 50 : _historyController.text.length)}${_historyController.text.length > 50 ? "..." : ""}"');
+      print('   Blood Pressure: "${_bpController.text}"');
+      print('   Heart Rate: "${_hrController.text}"');
+      print('   Temperature: "${_tempController.text}"');
+      print('   SpO2: "${_spo2Controller.text}"');
+      print('   Respiratory Rate: "${_rrController.text}"');
+      print('   Height: "${_heightController.text}"');
+      print('   Weight: "${_weightController.text}"');
+      print('   BMI: "${_calculatedBMI ?? "not calculated"}"');
+      print('   Lab Test Results Count: ${_labTestResults.length}');
+      print('   Investigation Findings Count: ${_investigationFindings.length}');
+
       final updatedCondition = widget.condition.copyWith(
         chiefComplaint: _chiefComplaintController.text,
         historyOfPresentIllness: _historyController.text,
@@ -497,31 +522,61 @@ class _PatientDataTabState extends State<PatientDataTab> {
         investigationFindings: _investigationFindings,
       );
 
-      // ✅ FIX: Use saveEndocrineCondition instead of updateEndocrineCondition
+      print('');
+      print('💾 SAVING TO DATABASE...');
+      print('   Updated Condition ID: ${updatedCondition.id}');
+      print('   Updated Chief Complaint: "${updatedCondition.chiefComplaint}"');
+      print('   Updated Vitals: ${updatedCondition.vitals}');
+      print('   Updated Measurements: ${updatedCondition.measurements}');
+
+      // ✅ FIX: Save to BOTH tables to keep them in sync
       await DatabaseHelper.instance.saveEndocrineCondition(updatedCondition);
+      print('   ✅ Saved to endocrine_conditions table');
+
+      // ✅ ALSO save to visits table for history
+      final doctorId = UserService.currentUserId ?? 'unknown';
+      await DatabaseHelper.instance.saveEndocrineVisit(updatedCondition, doctorId);
+      print('   ✅ Saved to endocrine_visits table (doctorId: $doctorId)');
+
       widget.onUpdate(updatedCondition);
+      print('   ✅ Updated parent state');
+
       await PatientDataService.instance.updateFromEndocrine(updatedCondition);
+      print('   ✅ Updated patient data snapshot');
 
       setState(() => _lastSaved = DateTime.now());
 
+      print('');
+      print('✅ AUTO-SAVE COMPLETE at ${DateTime.now()}');
+      print('🔄 ═════════════════════════════════════════════════════════════');
+      print('');
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Row(
               children: [
                 Icon(Icons.check_circle, color: Colors.white, size: 16),
                 SizedBox(width: 8),
-                Text('Patient data saved'),
+                Text('Patient data auto-saved (ID: ${updatedCondition.id.substring(0, 8)}...)'),
               ],
             ),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 1),
+            duration: Duration(seconds: 2),
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
-    } catch (e) {
-      print('Auto-save error: $e');
+    } catch (e, stackTrace) {
+      print('');
+      print('❌ ═════════════════════════════════════════════════════════════');
+      print('❌ AUTO-SAVE ERROR');
+      print('❌ ═════════════════════════════════════════════════════════════');
+      print('Error: $e');
+      print('Stack trace:');
+      print(stackTrace.toString().split('\n').take(10).join('\n'));
+      print('❌ ═════════════════════════════════════════════════════════════');
+      print('');
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -541,7 +596,30 @@ class _PatientDataTabState extends State<PatientDataTab> {
   }
 
   void _saveData() async {
-    print('💾 [Patient Data Tab] Saving data...');
+    print('');
+    print('💾 ═════════════════════════════════════════════════════════════');
+    print('💾 MANUAL SAVE TRIGGERED');
+    print('💾 ═════════════════════════════════════════════════════════════');
+    print('📍 CURRENT STATE:');
+    print('   Condition ID: ${widget.condition.id}');
+    print('   Patient ID: ${widget.condition.patientId}');
+    print('   Patient Name: ${widget.condition.patientName}');
+    print('   Disease: ${widget.condition.diseaseName}');
+    print('');
+    print('📝 DATA TO SAVE:');
+    print('   Chief Complaint: "${_chiefComplaintController.text}"');
+    print('   History: "${_historyController.text.substring(0, _historyController.text.length > 50 ? 50 : _historyController.text.length)}${_historyController.text.length > 50 ? "..." : ""}"');
+    print('   Past Medical History: "${_pastHistoryController.text.substring(0, _pastHistoryController.text.length > 50 ? 50 : _pastHistoryController.text.length)}${_pastHistoryController.text.length > 50 ? "..." : ""}"');
+    print('   Vitals:');
+    print('     Blood Pressure: "${_bpController.text}"');
+    print('     Heart Rate: "${_hrController.text}"');
+    print('     Temperature: "${_tempController.text}"');
+    print('     SpO2: "${_spo2Controller.text}"');
+    print('     Respiratory Rate: "${_rrController.text}"');
+    print('   Measurements:');
+    print('     Height: "${_heightController.text}"');
+    print('     Weight: "${_weightController.text}"');
+    print('     BMI: "${_calculatedBMI ?? "not calculated"}"');
 
     final updatedCondition = widget.condition.copyWith(
       chiefComplaint: _chiefComplaintController.text,
@@ -565,15 +643,26 @@ class _PatientDataTabState extends State<PatientDataTab> {
       investigationFindings: _investigationFindings,
     );
 
-    print('   Chief Complaint: "${updatedCondition.chiefComplaint}"');
-    print('   Vitals: ${updatedCondition.vitals?.keys.toList()}');
+    print('');
+    print('💾 SAVING TO DATABASE...');
+    print('   Updated Condition ID: ${updatedCondition.id}');
+    print('   Updated Chief Complaint: "${updatedCondition.chiefComplaint}"');
+    print('   Updated Vitals: ${updatedCondition.vitals}');
+    print('   Updated Measurements: ${updatedCondition.measurements}');
 
-    // ✅ FIX 1: Save to database (endocrine_conditions table)
+    // ✅ FIX 1: Save to database (both tables to keep them in sync)
     try {
       await DatabaseHelper.instance.saveEndocrineCondition(updatedCondition);
       print('   ✅ Saved to endocrine_conditions table');
-    } catch (e) {
+
+      // ✅ ALSO save to visits table for history
+      final doctorId = UserService.currentUserId ?? 'unknown';
+      await DatabaseHelper.instance.saveEndocrineVisit(updatedCondition, doctorId);
+      print('   ✅ Saved to endocrine_visits table (doctorId: $doctorId)');
+    } catch (e, stackTrace) {
       print('   ❌ Error saving to database: $e');
+      print('   Stack trace:');
+      print(stackTrace.toString().split('\n').take(5).join('\n'));
     }
 
     // ✅ FIX 2: Update parent state
@@ -584,7 +673,10 @@ class _PatientDataTabState extends State<PatientDataTab> {
     await PatientDataService.instance.updateFromEndocrine(updatedCondition);
     print('   ✅ Updated patient data snapshot');
 
-    print('💾 [Patient Data Tab] Save complete!');
+    print('');
+    print('✅ MANUAL SAVE COMPLETE at ${DateTime.now()}');
+    print('💾 ═════════════════════════════════════════════════════════════');
+    print('');
   }
 
   @override
