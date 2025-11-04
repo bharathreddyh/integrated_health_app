@@ -116,12 +116,14 @@ class ClinicClarityApp extends StatelessWidget {
               final patientName = args['patientName'] as String;
               final diseaseId = args['diseaseId'] as String;
               final diseaseName = args['diseaseName'] as String;
+              final conditionId = args['conditionId'] as String?;  // ✅ ADD THIS LINE
               return MaterialPageRoute(
                 builder: (context) => ThyroidDiseaseModuleScreen(
                   patientId: patientId,
                   patientName: patientName,
                   diseaseId: diseaseId,
                   diseaseName: diseaseName,
+                  conditionId: conditionId,  // ✅ ADD THIS LINE
                 ),
               );
             }
