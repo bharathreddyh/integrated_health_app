@@ -1,436 +1,65 @@
-// lib/screens/patient/visit_history_screen.dart
-// ✅ FIXED: Now passes specific condition ID when opening saved templates
-
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import '../../models/patient.dart';
-import '../../models/visit.dart';
-import '../../models/endocrine/endocrine_condition.dart';
 import '../../services/database_helper.dart';
-import '../kidney/visit_view_screen.dart';
+import '../../models/disease_template.dart';
+import '../templates/disease_template_edit_screen.dart'; // adjust path if needed
 
 class VisitHistoryScreen extends StatefulWidget {
-  final Patient patient;
-
-  const VisitHistoryScreen({super.key, required this.patient});
+  const VisitHistoryScreen({super.key});
 
   @override
   State<VisitHistoryScreen> createState() => _VisitHistoryScreenState();
 }
 
 class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
-  List<Visit> _visits = [];
-  List<EndocrineCondition> _endocrineVisits = [];
-  bool _isLoading = true;
+  late Future<List<DiseaseTemplate>> _templatesFuture;
 
   @override
   void initState() {
     super.initState();
-    _loadVisits();
+    _loadTemplates();
   }
 
-  Future<void> _loadVisits() async {
-    setState(() => _isLoading = true);
-    try {
-      final regularVisits = await DatabaseHelper.instance.getPatientVisits(widget.patient.id);
-      final endocrineVisits = await DatabaseHelper.instance.getEndocrineVisitsByPatient(widget.patient.id);
-
-      if (mounted) {
-        setState(() {
-          _visits = regularVisits;
-          _endocrineVisits = endocrineVisits;
-          _isLoading = false;
-        });
-        print('✅ Loaded ${regularVisits.length} canvas visits + ${endocrineVisits.length} medical templates');
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading visits: $e')),
-        );
-      }
-    }
+  void _loadTemplates() {
+    setState(() {
+      _templatesFuture = DatabaseHelper.instance.getAllDiseaseTemplates();
+    });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        title: Text('${widget.patient.name} - Visit History'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 1,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _visits.isEmpty && _endocrineVisits.isEmpty
-          ? _buildEmptyState()
-          : RefreshIndicator(
-        onRefresh: _loadVisits,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            if (_endocrineVisits.isNotEmpty) ...[
-              _buildSectionHeader(
-                Icons.science,
-                'Medical Templates',
-                Colors.pink,
-              ),
-              ..._endocrineVisits.map((condition) => _buildEndocrineVisitCard(condition)),
-              const SizedBox(height: 24),
-            ],
-            if (_visits.isNotEmpty) ...[
-              _buildSectionHeader(
-                Icons.draw,
-                'Canvas Diagrams',
-                Colors.blue,
-              ),
-              ..._visits.map((visit) => _buildVisitCard(visit)),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
+  void _openTemplate(DiseaseTemplate template) async {
+    print('📱 Opening template: ${template.name}');
+    print('   Template ID: ${template.id}');
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.history, size: 80, color: Colors.grey.shade300),
-          const SizedBox(height: 16),
-          Text(
-            'No Visit History',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Patient has no recorded visits yet',
-            style: TextStyle(color: Colors.grey.shade500),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(IconData icon, String title, Color color) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade800,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEndocrineVisitCard(EndocrineCondition condition) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () => _editEndocrineVisit(condition),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.pink.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.science, color: Colors.pink, size: 24),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          condition.diseaseName,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          DateFormat('MMM dd, yyyy • h:mm a').format(condition.createdAt),
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  _buildStatusBadge(condition.status.toString().split('.').last),
-                ],
-              ),
-              if (condition.chiefComplaint != null ||
-                  condition.labReadings.isNotEmpty ||
-                  condition.medications.isNotEmpty) ...[
-                const Divider(height: 24),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    if (condition.chiefComplaint != null && condition.chiefComplaint!.isNotEmpty)
-                      _buildInfoChip(Icons.notes, 'Chief Complaint'),
-                    if (condition.labReadings.isNotEmpty)
-                      _buildInfoChip(Icons.science, '${condition.labReadings.length} Labs'),
-                    if (condition.medications.isNotEmpty)
-                      _buildInfoChip(Icons.medication, '${condition.medications.length} Meds'),
-                  ],
-                ),
-              ],
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton.icon(
-                    onPressed: () => _deleteEndocrineVisit(condition),
-                    icon: const Icon(Icons.delete_outline, size: 18),
-                    label: const Text('Delete'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.red,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    onPressed: () => _editEndocrineVisit(condition),
-                    icon: const Icon(Icons.edit, size: 18),
-                    label: const Text('Edit'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.pink,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVisitCard(Visit visit) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => VisitViewScreen(
-                visit: visit,
-                patient: widget.patient,
-              ),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.draw, color: Colors.blue, size: 24),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${visit.system.toUpperCase()} - ${visit.diagramType}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      DateFormat('MMM dd, yyyy • h:mm a').format(visit.createdAt),
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right, color: Colors.grey),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge(String status) {
-    final colors = {
-      'suspected': Colors.orange,
-      'provisional': Colors.blue,
-      'confirmed': Colors.green,
-      'ruledOut': Colors.grey,
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: (colors[status] ?? Colors.grey).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colors[status] ?? Colors.grey),
-      ),
-      child: Text(
-        status == 'ruledOut' ? 'Ruled Out' : status[0].toUpperCase() + status.substring(1),
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: colors[status] ?? Colors.grey,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoChip(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: Colors.grey.shade700),
-          const SizedBox(width: 4),
-          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade700)),
-        ],
-      ),
-    );
-  }
-
-  // ✅ FIXED: Now passes the specific condition ID
-  void _editEndocrineVisit(EndocrineCondition condition) async {
-    print('📱 Opening template: ${condition.diseaseName}');
-    print('   Condition ID: ${condition.id}');
-    print('   Patient: ${widget.patient.name}');
-
-    final result = await Navigator.pushNamed(
+    final result = await Navigator.push(
       context,
-      '/thyroid-module',
-      arguments: {
-        'patientId': widget.patient.id,
-        'patientName': widget.patient.name,
-        'diseaseId': condition.diseaseId,
-        'diseaseName': condition.diseaseName,
-        'conditionId': condition.id,  // ✅ CRITICAL FIX: Pass the specific condition ID
-      },
+      MaterialPageRoute(
+        builder: (_) => DiseaseTemplateEditScreen(templateId: template.id),
+      ),
     );
 
-    if (result != null) {
-      _loadVisits();
+    if (result == true) {
+      _loadTemplates(); // Refresh the list
     }
   }
 
-  void _deleteEndocrineVisit(EndocrineCondition condition) async {
+  void _createNewTemplate() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DiseaseTemplateEditScreen(), // No ID = new template
+      ),
+    );
+
+    if (result == true) {
+      _loadTemplates();
+    }
+  }
+
+  void _deleteTemplate(DiseaseTemplate template) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.warning, color: Colors.red, size: 28),
-            const SizedBox(width: 12),
-            const Expanded(child: Text('Delete Template?')),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Are you sure you want to delete this medical template?',
-              style: TextStyle(fontSize: 15, color: Colors.grey.shade700),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red.shade200),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    condition.diseaseName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    DateFormat('MMM dd, yyyy').format(condition.createdAt),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '⚠️ This action cannot be undone.',
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.red.shade700,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
+        title: const Text('Delete Template?'),
+        content: Text('Are you sure you want to delete "${template.name}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -448,41 +77,237 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
       ),
     );
 
-    if (confirmed == true) {
+    if (confirmed == true && template.id != null) {
       try {
-        await DatabaseHelper.instance.deleteEndocrineVisit(condition.id);
-
+        await DatabaseHelper.instance.deleteDiseaseTemplate(template.id!);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text('Template deleted successfully'),
-                ],
-              ),
+              content: Text('Template deleted successfully'),
               backgroundColor: Colors.green,
             ),
           );
-          _loadVisits();
+          _loadTemplates();
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.error, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text('Error deleting: $e')),
-                ],
-              ),
+              content: Text('Error deleting template: $e'),
               backgroundColor: Colors.red,
             ),
           );
         }
       }
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        title: const Text('Disease Templates'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 1,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: _createNewTemplate,
+            tooltip: 'Create New Template',
+          ),
+        ],
+      ),
+      body: FutureBuilder<List<DiseaseTemplate>>(
+        future: _templatesFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Error: ${snapshot.error}'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadTemplates,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          final templates = snapshot.data ?? [];
+
+          if (templates.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.description_outlined,
+                      size: 80,
+                      color: Colors.grey.shade300),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No Templates Yet',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Create your first disease template',
+                    style: TextStyle(color: Colors.grey.shade500),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    onPressed: _createNewTemplate,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Create Template'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return RefreshIndicator(
+            onRefresh: () async => _loadTemplates(),
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: templates.length,
+              itemBuilder: (context, index) {
+                final template = templates[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: InkWell(
+                    onTap: () => _openTemplate(template),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.description,
+                                  color: Colors.blue,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      template.name.isNotEmpty
+                                          ? template.name
+                                          : '(Untitled)',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    if (template.category.isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        template.category,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              PopupMenuButton<String>(
+                                onSelected: (value) {
+                                  if (value == 'delete') {
+                                    _deleteTemplate(template);
+                                  } else if (value == 'edit') {
+                                    _openTemplate(template);
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  const PopupMenuItem(
+                                    value: 'edit',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.edit, size: 18),
+                                        SizedBox(width: 8),
+                                        Text('Edit'),
+                                      ],
+                                    ),
+                                  ),
+                                  const PopupMenuItem(
+                                    value: 'delete',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.delete,
+                                            size: 18,
+                                            color: Colors.red),
+                                        SizedBox(width: 8),
+                                        Text('Delete',
+                                            style: TextStyle(color: Colors.red)),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          if (template.details.isNotEmpty) ...[
+                            const Divider(height: 24),
+                            Text(
+                              '${template.details.length} field(s) configured',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _createNewTemplate,
+        icon: const Icon(Icons.add),
+        label: const Text('New Template'),
+      ),
+    );
   }
 }

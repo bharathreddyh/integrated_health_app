@@ -11,6 +11,7 @@ import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import '../models/lab_test.dart';
 import '../models/endocrine/endocrine_condition.dart';
+import '../models/disease_template.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
@@ -28,10 +29,10 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
     print('🔧 Database path: $path');
-    print('🔧 Database version: 13');
+    print('🔧 Database version: 14');
     return await openDatabase(
       path,
-      version: 13,
+      version: 14,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -39,6 +40,16 @@ class DatabaseHelper {
 
   Future<void> _createDB(Database db, int version) async {
     print('🔨 Creating NEW database with version $version');
+
+
+    await db.execute('''
+      CREATE TABLE disease_templates (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        category TEXT NOT NULL,
+        details TEXT NOT NULL
+      )
+    ''');
 
     // Users table
     await db.execute('''
@@ -498,6 +509,20 @@ class DatabaseHelper {
         print('Some columns may already exist in endocrine_conditions: $e');
       }
     }
+    if (oldVersion < 14) {
+      print('   📋 Adding disease_templates table...');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS disease_templates (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          category TEXT NOT NULL,
+          details TEXT NOT NULL
+        )
+      ''');
+      print('   ✅ disease_templates table added');
+    }
+
+
   }
 
   // ==================== HELPER METHODS (MUST BE DECLARED BEFORE USE) ====================
@@ -1139,7 +1164,9 @@ class DatabaseHelper {
     );
 
     if (conditionMaps.isNotEmpty) {
-      return EndocrineCondition.fromJson(conditionMaps.first);
+      // FIX: Convert snake_case database fields to camelCase for EndocrineCondition.fromJson
+      final convertedMap = _convertDatabaseMapToJson(conditionMaps.first);
+      return EndocrineCondition.fromJson(convertedMap);
     }
 
     // Check endocrine_visits table
@@ -1156,6 +1183,24 @@ class DatabaseHelper {
 
     return null;
   }
+
+// ==================== FIXED METHOD 2: getActiveEndocrineCondition ====================
+  Future<EndocrineCondition?> getActiveEndocrineCondition(String patientId, String diseaseId) async {
+    final db = await this.database;
+    final maps = await db.query(
+      'endocrine_conditions',
+      where: 'patient_id = ? AND disease_id = ? AND is_active = ?',
+      whereArgs: [patientId, diseaseId, 1],
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+
+    // FIX: Convert snake_case database fields to camelCase
+    final convertedMap = _convertDatabaseMapToJson(maps.first);
+    return EndocrineCondition.fromJson(convertedMap);
+  }
+
+
   Future<int> updateEndocrineCondition(EndocrineCondition condition) async {
     final db = await this.database;
 
@@ -1443,4 +1488,85 @@ class DatabaseHelper {
       whereArgs: [patientId],
     );
   }
+  uture<DiseaseTemplate?> getDiseaseTemplateById(int id) async {
+    final db = await database;
+    final result = await db.query(
+      'disease_templates',
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+
+    if (result.isEmpty) return null;
+    return DiseaseTemplate.fromMap(result.first);
+  }
+
+  /// Get all disease templates
+  Future<List<DiseaseTemplate>> getAllDiseaseTemplates() async {
+    final db = await database;
+    final result = await db.query(
+      'disease_templates',
+      orderBy: 'id DESC', // newest first
+    );
+
+    return result.map((map) => DiseaseTemplate.fromMap(map)).toList();
+  }
+
+  /// Insert a new disease template
+  Future<int> insertDiseaseTemplate(DiseaseTemplate template) async {
+    final db = await database;
+    return await db.insert(
+      'disease_templates',
+      template.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Update an existing disease template
+  Future<int> updateDiseaseTemplate(DiseaseTemplate template) async {
+    final db = await database;
+    return await db.update(
+      'disease_templates',
+      template.toMap(),
+      where: 'id = ?',
+      whereArgs: [template.id],
+    );
+  }
+
+  /// Delete a disease template
+  Future<int> deleteDiseaseTemplate(int id) async {
+    final db = await database;
+    return await db.delete(
+      'disease_templates',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  /// Get templates by category
+  Future<List<DiseaseTemplate>> getTemplatesByCategory(String category) async {
+    final db = await database;
+    final result = await db.query(
+      'disease_templates',
+      where: 'category = ?',
+      whereArgs: [category],
+      orderBy: 'name ASC',
+    );
+
+    return result.map((map) => DiseaseTemplate.fromMap(map)).toList();
+  }
+
+  /// Search templates by name
+  Future<List<DiseaseTemplate>> searchTemplates(String query) async {
+    final db = await database;
+    final result = await db.query(
+      'disease_templates',
+      where: 'name LIKE ? OR category LIKE ?',
+      whereArgs: ['%$query%', '%$query%'],
+      orderBy: 'name ASC',
+    );
+
+    return result.map((map) => DiseaseTemplate.fromMap(map)).toList();
+  }
+
 }
