@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import '../../models/endocrine/endocrine_condition.dart';
 import '../../models/patient.dart';
@@ -443,7 +441,119 @@ class _ThyroidDiseaseModuleScreenState extends State<ThyroidDiseaseModuleScreen>
         }
       },
       child: Scaffold(
-        // ... rest of your UI stays the same
+        backgroundColor: Colors.grey.shade50,
+        appBar: _buildAppBar(context),
+        body: Column(
+          children: [
+            // Tabs
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: TabBar(
+                controller: _tabController,
+                isScrollable: true,
+                indicatorColor: const Color(0xFF2563EB),
+                indicatorWeight: 3,
+                labelColor: const Color(0xFF2563EB),
+                unselectedLabelColor: Colors.grey.shade600,
+                labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+                tabs: const [
+                  Tab(text: 'Overview', icon: Icon(Icons.dashboard, size: 18)),
+                  Tab(text: 'Patient Data', icon: Icon(Icons.person, size: 18)),
+                  Tab(text: 'Diagram', icon: Icon(Icons.draw, size: 18)),
+                  Tab(text: 'Clinical', icon: Icon(Icons.medical_services, size: 18)),
+                  Tab(text: 'Labs & Trends', icon: Icon(Icons.analytics, size: 18)),
+                  Tab(text: 'Investigations', icon: Icon(Icons.science, size: 18)),
+                  Tab(text: 'Treatment', icon: Icon(Icons.healing, size: 18)),
+                ],
+              ),
+            ),
+
+            // Tab Content
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  OverviewTab(
+                    condition: _condition,
+                    diseaseConfig: _diseaseConfig,
+                    onUpdate: _updateCondition,
+                  ),
+                  PatientDataTab(
+                    condition: _condition,
+                    diseaseConfig: _diseaseConfig,
+                    onUpdate: _updateCondition,
+                  ),
+                  CanvasTab(
+                    condition: _condition,
+                    diseaseConfig: _diseaseConfig,
+                    onUpdate: _updateCondition,
+                    patient: _patient,
+                  ),
+                  ClinicalFeaturesTab(
+                    condition: _condition,
+                    diseaseConfig: _diseaseConfig,
+                    onUpdate: _updateCondition,
+                  ),
+                  LabsTrendsTab(
+                    condition: _condition,
+                    diseaseConfig: _diseaseConfig,
+                    onUpdate: _updateCondition,
+                  ),
+                  InvestigationsTab(
+                    condition: _condition,
+                    diseaseConfig: _diseaseConfig,
+                    onUpdate: _updateCondition,
+                  ),
+                  TreatmentTab(
+                    condition: _condition,
+                    diseaseConfig: _diseaseConfig,
+                    onUpdate: _updateCondition,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        // Bottom save button - shows when there are unsaved changes
+        bottomNavigationBar: _hasUnsavedChanges
+            ? Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            child: ElevatedButton.icon(
+              onPressed: _saveConditionToDatabase,
+              icon: const Icon(Icons.save, size: 20),
+              label: const Text('Save Changes'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2563EB),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        )
+            : null,
       ),
     );
   }
