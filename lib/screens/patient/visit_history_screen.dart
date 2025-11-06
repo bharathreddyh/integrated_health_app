@@ -70,13 +70,26 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
   Color _getConditionStatusColor(DiagnosisStatus status) {
     switch (status) {
       case DiagnosisStatus.suspected:
-        return Colors.orange;
+        return Colors.orange.shade400;
       case DiagnosisStatus.provisional:
-        return Colors.blue;
+        return Colors.blue.shade400;
       case DiagnosisStatus.confirmed:
-        return Colors.green;
+        return Colors.green.shade400;
       case DiagnosisStatus.ruledOut:
-        return Colors.grey;
+        return Colors.grey.shade400;
+    }
+  }
+
+  Color _getConditionStatusTextColor(DiagnosisStatus status) {
+    switch (status) {
+      case DiagnosisStatus.suspected:
+        return Colors.orange.shade900;
+      case DiagnosisStatus.provisional:
+        return Colors.blue.shade900;
+      case DiagnosisStatus.confirmed:
+        return Colors.green.shade900;
+      case DiagnosisStatus.ruledOut:
+        return Colors.grey.shade900;
     }
   }
 
@@ -167,6 +180,7 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
                 final condition = visits[index];
                 final lastUpdated = condition.lastUpdated;
                 final statusColor = _getConditionStatusColor(condition.status);
+                final statusTextColor = _getConditionStatusTextColor(condition.status);
                 final statusText = _getConditionStatusBadge(condition.status);
 
                 return Card(
@@ -226,7 +240,7 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
                                             style: TextStyle(
                                               fontSize: 11,
                                               fontWeight: FontWeight.w600,
-                                              color: statusColor.shade700,
+                                              color: statusTextColor,
                                             ),
                                           ),
                                         ),
