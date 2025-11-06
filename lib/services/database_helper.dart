@@ -1207,9 +1207,7 @@ class DatabaseHelper {
     );
 
     if (conditionMaps.isNotEmpty) {
-      // FIX: Convert snake_case database fields to camelCase for EndocrineCondition.fromJson
-      final convertedMap = _convertDatabaseMapToJson(conditionMaps.first);
-      return EndocrineCondition.fromJson(convertedMap);
+      return _endocrineConditionFromMap(conditionMaps.first);
     }
 
     // Check endocrine_visits table

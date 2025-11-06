@@ -689,7 +689,8 @@ class _Page2SystemSelectorState extends State<Page2SystemSelector> {
   // TEMPLATES TAB - PHASE 2 COMPLETE
   // ============================================
   Widget _buildTemplatesTab(ConsultationData data) {
-    final groupedTemplates = DiseaseTemplates.groupedBySystem;
+    // TODO: Implement disease templates - requires DiseaseTemplates and MedicalSystems classes
+    final groupedTemplates = <String, List<DiseaseTemplate>>{};
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -697,7 +698,7 @@ class _Page2SystemSelectorState extends State<Page2SystemSelector> {
         children: groupedTemplates.entries.map((entry) {
           final systemId = entry.key;
           final templates = entry.value;
-          final system = MedicalSystems.getById(systemId);
+          final system = null; // MedicalSystems.getById(systemId);
 
           if (system == null) return const SizedBox.shrink();
 
@@ -1266,7 +1267,8 @@ class _Page2SystemSelectorState extends State<Page2SystemSelector> {
     final templateId = template['templateId'] as String?;
     if (templateId == null) return;
 
-    final diseaseTemplate = DiseaseTemplates.getById(templateId);
+    // TODO: Implement DiseaseTemplates.getById
+    final diseaseTemplate = null; // DiseaseTemplates.getById(templateId);
     if (diseaseTemplate == null) return;
 
     final result = await showDialog<Map<String, dynamic>>(
