@@ -28,19 +28,21 @@ class _DiseaseTemplateDialogState extends State<DiseaseTemplateDialog> {
 
   void _initializeControllers() {
     // Initialize controllers for lab tests
-    for (final test in widget.template.requiredLabTests) {
+    final requiredLabTests = (widget.template.details['requiredLabTests'] as List<dynamic>?) ?? [];
+    for (final test in requiredLabTests) {
+      final testName = test.toString();
       final controller = TextEditingController();
 
       // If editing, load existing values
       if (widget.existingData != null) {
-        final existingValue = widget.existingData!['data']?[test];
+        final existingValue = widget.existingData!['data']?[testName];
         if (existingValue != null) {
           controller.text = existingValue.toString();
         }
       }
 
-      _controllers[test] = controller;
-      _focusNodes[test] = FocusNode();
+      _controllers[testName] = controller;
+      _focusNodes[testName] = FocusNode();
     }
 
     // Initialize controllers for additional fields
@@ -166,7 +168,7 @@ class _DiseaseTemplateDialogState extends State<DiseaseTemplateDialog> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Lab Tests Section
-                      if (widget.template.requiredLabTests.isNotEmpty) ...[
+                      if (((widget.template.details['requiredLabTests'] as List<dynamic>?) ?? []).isNotEmpty) ...[
                         _buildSectionHeader(
                           'Required Lab Tests',
                           Icons.science,
@@ -296,6 +298,7 @@ class _DiseaseTemplateDialogState extends State<DiseaseTemplateDialog> {
   }
 
   Widget _buildLabTestsGrid() {
+    final requiredLabTests = (widget.template.details['requiredLabTests'] as List<dynamic>?) ?? [];
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -305,9 +308,9 @@ class _DiseaseTemplateDialogState extends State<DiseaseTemplateDialog> {
         mainAxisSpacing: 16,
         childAspectRatio: 3,
       ),
-      itemCount: widget.template.requiredLabTests.length,
+      itemCount: requiredLabTests.length,
       itemBuilder: (context, index) {
-        final testName = widget.template.requiredLabTests[index];
+        final testName = requiredLabTests[index].toString();
         return _buildLabTestField(testName);
       },
     );
