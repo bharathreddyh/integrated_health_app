@@ -816,15 +816,15 @@ class _Page2SystemSelectorState extends State<Page2SystemSelector> {
                             children: [
                               const SizedBox(height: 4),
                               Text(
-                                '${template.requiredLabTests.length} lab tests required',
+                                '${(template.details['requiredLabTests'] as List?)?.length ?? 0} lab tests required',
                                 style: const TextStyle(fontSize: 12),
                               ),
-                              if (template.requiredLabTests.isNotEmpty) ...[
+                              if (((template.details['requiredLabTests'] as List?)?.isNotEmpty ?? false)) ...[
                                 const SizedBox(height: 4),
                                 Wrap(
                                   spacing: 4,
                                   runSpacing: 4,
-                                  children: template.requiredLabTests
+                                  children: ((template.details['requiredLabTests'] as List?) ?? [])
                                       .take(3)
                                       .map((test) => Container(
                                     padding: const EdgeInsets.symmetric(
@@ -836,7 +836,7 @@ class _Page2SystemSelectorState extends State<Page2SystemSelector> {
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Text(
-                                      test,
+                                      test.toString(),
                                       style: TextStyle(
                                         fontSize: 10,
                                         color: Colors.purple.shade700,
