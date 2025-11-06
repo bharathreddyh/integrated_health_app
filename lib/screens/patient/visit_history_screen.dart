@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../services/database_helper.dart';
-import '../../models/disease_template.dart';
 import '../../models/patient.dart';
-import '../templates/disease_template_edit_screen.dart'; // adjust path if needed
+import '../../models/endocrine/endocrine_condition.dart';
+import '../endocrine/thyroid_disease_module_screen.dart';
 
+/// Visit History Screen
+/// Shows all saved disease templates/conditions for a specific patient
+/// Allows viewing and editing previously saved data
 class VisitHistoryScreen extends StatefulWidget {
   final Patient patient;
 
@@ -14,94 +17,66 @@ class VisitHistoryScreen extends StatefulWidget {
 }
 
 class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
-  late Future<List<DiseaseTemplate>> _templatesFuture;
+  late Future<List<EndocrineCondition>> _visitsFuture;
 
   @override
   void initState() {
     super.initState();
-    _loadTemplates();
+    _loadVisits();
   }
 
-  void _loadTemplates() {
+  void _loadVisits() {
     setState(() {
-      _templatesFuture = DatabaseHelper.instance.getAllDiseaseTemplates();
+      _visitsFuture = DatabaseHelper.instance.getEndocrineVisitsByPatient(widget.patient.id);
     });
   }
 
-  void _openTemplate(DiseaseTemplate template) async {
-    print('📱 Opening template: ${template.name}');
-    print('   Template ID: ${template.id}');
+  void _openCondition(EndocrineCondition condition) async {
+    print('📱 Opening saved condition: ${condition.diseaseName}');
+    print('   Condition ID: ${condition.id}');
+    print('   Patient: ${condition.patientName}');
 
-    final result = await Navigator.push(
+    // Navigate to the disease module screen with the saved condition
+    await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => DiseaseTemplateEditScreen(templateId: template.id),
+        builder: (context) => ThyroidDiseaseModuleScreen(
+          patientId: condition.patientId,
+          patientName: condition.patientName,
+          diseaseId: condition.diseaseId,
+          diseaseName: condition.diseaseName,
+          conditionId: condition.id, // Pass the condition ID to load saved data
+        ),
       ),
     );
 
-    if (result == true) {
-      _loadTemplates(); // Refresh the list
+    // Refresh the list after returning
+    _loadVisits();
+  }
+
+  String _getConditionStatusBadge(DiagnosisStatus status) {
+    switch (status) {
+      case DiagnosisStatus.suspected:
+        return 'Suspected';
+      case DiagnosisStatus.provisional:
+        return 'Provisional';
+      case DiagnosisStatus.confirmed:
+        return 'Confirmed';
+      case DiagnosisStatus.ruledOut:
+        return 'Ruled Out';
     }
   }
 
-  void _createNewTemplate() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => DiseaseTemplateEditScreen(), // No ID = new template
-      ),
-    );
-
-    if (result == true) {
-      _loadTemplates();
-    }
-  }
-
-  void _deleteTemplate(DiseaseTemplate template) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Template?'),
-        content: Text('Are you sure you want to delete "${template.name}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && template.id != null) {
-      try {
-        await DatabaseHelper.instance.deleteDiseaseTemplate(template.id!);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Template deleted successfully'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          _loadTemplates();
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error deleting template: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
+  Color _getConditionStatusColor(DiagnosisStatus status) {
+    switch (status) {
+      case DiagnosisStatus.suspected:
+        return Colors.orange;
+      case DiagnosisStatus.provisional:
+        return Colors.blue;
+      case DiagnosisStatus.confirmed:
+        return Colors.green;
+      case DiagnosisStatus.ruledOut:
+        return Colors.grey;
     }
   }
 
@@ -110,20 +85,13 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Disease Templates'),
+        title: Text('Visit History - ${widget.patient.name}'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 1,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _createNewTemplate,
-            tooltip: 'Create New Template',
-          ),
-        ],
       ),
-      body: FutureBuilder<List<DiseaseTemplate>>(
-        future: _templatesFuture,
+      body: FutureBuilder<List<EndocrineCondition>>(
+        future: _visitsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -139,7 +107,7 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
                   Text('Error: ${snapshot.error}'),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: _loadTemplates,
+                    onPressed: _loadVisits,
                     child: const Text('Retry'),
                   ),
                 ],
@@ -147,19 +115,19 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
             );
           }
 
-          final templates = snapshot.data ?? [];
+          final visits = snapshot.data ?? [];
 
-          if (templates.isEmpty) {
+          if (visits.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.description_outlined,
+                  Icon(Icons.history,
                       size: 80,
                       color: Colors.grey.shade300),
                   const SizedBox(height: 16),
                   Text(
-                    'No Templates Yet',
+                    'No Visit History',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
@@ -168,14 +136,16 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Create your first disease template',
+                    'No saved disease templates for this patient yet',
                     style: TextStyle(color: Colors.grey.shade500),
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
-                    onPressed: _createNewTemplate,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Create Template'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    icon: const Icon(Icons.arrow_back),
+                    label: const Text('Go Back'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 24,
@@ -189,12 +159,16 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
           }
 
           return RefreshIndicator(
-            onRefresh: () async => _loadTemplates(),
+            onRefresh: () async => _loadVisits(),
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: templates.length,
+              itemCount: visits.length,
               itemBuilder: (context, index) {
-                final template = templates[index];
+                final condition = visits[index];
+                final lastUpdated = condition.lastUpdated;
+                final statusColor = _getConditionStatusColor(condition.status);
+                final statusText = _getConditionStatusBadge(condition.status);
+
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
                   elevation: 2,
@@ -202,7 +176,7 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: InkWell(
-                    onTap: () => _openTemplate(template),
+                    onTap: () => _openCondition(condition),
                     borderRadius: BorderRadius.circular(12),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -214,12 +188,12 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue.withOpacity(0.1),
+                                  color: Colors.purple.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: const Icon(
-                                  Icons.description,
-                                  color: Colors.blue,
+                                  Icons.medical_information,
+                                  color: Colors.purple,
                                   size: 24,
                                 ),
                               ),
@@ -229,73 +203,103 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      template.name.isNotEmpty
-                                          ? template.name
-                                          : '(Untitled)',
+                                      condition.diseaseName,
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                    if (template.category.isNotEmpty) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        template.category,
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          color: Colors.grey.shade600,
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: statusColor.withOpacity(0.2),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            statusText,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w600,
+                                              color: statusColor.shade700,
+                                            ),
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '${condition.gland} • ${condition.category}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ],
                                 ),
                               ),
-                              PopupMenuButton<String>(
-                                onSelected: (value) {
-                                  if (value == 'delete') {
-                                    _deleteTemplate(template);
-                                  } else if (value == 'edit') {
-                                    _openTemplate(template);
-                                  }
-                                },
-                                itemBuilder: (context) => [
-                                  const PopupMenuItem(
-                                    value: 'edit',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.edit, size: 18),
-                                        SizedBox(width: 8),
-                                        Text('Edit'),
-                                      ],
-                                    ),
-                                  ),
-                                  const PopupMenuItem(
-                                    value: 'delete',
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.delete,
-                                            size: 18,
-                                            color: Colors.red),
-                                        SizedBox(width: 8),
-                                        Text('Delete',
-                                            style: TextStyle(color: Colors.red)),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                              const Icon(
+                                Icons.chevron_right,
+                                color: Colors.grey,
                               ),
                             ],
                           ),
-                          if (template.details.isNotEmpty) ...[
-                            const Divider(height: 24),
-                            Text(
-                              '${template.details.length} field(s) configured',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey.shade600,
-                              ),
+                          const Divider(height: 24),
+
+                          // Chief Complaint
+                          if (condition.chiefComplaint != null && condition.chiefComplaint!.isNotEmpty) ...[
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(Icons.description, size: 16, color: Colors.grey.shade600),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    condition.chiefComplaint!,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey.shade700,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
+                            const SizedBox(height: 8),
                           ],
+
+                          // Visit Info
+                          Row(
+                            children: [
+                              Icon(Icons.access_time, size: 14, color: Colors.grey.shade500),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Last updated: ${_formatDate(lastUpdated)}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade500,
+                                ),
+                              ),
+                              const Spacer(),
+                              if (condition.labReadings.isNotEmpty) ...[
+                                Icon(Icons.science, size: 14, color: Colors.grey.shade500),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${condition.labReadings.length} lab tests',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade500,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -306,11 +310,27 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _createNewTemplate,
-        icon: const Icon(Icons.add),
-        label: const Text('New Template'),
-      ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final diff = now.difference(date);
+
+    if (diff.inDays == 0) {
+      if (diff.inHours == 0) {
+        if (diff.inMinutes == 0) {
+          return 'Just now';
+        }
+        return '${diff.inMinutes}m ago';
+      }
+      return '${diff.inHours}h ago';
+    } else if (diff.inDays == 1) {
+      return 'Yesterday';
+    } else if (diff.inDays < 7) {
+      return '${diff.inDays} days ago';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
   }
 }
