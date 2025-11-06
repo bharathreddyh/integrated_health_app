@@ -152,6 +152,7 @@ class DatabaseHelper {
       CREATE TABLE endocrine_conditions (
         id TEXT PRIMARY KEY,
         patient_id TEXT NOT NULL,
+        patient_name TEXT,
         gland TEXT NOT NULL,
         category TEXT NOT NULL,
         disease_id TEXT NOT NULL,
@@ -195,6 +196,7 @@ class DatabaseHelper {
       CREATE TABLE endocrine_visits (
         id TEXT PRIMARY KEY,
         patient_id TEXT NOT NULL,
+        patient_name TEXT,
         doctor_id TEXT NOT NULL,
         visit_date TEXT NOT NULL,
         gland TEXT NOT NULL,
@@ -212,9 +214,10 @@ class DatabaseHelper {
         measurements TEXT,
         ordered_lab_tests TEXT,
         ordered_investigations TEXT,
+        lab_test_results TEXT,
+        investigation_findings TEXT,
         clinical_features TEXT,
         lab_readings TEXT,
-        investigation_findings TEXT,
         images TEXT,
         medications TEXT,
         treatment_plan TEXT,
@@ -526,7 +529,7 @@ class DatabaseHelper {
       print('   ✅ disease_templates table added');
     }
 
-    // Version 15: Add patient_name column to endocrine tables
+    // Version 15: Add patient_name and lab_test_results columns to endocrine tables
     if (oldVersion < 15) {
       try {
         await db.execute('ALTER TABLE endocrine_conditions ADD COLUMN patient_name TEXT');
@@ -540,6 +543,13 @@ class DatabaseHelper {
         print('✅ Added patient_name column to endocrine_visits table');
       } catch (e) {
         print('patient_name column may already exist in endocrine_visits: $e');
+      }
+
+      try {
+        await db.execute('ALTER TABLE endocrine_visits ADD COLUMN lab_test_results TEXT');
+        print('✅ Added lab_test_results column to endocrine_visits table');
+      } catch (e) {
+        print('lab_test_results column may already exist in endocrine_visits: $e');
       }
     }
 
@@ -1157,8 +1167,8 @@ class DatabaseHelper {
       'ordered_lab_tests': condition.orderedLabTests != null ? jsonEncode(condition.orderedLabTests) : null,
       'ordered_investigations': condition.orderedInvestigations != null ? jsonEncode(condition.orderedInvestigations) : null,
       'additional_data': condition.additionalData != null ? jsonEncode(condition.additionalData) : null,
-      'lab_test_results': condition.labTestResults != null ? jsonEncode(condition.labTestResults) : null,
-      'investigation_findings': condition.investigationFindings != null ? jsonEncode(condition.investigationFindings) : null,
+      'lab_test_results': jsonEncode(condition.labTestResults.map((x) => x.toJson()).toList()),
+      'investigation_findings': jsonEncode(condition.investigationFindings.map((x) => x.toJson()).toList()),
       'selected_symptoms': condition.selectedSymptoms != null ? jsonEncode(condition.selectedSymptoms) : null,
       'selected_diagnostic_criteria': condition.selectedDiagnosticCriteria != null ? jsonEncode(condition.selectedDiagnosticCriteria) : null,
       'selected_complications': condition.selectedComplications != null ? jsonEncode(condition.selectedComplications) : null,
@@ -1272,8 +1282,8 @@ class DatabaseHelper {
       'ordered_lab_tests': condition.orderedLabTests != null ? jsonEncode(condition.orderedLabTests) : null,
       'ordered_investigations': condition.orderedInvestigations != null ? jsonEncode(condition.orderedInvestigations) : null,
       'additional_data': condition.additionalData != null ? jsonEncode(condition.additionalData) : null,
-      'lab_test_results': condition.labTestResults != null ? jsonEncode(condition.labTestResults) : null,
-      'investigation_findings': condition.investigationFindings != null ? jsonEncode(condition.investigationFindings) : null,
+      'lab_test_results': jsonEncode(condition.labTestResults.map((x) => x.toJson()).toList()),
+      'investigation_findings': jsonEncode(condition.investigationFindings.map((x) => x.toJson()).toList()),
       'selected_symptoms': condition.selectedSymptoms != null ? jsonEncode(condition.selectedSymptoms) : null,
       'selected_diagnostic_criteria': condition.selectedDiagnosticCriteria != null ? jsonEncode(condition.selectedDiagnosticCriteria) : null,
       'selected_complications': condition.selectedComplications != null ? jsonEncode(condition.selectedComplications) : null,
@@ -1325,9 +1335,10 @@ class DatabaseHelper {
       'measurements': condition.measurements != null ? jsonEncode(condition.measurements) : null,
       'ordered_lab_tests': condition.orderedLabTests != null ? jsonEncode(condition.orderedLabTests) : null,
       'ordered_investigations': condition.orderedInvestigations != null ? jsonEncode(condition.orderedInvestigations) : null,
+      'lab_test_results': jsonEncode(condition.labTestResults.map((x) => x.toJson()).toList()),
+      'investigation_findings': jsonEncode(condition.investigationFindings.map((x) => x.toJson()).toList()),
       'clinical_features': jsonEncode(condition.clinicalFeatures.map((f) => f.toJson()).toList()),
       'lab_readings': jsonEncode(condition.labReadings.map((r) => r.toJson()).toList()),
-      'investigation_findings': condition.investigationFindings != null ? jsonEncode(condition.investigationFindings) : null,
       'images': jsonEncode(condition.images.map((i) => i.toJson()).toList()),
       'medications': jsonEncode(condition.medications.map((m) => m.toJson()).toList()),
       'treatment_plan': condition.treatmentPlan != null ? jsonEncode(condition.treatmentPlan!.toJson()) : null,
