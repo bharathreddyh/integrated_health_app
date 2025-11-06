@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/home/nurse_home_screen.dart';
@@ -25,6 +27,16 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   print('🚀 App starting...');
+
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('🔥 Firebase initialized successfully');
+  } catch (e) {
+    print('⚠️ Firebase initialization error: $e');
+  }
 
   final initialized = await WhisperVoiceService.instance.initialize();
   print('🎤 Voice service initialized: $initialized');

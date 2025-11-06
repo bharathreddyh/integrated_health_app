@@ -12,10 +12,12 @@ import 'dart:convert';
 import '../models/lab_test.dart';
 import '../models/endocrine/endocrine_condition.dart';
 import '../models/disease_template.dart';
+import 'cloud_sync_service.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
+  static final CloudSyncService _cloudSync = CloudSyncService();
 
   DatabaseHelper._init();
 
@@ -746,13 +748,27 @@ class DatabaseHelper {
   }
 
   Future<int> insertPatient(Patient patient) async {
-    return await createPatient(patient);
+    final result = await createPatient(patient);
+
+    // Sync to cloud if authenticated
+    if (_cloudSync.isAuthenticated) {
+      _cloudSync.syncPatientToCloud(patient).catchError((e) {
+        print('⚠️ Failed to sync patient to cloud: $e');
+      });
+    }
+
+    return result;
   }
 
   Future<List<Patient>> getAllPatients() async {
     final db = await this.database;
     final maps = await db.query('patients', orderBy: 'name ASC');
     return maps.map((map) => Patient.fromMap(map)).toList();
+  }
+
+  // Alias for getAllPatients (used by CloudSyncService)
+  Future<List<Patient>> getPatients() async {
+    return await getAllPatients();
   }
 
   Future<Patient?> getPatient(String id) async {
@@ -764,17 +780,35 @@ class DatabaseHelper {
 
   Future<int> updatePatient(Patient patient) async {
     final db = await this.database;
-    return await db.update(
+    final result = await db.update(
       'patients',
       patient.toMap(),
       where: 'id = ?',
       whereArgs: [patient.id],
     );
+
+    // Sync to cloud if authenticated
+    if (_cloudSync.isAuthenticated) {
+      _cloudSync.syncPatientToCloud(patient).catchError((e) {
+        print('⚠️ Failed to sync patient update to cloud: $e');
+      });
+    }
+
+    return result;
   }
 
   Future<int> deletePatient(String id) async {
     final db = await this.database;
-    return await db.delete('patients', where: 'id = ?', whereArgs: [id]);
+    final result = await db.delete('patients', where: 'id = ?', whereArgs: [id]);
+
+    // Delete from cloud if authenticated
+    if (_cloudSync.isAuthenticated) {
+      _cloudSync.deletePatientFromCloud(id).catchError((e) {
+        print('⚠️ Failed to delete patient from cloud: $e');
+      });
+    }
+
+    return result;
   }
 
   Future<List<Patient>> searchPatients(String query) async {
