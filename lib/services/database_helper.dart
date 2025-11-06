@@ -33,10 +33,10 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
     print('🔧 Database path: $path');
-    print('🔧 Database version: 14');
+    print('🔧 Database version: 15');
     return await openDatabase(
       path,
-      version: 14,
+      version: 15,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -526,6 +526,23 @@ class DatabaseHelper {
       print('   ✅ disease_templates table added');
     }
 
+    // Version 15: Add patient_name column to endocrine tables
+    if (oldVersion < 15) {
+      try {
+        await db.execute('ALTER TABLE endocrine_conditions ADD COLUMN patient_name TEXT');
+        print('✅ Added patient_name column to endocrine_conditions table');
+      } catch (e) {
+        print('patient_name column may already exist in endocrine_conditions: $e');
+      }
+
+      try {
+        await db.execute('ALTER TABLE endocrine_visits ADD COLUMN patient_name TEXT');
+        print('✅ Added patient_name column to endocrine_visits table');
+      } catch (e) {
+        print('patient_name column may already exist in endocrine_visits: $e');
+      }
+    }
+
 
   }
 
@@ -541,7 +558,7 @@ class DatabaseHelper {
     return EndocrineCondition(
       id: map['id'] as String,
       patientId: map['patient_id'] as String,
-      patientName: '',
+      patientName: map['patient_name'] as String? ?? '',
       gland: map['gland'] as String,
       category: (map['category'] as String?) ?? '',
       diseaseId: map['disease_id'] as String,
@@ -1122,6 +1139,7 @@ class DatabaseHelper {
     final data = {
       'id': condition.id,
       'patient_id': condition.patientId,
+      'patient_name': condition.patientName,
       'gland': condition.gland,
       'category': condition.category,
       'disease_id': condition.diseaseId,
@@ -1236,6 +1254,7 @@ class DatabaseHelper {
 
     final updateData = {
       'patient_id': condition.patientId,
+      'patient_name': condition.patientName,
       'gland': condition.gland,
       'category': condition.category,
       'disease_id': condition.diseaseId,
@@ -1288,6 +1307,7 @@ class DatabaseHelper {
     final visitData = {
       'id': condition.id,
       'patient_id': condition.patientId,
+      'patient_name': condition.patientName,
       'doctor_id': doctorId,
       'visit_date': DateTime.now().toIso8601String(),
       'gland': condition.gland,
