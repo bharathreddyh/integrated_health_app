@@ -1227,23 +1227,6 @@ class DatabaseHelper {
     return null;
   }
 
-// ==================== FIXED METHOD 2: getActiveEndocrineCondition ====================
-  Future<EndocrineCondition?> getActiveEndocrineCondition(String patientId, String diseaseId) async {
-    final db = await this.database;
-    final maps = await db.query(
-      'endocrine_conditions',
-      where: 'patient_id = ? AND disease_id = ? AND is_active = ?',
-      whereArgs: [patientId, diseaseId, 1],
-      limit: 1,
-    );
-    if (maps.isEmpty) return null;
-
-    // FIX: Convert snake_case database fields to camelCase
-    final convertedMap = _convertDatabaseMapToJson(maps.first);
-    return EndocrineCondition.fromJson(convertedMap);
-  }
-
-
   Future<int> updateEndocrineCondition(EndocrineCondition condition) async {
     final db = await this.database;
 
@@ -1539,7 +1522,7 @@ class DatabaseHelper {
       whereArgs: [patientId],
     );
   }
-  uture<DiseaseTemplate?> getDiseaseTemplateById(int id) async {
+  Future<DiseaseTemplate?> getDiseaseTemplateById(int id) async {
     final db = await database;
     final result = await db.query(
       'disease_templates',

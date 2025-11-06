@@ -43,7 +43,6 @@ class FirebaseAuthService {
         id: credential.user!.uid,
         name: name,
         email: email,
-        passwordHash: '', // Not stored in cloud for security
         role: _parseUserRole(role),
         specialty: specialty,
         createdAt: DateTime.now(),
@@ -100,7 +99,6 @@ class FirebaseAuthService {
         id: credential.user!.uid,
         name: userData['name'] as String,
         email: userData['email'] as String,
-        passwordHash: '', // Not used for Firebase auth
         role: _parseUserRole(userData['role'] as String),
         specialty: userData['specialty'] as String?,
         createdAt: DateTime.parse(userData['createdAt'] as String),
@@ -145,7 +143,6 @@ class FirebaseAuthService {
         id: userId,
         name: data['name'] as String,
         email: data['email'] as String,
-        passwordHash: '',
         role: _parseUserRole(data['role'] as String),
         specialty: data['specialty'] as String?,
         createdAt: DateTime.parse(data['createdAt'] as String),

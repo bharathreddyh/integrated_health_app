@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../services/database_helper.dart';
 import '../../models/disease_template.dart';
+import '../../models/patient.dart';
 import '../templates/disease_template_edit_screen.dart'; // adjust path if needed
 
 class VisitHistoryScreen extends StatefulWidget {
-  const VisitHistoryScreen({super.key});
+  final Patient patient;
+
+  const VisitHistoryScreen({super.key, required this.patient});
 
   @override
   State<VisitHistoryScreen> createState() => _VisitHistoryScreenState();
