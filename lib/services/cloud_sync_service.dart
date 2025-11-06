@@ -275,6 +275,113 @@ class CloudSyncService {
     }
   }
 
+  // ==================== ENDOCRINE CONDITION SYNC ====================
+
+  /// Sync endocrine condition to Firestore
+  /// Saves thyroid disease data and other endocrine conditions
+  Future<void> syncEndocrineConditionToCloud(Map<String, dynamic> conditionData) async {
+    if (_currentUserId == null) {
+      print('⚠️ Cannot sync endocrine condition: User not authenticated');
+      return;
+    }
+
+    try {
+      final conditionWithTimestamp = {
+        ...conditionData,
+        'userId': _currentUserId,
+        'syncedAt': FieldValue.serverTimestamp(),
+      };
+
+      await _firestore
+          .collection('users')
+          .doc(_currentUserId)
+          .collection('endocrine_conditions')
+          .doc(conditionData['id'] as String)
+          .set(conditionWithTimestamp, SetOptions(merge: true));
+
+      print('✅ Endocrine condition synced to cloud: ${conditionData['disease_name']}');
+    } catch (e) {
+      print('❌ Error syncing endocrine condition to cloud: $e');
+      rethrow;
+    }
+  }
+
+  /// Sync endocrine visit (history record) to Firestore
+  Future<void> syncEndocrineVisitToCloud(Map<String, dynamic> visitData) async {
+    if (_currentUserId == null) {
+      print('⚠️ Cannot sync endocrine visit: User not authenticated');
+      return;
+    }
+
+    try {
+      final visitWithTimestamp = {
+        ...visitData,
+        'userId': _currentUserId,
+        'syncedAt': FieldValue.serverTimestamp(),
+      };
+
+      await _firestore
+          .collection('users')
+          .doc(_currentUserId)
+          .collection('endocrine_visits')
+          .doc(visitData['id'] as String)
+          .set(visitWithTimestamp, SetOptions(merge: true));
+
+      print('✅ Endocrine visit synced to cloud');
+    } catch (e) {
+      print('❌ Error syncing endocrine visit to cloud: $e');
+      rethrow;
+    }
+  }
+
+  /// Sync all endocrine conditions for a patient from cloud
+  Future<List<Map<String, dynamic>>> syncEndocrineConditionsFromCloud(String patientId) async {
+    if (_currentUserId == null) {
+      print('⚠️ Cannot sync: User not authenticated');
+      return [];
+    }
+
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(_currentUserId)
+          .collection('endocrine_conditions')
+          .where('patient_id', isEqualTo: patientId)
+          .where('is_active', isEqualTo: 1)
+          .orderBy('last_updated', descending: true)
+          .get();
+
+      final conditions = snapshot.docs.map((doc) => doc.data()).toList();
+      print('📥 Synced ${conditions.length} endocrine conditions from cloud');
+      return conditions;
+    } catch (e) {
+      print('❌ Error syncing endocrine conditions from cloud: $e');
+      return [];
+    }
+  }
+
+  /// Delete endocrine condition from cloud
+  Future<void> deleteEndocrineConditionFromCloud(String conditionId) async {
+    if (_currentUserId == null) {
+      print('⚠️ Cannot delete: User not authenticated');
+      return;
+    }
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(_currentUserId)
+          .collection('endocrine_conditions')
+          .doc(conditionId)
+          .delete();
+
+      print('✅ Endocrine condition deleted from cloud: $conditionId');
+    } catch (e) {
+      print('❌ Error deleting endocrine condition from cloud: $e');
+      rethrow;
+    }
+  }
+
   // ==================== FULL SYNC ====================
 
   /// Perform full bidirectional sync

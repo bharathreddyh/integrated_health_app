@@ -71,6 +71,16 @@ service cloud.firestore {
       match /lab_tests/{labTestId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
+
+      // User's endocrine conditions collection
+      match /endocrine_conditions/{conditionId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // User's endocrine visits collection
+      match /endocrine_visits/{visitId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
   }
 }
@@ -183,6 +193,28 @@ users (collection)
     └── lab_tests (subcollection)
         └── {labTestId} (document)
             └── ... lab test data
+
+    └── endocrine_conditions (subcollection)
+        └── {conditionId} (document)
+            ├── patient_id: string
+            ├── gland: string (e.g., "thyroid")
+            ├── category: string (e.g., "hyperthyroidism")
+            ├── disease_id: string (e.g., "graves_disease")
+            ├── disease_name: string (e.g., "Graves' Disease")
+            ├── status: string (suspected/provisional/confirmed/ruledOut)
+            ├── chief_complaint: string
+            ├── vitals: object (BP, pulse, temp, SpO2, etc.)
+            ├── measurements: object (height, weight, BMI, etc.)
+            ├── lab_readings: array
+            ├── clinical_features: array
+            ├── medications: array
+            ├── treatment_plan: object
+            ├── notes: string
+            └── syncedAt: timestamp
+
+    └── endocrine_visits (subcollection)
+        └── {visitId} (document)
+            └── ... visit history data
 ```
 
 ## Usage in the App
@@ -208,6 +240,38 @@ users (collection)
 3. **Delete Patient**: Deletes from local SQLite + deletes from Firestore
 4. **Login**: Automatically pulls latest data from Firestore
 5. **Offline**: App works offline, syncs when connection restored
+
+### Medical Template Data (Thyroid Diseases & Endocrine Conditions)
+
+**Important:** When you enter data in medical templates (thyroid diseases, etc.) and close halfway:
+
+1. **Auto-Save on Close**: Data is automatically saved when you:
+   - Press "Save & Exit" button
+   - Press "Save Changes" button
+   - Close the screen (even without explicit save)
+   - Navigate back (with confirmation)
+
+2. **Cloud Sync**: All saved endocrine condition data syncs to cloud automatically:
+   - **Endocrine Conditions**: Active working version of thyroid/endocrine data
+   - **Endocrine Visits**: History records of all visits
+   - Includes: Patient vitals, measurements, lab readings, clinical features, medications, treatment plans, etc.
+
+3. **Resume from Any Device**:
+   - Login from another device
+   - Navigate to the same patient
+   - Open the thyroid disease module
+   - Your partially entered data will be loaded automatically
+   - Continue where you left off
+
+**Example Workflow:**
+```
+Device A: Open patient → Select Graves' Disease → Enter vitals → Close halfway
+         (Data saved locally + synced to cloud ✅)
+
+Device B: Login → Open same patient → Select Graves' Disease
+         → All entered vitals appear automatically ✅
+         → Continue entering remaining data
+```
 
 ## Troubleshooting
 

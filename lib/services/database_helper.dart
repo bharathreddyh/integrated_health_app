@@ -1152,11 +1152,20 @@ class DatabaseHelper {
       'is_active': condition.isActive ? 1 : 0,
     };
 
-    return await db.insert(
+    final result = await db.insert(
       'endocrine_conditions',
       data,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+
+    // Sync to cloud if authenticated
+    if (_cloudSync.isAuthenticated) {
+      _cloudSync.syncEndocrineConditionToCloud(data).catchError((e) {
+        print('⚠️ Failed to sync endocrine condition to cloud: $e');
+      });
+    }
+
+    return result;
   }
 
   Future<List<EndocrineCondition>> getEndocrineConditionsByPatient(String patientId) async {
@@ -1325,6 +1334,14 @@ class DatabaseHelper {
     };
 
     await db.insert('endocrine_visits', visitData, conflictAlgorithm: ConflictAlgorithm.replace);
+
+    // Sync visit to cloud if authenticated
+    if (_cloudSync.isAuthenticated) {
+      _cloudSync.syncEndocrineVisitToCloud(visitData).catchError((e) {
+        print('⚠️ Failed to sync endocrine visit to cloud: $e');
+      });
+    }
+
     return condition.id;
   }
 
