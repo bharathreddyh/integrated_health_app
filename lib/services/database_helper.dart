@@ -1139,6 +1139,17 @@ class DatabaseHelper {
 
   // ==================== ENDOCRINE CONDITION METHODS ====================
 
+  // Helper method to check if a column exists in a table
+  Future<bool> _columnExists(Database db, String tableName, String columnName) async {
+    try {
+      final result = await db.rawQuery('PRAGMA table_info($tableName)');
+      return result.any((column) => column['name'] == columnName);
+    } catch (e) {
+      print('Error checking column existence: $e');
+      return false;
+    }
+  }
+
   Future<int> saveEndocrineCondition(EndocrineCondition condition) async {
     final db = await this.database;
 
@@ -1146,10 +1157,12 @@ class DatabaseHelper {
     print('💾 Patient ID: ${condition.patientId}');
     print('💾 Disease: ${condition.diseaseName}');
 
-    final data = {
+    // Check if patient_name column exists (for migration compatibility)
+    final hasPatientName = await _columnExists(db, 'endocrine_conditions', 'patient_name');
+
+    final data = <String, dynamic>{
       'id': condition.id,
       'patient_id': condition.patientId,
-      'patient_name': condition.patientName,
       'gland': condition.gland,
       'category': condition.category,
       'disease_id': condition.diseaseId,
@@ -1185,6 +1198,11 @@ class DatabaseHelper {
       'last_updated': condition.lastUpdated.toIso8601String(),
       'is_active': condition.isActive ? 1 : 0,
     };
+
+    // Add patient_name only if column exists (for backward compatibility)
+    if (hasPatientName) {
+      data['patient_name'] = condition.patientName;
+    }
 
     final result = await db.insert(
       'endocrine_conditions',
@@ -1262,9 +1280,11 @@ class DatabaseHelper {
   Future<int> updateEndocrineCondition(EndocrineCondition condition) async {
     final db = await this.database;
 
-    final updateData = {
+    // Check if patient_name column exists (for migration compatibility)
+    final hasPatientName = await _columnExists(db, 'endocrine_conditions', 'patient_name');
+
+    final updateData = <String, dynamic>{
       'patient_id': condition.patientId,
-      'patient_name': condition.patientName,
       'gland': condition.gland,
       'category': condition.category,
       'disease_id': condition.diseaseId,
@@ -1301,6 +1321,11 @@ class DatabaseHelper {
       'is_active': condition.isActive ? 1 : 0,
     };
 
+    // Add patient_name only if column exists (for backward compatibility)
+    if (hasPatientName) {
+      updateData['patient_name'] = condition.patientName;
+    }
+
     return await db.update(
       'endocrine_conditions',
       updateData,
@@ -1314,10 +1339,13 @@ class DatabaseHelper {
   Future<String> saveEndocrineVisit(EndocrineCondition condition, String doctorId) async {
     final db = await this.database;
 
-    final visitData = {
+    // Check if patient_name and lab_test_results columns exist (for migration compatibility)
+    final hasPatientName = await _columnExists(db, 'endocrine_visits', 'patient_name');
+    final hasLabTestResults = await _columnExists(db, 'endocrine_visits', 'lab_test_results');
+
+    final visitData = <String, dynamic>{
       'id': condition.id,
       'patient_id': condition.patientId,
-      'patient_name': condition.patientName,
       'doctor_id': doctorId,
       'visit_date': DateTime.now().toIso8601String(),
       'gland': condition.gland,
@@ -1335,7 +1363,6 @@ class DatabaseHelper {
       'measurements': condition.measurements != null ? jsonEncode(condition.measurements) : null,
       'ordered_lab_tests': condition.orderedLabTests != null ? jsonEncode(condition.orderedLabTests) : null,
       'ordered_investigations': condition.orderedInvestigations != null ? jsonEncode(condition.orderedInvestigations) : null,
-      'lab_test_results': jsonEncode(condition.labTestResults.map((x) => x.toJson()).toList()),
       'investigation_findings': jsonEncode(condition.investigationFindings.map((x) => x.toJson()).toList()),
       'clinical_features': jsonEncode(condition.clinicalFeatures.map((f) => f.toJson()).toList()),
       'lab_readings': jsonEncode(condition.labReadings.map((r) => r.toJson()).toList()),
@@ -1350,6 +1377,14 @@ class DatabaseHelper {
       'last_updated': DateTime.now().toIso8601String(),
       'is_active': condition.isActive ? 1 : 0,
     };
+
+    // Add patient_name and lab_test_results only if columns exist (for backward compatibility)
+    if (hasPatientName) {
+      visitData['patient_name'] = condition.patientName;
+    }
+    if (hasLabTestResults) {
+      visitData['lab_test_results'] = jsonEncode(condition.labTestResults.map((x) => x.toJson()).toList());
+    }
 
     await db.insert('endocrine_visits', visitData, conflictAlgorithm: ConflictAlgorithm.replace);
 
