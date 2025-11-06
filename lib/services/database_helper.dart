@@ -11,6 +11,8 @@ import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import '../models/lab_test.dart';
 import '../models/endocrine/endocrine_condition.dart';
+import '../models/endocrine/lab_test_result.dart';
+import '../models/endocrine/investigation_finding.dart';
 import '../models/disease_template.dart';
 import 'cloud_sync_service.dart';
 
@@ -570,11 +572,15 @@ class DatabaseHelper {
           ? List<Map<String, dynamic>>.from(jsonDecode(map['ordered_investigations']))
           : null,
       labTestResults: map['lab_test_results'] != null
-          ? List<dynamic>.from(jsonDecode(map['lab_test_results']))
-          : null,
+          ? (jsonDecode(map['lab_test_results']) as List)
+          .map((x) => LabTestResult.fromJson(x))
+          .toList()
+          : [],
       investigationFindings: map['investigation_findings'] != null
-          ? List<dynamic>.from(jsonDecode(map['investigation_findings']))
-          : null,
+          ? (jsonDecode(map['investigation_findings']) as List)
+          .map((x) => InvestigationFinding.fromJson(x))
+          .toList()
+          : [],
       selectedSymptoms: map['selected_symptoms'] != null
           ? List<String>.from(jsonDecode(map['selected_symptoms']))
           : null,

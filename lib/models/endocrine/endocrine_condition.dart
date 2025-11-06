@@ -3,6 +3,8 @@
 
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'lab_test_result.dart';
+import 'investigation_finding.dart';
 
 // ==================== ENUM DEFINITIONS ====================
 
@@ -50,8 +52,8 @@ class EndocrineCondition {
   final Map<String, dynamic>? additionalData;
 
   // 🆕 NEW FIELDS - Add these to support PatientDataTab
-  final List<dynamic>? labTestResults;
-  final List<dynamic>? investigationFindings;
+  final List<LabTestResult> labTestResults;
+  final List<InvestigationFinding> investigationFindings;
 
   // 🆕 NEW FIELDS - Add these to support redesigned OverviewTab
   final List<String>? selectedSymptoms;
@@ -267,8 +269,8 @@ class EndocrineCondition {
     List<Map<String, dynamic>>? orderedLabTests,
     List<Map<String, dynamic>>? orderedInvestigations,
     Map<String, dynamic>? additionalData,
-    List<dynamic>? labTestResults,
-    List<dynamic>? investigationFindings,
+    List<LabTestResult>? labTestResults,
+    List<InvestigationFinding>? investigationFindings,
     // NEW PARAMETERS for redesigned overview tab
     List<String>? selectedSymptoms,
     List<String>? selectedDiagnosticCriteria,
