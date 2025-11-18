@@ -3,7 +3,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:async';
 import '../../../models/endocrine/endocrine_condition.dart';
 import '../../../models/endocrine/lab_test_result.dart';
 import '../../../config/thyroid_disease_config.dart';
@@ -56,10 +55,6 @@ class _PatientDataTabState extends State<PatientDataTab> {
   // Lab test results
   List<LabTestResult> _labTestResults = [];
   List<InvestigationFinding> _investigationFindings = [];
-  // Auto-save
-  Timer? _autoSaveTimer;
-  bool _isSaving = false;
-  DateTime? _lastSaved;
 
   @override
   void initState() {
@@ -232,9 +227,6 @@ class _PatientDataTabState extends State<PatientDataTab> {
             _labTestResults.add(result);
           });
 
-          // Auto-save
-          _onDataChanged();
-
           // Show brief notification in parent
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -268,7 +260,6 @@ class _PatientDataTabState extends State<PatientDataTab> {
 
     if (result != null) {
       setState(() => _labTestResults[index] = result);
-      _onDataChanged();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -315,7 +306,6 @@ class _PatientDataTabState extends State<PatientDataTab> {
 
     if (confirm == true) {
       setState(() => _labTestResults.removeAt(index));
-      _onDataChanged();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -431,7 +421,6 @@ class _PatientDataTabState extends State<PatientDataTab> {
 
     if (confirm == true) {
       setState(() => _investigationFindings.removeAt(index));
-      _onDataChanged();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -464,122 +453,6 @@ class _PatientDataTabState extends State<PatientDataTab> {
         results: trendData,
       ),
     );
-  }
-
-  void _onDataChanged() {
-    _autoSaveTimer?.cancel();
-    _autoSaveTimer = Timer(const Duration(seconds: 2), _autoSave);
-  }
-
-  Future<void> _autoSave() async {
-    if (_isSaving) return;
-    setState(() => _isSaving = true);
-
-    try {
-      print('');
-      print('🔄 ═════════════════════════════════════════════════════════════');
-      print('🔄 AUTO-SAVE TRIGGERED');
-      print('🔄 ═════════════════════════════════════════════════════════════');
-      print('📍 CURRENT STATE:');
-      print('   Condition ID: ${widget.condition.id}');
-      print('   Patient ID: ${widget.condition.patientId}');
-      print('   Patient Name: ${widget.condition.patientName}');
-      print('   Disease: ${widget.condition.diseaseName}');
-      print('');
-      print('📝 DATA TO SAVE:');
-      print('   Chief Complaint: "${_chiefComplaintController.text}"');
-      print('   History: "${_historyController.text.substring(0, _historyController.text.length > 50 ? 50 : _historyController.text.length)}${_historyController.text.length > 50 ? "..." : ""}"');
-      print('   Blood Pressure: "${_bpController.text}"');
-      print('   Heart Rate: "${_hrController.text}"');
-      print('   Temperature: "${_tempController.text}"');
-      print('   SpO2: "${_spo2Controller.text}"');
-      print('   Respiratory Rate: "${_rrController.text}"');
-      print('   Height: "${_heightController.text}"');
-      print('   Weight: "${_weightController.text}"');
-      print('   BMI: "${_calculatedBMI ?? "not calculated"}"');
-      print('   Lab Test Results Count: ${_labTestResults.length}');
-      print('   Investigation Findings Count: ${_investigationFindings.length}');
-
-      final updatedCondition = widget.condition.copyWith(
-        chiefComplaint: _chiefComplaintController.text,
-        historyOfPresentIllness: _historyController.text,
-        pastMedicalHistory: _pastHistoryController.text,
-        familyHistory: _familyHistoryController.text,
-        allergies: _allergiesController.text,
-        vitals: {
-          'bloodPressure': _bpController.text,
-          'heartRate': _hrController.text,
-          'temperature': _tempController.text,
-          'spo2': _spo2Controller.text,
-          'respiratoryRate': _rrController.text,
-        },
-        measurements: {
-          'height': _heightController.text,
-          'weight': _weightController.text,
-          'bmi': _calculatedBMI ?? '',
-        },
-        labTestResults: _labTestResults,
-        investigationFindings: _investigationFindings,
-      );
-
-      print('');
-      print('💾 SAVING TO DATABASE...');
-      print('   Updated Condition ID: ${updatedCondition.id}');
-      print('   Updated Chief Complaint: "${updatedCondition.chiefComplaint}"');
-      print('   Updated Vitals: ${updatedCondition.vitals}');
-      print('   Updated Measurements: ${updatedCondition.measurements}');
-
-      // ✅ FIX: Save to BOTH tables to keep them in sync
-      await DatabaseHelper.instance.saveEndocrineCondition(updatedCondition);
-      print('   ✅ Saved to endocrine_conditions table');
-
-      // ✅ ALSO save to visits table for history
-      final doctorId = UserService.currentUserId ?? 'unknown';
-      await DatabaseHelper.instance.saveEndocrineVisit(updatedCondition, doctorId);
-      print('   ✅ Saved to endocrine_visits table (doctorId: $doctorId)');
-
-      widget.onUpdate(updatedCondition);
-      print('   ✅ Updated parent state');
-
-      await PatientDataService.instance.updateFromEndocrine(updatedCondition);
-      print('   ✅ Updated patient data snapshot');
-
-      setState(() => _lastSaved = DateTime.now());
-
-      print('');
-      print('✅ AUTO-SAVE COMPLETE at ${DateTime.now()}');
-      print('🔄 ═════════════════════════════════════════════════════════════');
-      print('');
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white, size: 16),
-                SizedBox(width: 8),
-                Text('Patient data auto-saved (ID: ${updatedCondition.id.substring(0, 8)}...)'),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (e, stackTrace) {
-      print('');
-      print('❌ ═════════════════════════════════════════════════════════════');
-      print('❌ AUTO-SAVE ERROR');
-      print('❌ ═════════════════════════════════════════════════════════════');
-      print('Error: $e');
-      print('Stack trace:');
-      print(stackTrace.toString().split('\n').take(10).join('\n'));
-      print('❌ ═════════════════════════════════════════════════════════════');
-      print('');
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
   }
 
   void _calculateBMI() {
@@ -693,7 +566,6 @@ class _PatientDataTabState extends State<PatientDataTab> {
     _rrController.dispose();
     _heightController.dispose();
     _weightController.dispose();
-    _autoSaveTimer?.cancel();
     super.dispose();
   }
 
@@ -1217,17 +1089,17 @@ class _PatientDataTabState extends State<PatientDataTab> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            _buildTextField(controller: _chiefComplaintController, label: 'Chief Complaint *', hint: 'Main reason for visit', icon: Icons.priority_high, maxLines: 2, onChanged: (value) => _onDataChanged()),
+            _buildTextField(controller: _chiefComplaintController, label: 'Chief Complaint *', hint: 'Main reason for visit', icon: Icons.priority_high, maxLines: 2),
             const SizedBox(height: 16),
-            _buildTextField(controller: _historyController, label: 'History of Present Illness', hint: 'Duration, severity, associated symptoms...', icon: Icons.history, maxLines: 3, onChanged: (value) => _onDataChanged()),
+            _buildTextField(controller: _historyController, label: 'History of Present Illness', hint: 'Duration, severity, associated symptoms...', icon: Icons.history, maxLines: 3),
             const SizedBox(height: 16),
-            _buildTextField(controller: _pastHistoryController, label: 'Past Medical History', hint: 'Previous conditions, surgeries...', icon: Icons.folder_open, maxLines: 2, onChanged: (value) => _onDataChanged()),
+            _buildTextField(controller: _pastHistoryController, label: 'Past Medical History', hint: 'Previous conditions, surgeries...', icon: Icons.folder_open, maxLines: 2),
             const SizedBox(height: 16),
             Row(
               children: [
-                Expanded(child: _buildTextField(controller: _familyHistoryController, label: 'Family History', hint: 'Hereditary conditions', icon: Icons.people, maxLines: 2, onChanged: (value) => _onDataChanged())),
+                Expanded(child: _buildTextField(controller: _familyHistoryController, label: 'Family History', hint: 'Hereditary conditions', icon: Icons.people, maxLines: 2)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildTextField(controller: _allergiesController, label: 'Allergies', hint: 'Drug/food allergies', icon: Icons.warning, maxLines: 2, onChanged: (value) => _onDataChanged())),
+                Expanded(child: _buildTextField(controller: _allergiesController, label: 'Allergies', hint: 'Drug/food allergies', icon: Icons.warning, maxLines: 2)),
               ],
             ),
           ],
@@ -1246,21 +1118,21 @@ class _PatientDataTabState extends State<PatientDataTab> {
           children: [
             Row(
               children: [
-                Expanded(child: _buildVitalField(controller: _bpController, label: 'Blood Pressure', hint: '120/80', unit: 'mmHg', icon: Icons.favorite, onChanged: (value) => _onDataChanged())),
+                Expanded(child: _buildVitalField(controller: _bpController, label: 'Blood Pressure', hint: '120/80', unit: 'mmHg', icon: Icons.favorite)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildVitalField(controller: _hrController, label: 'Heart Rate', hint: '72', unit: 'bpm', icon: Icons.monitor_heart, onChanged: (value) => _onDataChanged())),
+                Expanded(child: _buildVitalField(controller: _hrController, label: 'Heart Rate', hint: '72', unit: 'bpm', icon: Icons.monitor_heart)),
               ],
             ),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _buildVitalField(controller: _tempController, label: 'Temperature', hint: '98.6', unit: '°F', icon: Icons.thermostat, onChanged: (value) => _onDataChanged())),
+                Expanded(child: _buildVitalField(controller: _tempController, label: 'Temperature', hint: '98.6', unit: '°F', icon: Icons.thermostat)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildVitalField(controller: _spo2Controller, label: 'SpO2', hint: '98', unit: '%', icon: Icons.air, onChanged: (value) => _onDataChanged())),
+                Expanded(child: _buildVitalField(controller: _spo2Controller, label: 'SpO2', hint: '98', unit: '%', icon: Icons.air)),
               ],
             ),
             const SizedBox(height: 12),
-            _buildVitalField(controller: _rrController, label: 'Respiratory Rate', hint: '16', unit: '/min', icon: Icons.wind_power, onChanged: (value) => _onDataChanged()),
+            _buildVitalField(controller: _rrController, label: 'Respiratory Rate', hint: '16', unit: '/min', icon: Icons.wind_power),
           ],
         ),
       ),
@@ -1277,9 +1149,9 @@ class _PatientDataTabState extends State<PatientDataTab> {
           children: [
             Row(
               children: [
-                Expanded(child: _buildVitalField(controller: _heightController, label: 'Height', hint: '170', unit: 'cm', icon: Icons.height, onChanged: (value) => _onDataChanged())),
+                Expanded(child: _buildVitalField(controller: _heightController, label: 'Height', hint: '170', unit: 'cm', icon: Icons.height)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildVitalField(controller: _weightController, label: 'Weight', hint: '70', unit: 'kg', icon: Icons.monitor_weight, onChanged: (value) => _onDataChanged())),
+                Expanded(child: _buildVitalField(controller: _weightController, label: 'Weight', hint: '70', unit: 'kg', icon: Icons.monitor_weight)),
               ],
             ),
             if (_calculatedBMI != null) ...[
@@ -1329,7 +1201,7 @@ class _PatientDataTabState extends State<PatientDataTab> {
     );
   }
 
-  Widget _buildTextField({required TextEditingController controller, required String label, required String hint, required IconData icon, required Function(String) onChanged, int maxLines = 1}) {
+  Widget _buildTextField({required TextEditingController controller, required String label, required String hint, required IconData icon, int maxLines = 1}) {
     return TextField(
       controller: controller,
       decoration: InputDecoration(
@@ -1341,11 +1213,10 @@ class _PatientDataTabState extends State<PatientDataTab> {
         fillColor: Colors.grey.shade50,
       ),
       maxLines: maxLines,
-      onChanged: onChanged,
     );
   }
 
-  Widget _buildVitalField({required TextEditingController controller, required String label, required String hint, required String unit, required IconData icon, required Function(String) onChanged}) {
+  Widget _buildVitalField({required TextEditingController controller, required String label, required String hint, required String unit, required IconData icon}) {
     return TextField(
       controller: controller,
       decoration: InputDecoration(
@@ -1359,7 +1230,6 @@ class _PatientDataTabState extends State<PatientDataTab> {
       ),
       keyboardType: label == 'Blood Pressure' ? TextInputType.text : TextInputType.number,
       inputFormatters: label == 'Blood Pressure' ? [BloodPressureFormatter()] : null,
-      onChanged: onChanged,
     );
   }
 

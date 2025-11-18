@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/database_helper.dart';
 import '../../services/user_service.dart';
+import '../../services/firebase_auth_service.dart';
 import '../../models/user.dart';
 import 'registration_screen.dart';
 
@@ -17,7 +18,10 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _useCloudAuth = true; // Default to cloud authentication
   String? _errorMessage;
+
+  final FirebaseAuthService _firebaseAuth = FirebaseAuthService();
 
   @override
   void dispose() {
@@ -35,21 +39,48 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final user = await DatabaseHelper.instance.authenticateUser(
-        _emailController.text.trim(),
-        _passwordController.text,
-      );
+      User? user;
 
-      if (user == null) {
-        setState(() {
-          _errorMessage = 'Invalid email or password';
-          _isLoading = false;
-        });
-        return;
+      if (_useCloudAuth) {
+        // Firebase Cloud Authentication
+        try {
+          user = await _firebaseAuth.signInWithEmail(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
+
+          if (user == null) {
+            setState(() {
+              _errorMessage = 'Cloud authentication failed';
+              _isLoading = false;
+            });
+            return;
+          }
+        } catch (e) {
+          setState(() {
+            _errorMessage = e.toString();
+            _isLoading = false;
+          });
+          return;
+        }
+      } else {
+        // Local Database Authentication
+        user = await DatabaseHelper.instance.authenticateUser(
+          _emailController.text.trim(),
+          _passwordController.text,
+        );
+
+        if (user == null) {
+          setState(() {
+            _errorMessage = 'Invalid email or password';
+            _isLoading = false;
+          });
+          return;
+        }
       }
 
       // Save login state
-      await UserService.login(user);
+      await UserService.login(user, useCloudAuth: _useCloudAuth);
 
       if (!mounted) return;
 
@@ -285,6 +316,51 @@ class _LoginScreenState extends State<LoginScreen> {
                                         }
                                         return null;
                                       },
+                                    ),
+                                    SizedBox(height: spacing * 0.6),
+
+                                    // Cloud Auth Toggle
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue.shade50,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            _useCloudAuth
+                                                ? Icons.cloud_done
+                                                : Icons.storage,
+                                            size: 18,
+                                            color: Colors.blue.shade700,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              _useCloudAuth
+                                                  ? 'Cloud Storage (Multi-device sync)'
+                                                  : 'Local Storage (Single device)',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.blue.shade700,
+                                              ),
+                                            ),
+                                          ),
+                                          Switch(
+                                            value: _useCloudAuth,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                _useCloudAuth = value;
+                                              });
+                                            },
+                                            activeColor: Colors.blue.shade700,
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                     SizedBox(height: spacing),
 

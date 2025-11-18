@@ -1468,7 +1468,8 @@ class _Page3DiagnosisTreatmentState extends State<Page3DiagnosisTreatment> {
               spacing: 6,
               runSpacing: 6,
               children: data.selectedTemplateIds.map((id) {
-                final template = DiseaseTemplates.getById(id);
+                // TODO: Implement DiseaseTemplates.getById
+                final template = null; // DiseaseTemplates.getById(id);
                 if (template == null) return const SizedBox.shrink();
                 return Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

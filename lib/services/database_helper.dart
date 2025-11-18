@@ -11,11 +11,15 @@ import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import '../models/lab_test.dart';
 import '../models/endocrine/endocrine_condition.dart';
+import '../models/endocrine/lab_test_result.dart';
+import '../models/endocrine/investigation_finding.dart';
 import '../models/disease_template.dart';
+import 'cloud_sync_service.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
+  static final CloudSyncService _cloudSync = CloudSyncService();
 
   DatabaseHelper._init();
 
@@ -29,10 +33,10 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
     print('🔧 Database path: $path');
-    print('🔧 Database version: 14');
+    print('🔧 Database version: 15');
     return await openDatabase(
       path,
-      version: 14,
+      version: 15,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -148,6 +152,7 @@ class DatabaseHelper {
       CREATE TABLE endocrine_conditions (
         id TEXT PRIMARY KEY,
         patient_id TEXT NOT NULL,
+        patient_name TEXT,
         gland TEXT NOT NULL,
         category TEXT NOT NULL,
         disease_id TEXT NOT NULL,
@@ -191,6 +196,7 @@ class DatabaseHelper {
       CREATE TABLE endocrine_visits (
         id TEXT PRIMARY KEY,
         patient_id TEXT NOT NULL,
+        patient_name TEXT,
         doctor_id TEXT NOT NULL,
         visit_date TEXT NOT NULL,
         gland TEXT NOT NULL,
@@ -208,9 +214,10 @@ class DatabaseHelper {
         measurements TEXT,
         ordered_lab_tests TEXT,
         ordered_investigations TEXT,
+        lab_test_results TEXT,
+        investigation_findings TEXT,
         clinical_features TEXT,
         lab_readings TEXT,
-        investigation_findings TEXT,
         images TEXT,
         medications TEXT,
         treatment_plan TEXT,
@@ -522,6 +529,30 @@ class DatabaseHelper {
       print('   ✅ disease_templates table added');
     }
 
+    // Version 15: Add patient_name and lab_test_results columns to endocrine tables
+    if (oldVersion < 15) {
+      try {
+        await db.execute('ALTER TABLE endocrine_conditions ADD COLUMN patient_name TEXT');
+        print('✅ Added patient_name column to endocrine_conditions table');
+      } catch (e) {
+        print('patient_name column may already exist in endocrine_conditions: $e');
+      }
+
+      try {
+        await db.execute('ALTER TABLE endocrine_visits ADD COLUMN patient_name TEXT');
+        print('✅ Added patient_name column to endocrine_visits table');
+      } catch (e) {
+        print('patient_name column may already exist in endocrine_visits: $e');
+      }
+
+      try {
+        await db.execute('ALTER TABLE endocrine_visits ADD COLUMN lab_test_results TEXT');
+        print('✅ Added lab_test_results column to endocrine_visits table');
+      } catch (e) {
+        print('lab_test_results column may already exist in endocrine_visits: $e');
+      }
+    }
+
 
   }
 
@@ -537,7 +568,7 @@ class DatabaseHelper {
     return EndocrineCondition(
       id: map['id'] as String,
       patientId: map['patient_id'] as String,
-      patientName: '',
+      patientName: map['patient_name'] as String? ?? '',
       gland: map['gland'] as String,
       category: (map['category'] as String?) ?? '',
       diseaseId: map['disease_id'] as String,
@@ -568,11 +599,15 @@ class DatabaseHelper {
           ? List<Map<String, dynamic>>.from(jsonDecode(map['ordered_investigations']))
           : null,
       labTestResults: map['lab_test_results'] != null
-          ? List<dynamic>.from(jsonDecode(map['lab_test_results']))
-          : null,
+          ? (jsonDecode(map['lab_test_results']) as List)
+          .map((x) => LabTestResult.fromJson(x))
+          .toList()
+          : [],
       investigationFindings: map['investigation_findings'] != null
-          ? List<dynamic>.from(jsonDecode(map['investigation_findings']))
-          : null,
+          ? (jsonDecode(map['investigation_findings']) as List)
+          .map((x) => InvestigationFinding.fromJson(x))
+          .toList()
+          : [],
       selectedSymptoms: map['selected_symptoms'] != null
           ? List<String>.from(jsonDecode(map['selected_symptoms']))
           : null,
@@ -746,13 +781,27 @@ class DatabaseHelper {
   }
 
   Future<int> insertPatient(Patient patient) async {
-    return await createPatient(patient);
+    final result = await createPatient(patient);
+
+    // Sync to cloud if authenticated
+    if (_cloudSync.isAuthenticated) {
+      _cloudSync.syncPatientToCloud(patient).catchError((e) {
+        print('⚠️ Failed to sync patient to cloud: $e');
+      });
+    }
+
+    return result;
   }
 
   Future<List<Patient>> getAllPatients() async {
     final db = await this.database;
     final maps = await db.query('patients', orderBy: 'name ASC');
     return maps.map((map) => Patient.fromMap(map)).toList();
+  }
+
+  // Alias for getAllPatients (used by CloudSyncService)
+  Future<List<Patient>> getPatients() async {
+    return await getAllPatients();
   }
 
   Future<Patient?> getPatient(String id) async {
@@ -764,17 +813,35 @@ class DatabaseHelper {
 
   Future<int> updatePatient(Patient patient) async {
     final db = await this.database;
-    return await db.update(
+    final result = await db.update(
       'patients',
       patient.toMap(),
       where: 'id = ?',
       whereArgs: [patient.id],
     );
+
+    // Sync to cloud if authenticated
+    if (_cloudSync.isAuthenticated) {
+      _cloudSync.syncPatientToCloud(patient).catchError((e) {
+        print('⚠️ Failed to sync patient update to cloud: $e');
+      });
+    }
+
+    return result;
   }
 
   Future<int> deletePatient(String id) async {
     final db = await this.database;
-    return await db.delete('patients', where: 'id = ?', whereArgs: [id]);
+    final result = await db.delete('patients', where: 'id = ?', whereArgs: [id]);
+
+    // Delete from cloud if authenticated
+    if (_cloudSync.isAuthenticated) {
+      _cloudSync.deletePatientFromCloud(id).catchError((e) {
+        print('⚠️ Failed to delete patient from cloud: $e');
+      });
+    }
+
+    return result;
   }
 
   Future<List<Patient>> searchPatients(String query) async {
@@ -1072,6 +1139,17 @@ class DatabaseHelper {
 
   // ==================== ENDOCRINE CONDITION METHODS ====================
 
+  // Helper method to check if a column exists in a table
+  Future<bool> _columnExists(Database db, String tableName, String columnName) async {
+    try {
+      final result = await db.rawQuery('PRAGMA table_info($tableName)');
+      return result.any((column) => column['name'] == columnName);
+    } catch (e) {
+      print('Error checking column existence: $e');
+      return false;
+    }
+  }
+
   Future<int> saveEndocrineCondition(EndocrineCondition condition) async {
     final db = await this.database;
 
@@ -1079,7 +1157,10 @@ class DatabaseHelper {
     print('💾 Patient ID: ${condition.patientId}');
     print('💾 Disease: ${condition.diseaseName}');
 
-    final data = {
+    // Check if patient_name column exists (for migration compatibility)
+    final hasPatientName = await _columnExists(db, 'endocrine_conditions', 'patient_name');
+
+    final data = <String, dynamic>{
       'id': condition.id,
       'patient_id': condition.patientId,
       'gland': condition.gland,
@@ -1099,8 +1180,8 @@ class DatabaseHelper {
       'ordered_lab_tests': condition.orderedLabTests != null ? jsonEncode(condition.orderedLabTests) : null,
       'ordered_investigations': condition.orderedInvestigations != null ? jsonEncode(condition.orderedInvestigations) : null,
       'additional_data': condition.additionalData != null ? jsonEncode(condition.additionalData) : null,
-      'lab_test_results': condition.labTestResults != null ? jsonEncode(condition.labTestResults) : null,
-      'investigation_findings': condition.investigationFindings != null ? jsonEncode(condition.investigationFindings) : null,
+      'lab_test_results': jsonEncode(condition.labTestResults.map((x) => x.toJson()).toList()),
+      'investigation_findings': jsonEncode(condition.investigationFindings.map((x) => x.toJson()).toList()),
       'selected_symptoms': condition.selectedSymptoms != null ? jsonEncode(condition.selectedSymptoms) : null,
       'selected_diagnostic_criteria': condition.selectedDiagnosticCriteria != null ? jsonEncode(condition.selectedDiagnosticCriteria) : null,
       'selected_complications': condition.selectedComplications != null ? jsonEncode(condition.selectedComplications) : null,
@@ -1118,11 +1199,25 @@ class DatabaseHelper {
       'is_active': condition.isActive ? 1 : 0,
     };
 
-    return await db.insert(
+    // Add patient_name only if column exists (for backward compatibility)
+    if (hasPatientName) {
+      data['patient_name'] = condition.patientName;
+    }
+
+    final result = await db.insert(
       'endocrine_conditions',
       data,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+
+    // Sync to cloud if authenticated
+    if (_cloudSync.isAuthenticated) {
+      _cloudSync.syncEndocrineConditionToCloud(data).catchError((e) {
+        print('⚠️ Failed to sync endocrine condition to cloud: $e');
+      });
+    }
+
+    return result;
   }
 
   Future<List<EndocrineCondition>> getEndocrineConditionsByPatient(String patientId) async {
@@ -1164,9 +1259,7 @@ class DatabaseHelper {
     );
 
     if (conditionMaps.isNotEmpty) {
-      // FIX: Convert snake_case database fields to camelCase for EndocrineCondition.fromJson
-      final convertedMap = _convertDatabaseMapToJson(conditionMaps.first);
-      return EndocrineCondition.fromJson(convertedMap);
+      return _endocrineConditionFromMap(conditionMaps.first);
     }
 
     // Check endocrine_visits table
@@ -1184,27 +1277,13 @@ class DatabaseHelper {
     return null;
   }
 
-// ==================== FIXED METHOD 2: getActiveEndocrineCondition ====================
-  Future<EndocrineCondition?> getActiveEndocrineCondition(String patientId, String diseaseId) async {
-    final db = await this.database;
-    final maps = await db.query(
-      'endocrine_conditions',
-      where: 'patient_id = ? AND disease_id = ? AND is_active = ?',
-      whereArgs: [patientId, diseaseId, 1],
-      limit: 1,
-    );
-    if (maps.isEmpty) return null;
-
-    // FIX: Convert snake_case database fields to camelCase
-    final convertedMap = _convertDatabaseMapToJson(maps.first);
-    return EndocrineCondition.fromJson(convertedMap);
-  }
-
-
   Future<int> updateEndocrineCondition(EndocrineCondition condition) async {
     final db = await this.database;
 
-    final updateData = {
+    // Check if patient_name column exists (for migration compatibility)
+    final hasPatientName = await _columnExists(db, 'endocrine_conditions', 'patient_name');
+
+    final updateData = <String, dynamic>{
       'patient_id': condition.patientId,
       'gland': condition.gland,
       'category': condition.category,
@@ -1223,8 +1302,8 @@ class DatabaseHelper {
       'ordered_lab_tests': condition.orderedLabTests != null ? jsonEncode(condition.orderedLabTests) : null,
       'ordered_investigations': condition.orderedInvestigations != null ? jsonEncode(condition.orderedInvestigations) : null,
       'additional_data': condition.additionalData != null ? jsonEncode(condition.additionalData) : null,
-      'lab_test_results': condition.labTestResults != null ? jsonEncode(condition.labTestResults) : null,
-      'investigation_findings': condition.investigationFindings != null ? jsonEncode(condition.investigationFindings) : null,
+      'lab_test_results': jsonEncode(condition.labTestResults.map((x) => x.toJson()).toList()),
+      'investigation_findings': jsonEncode(condition.investigationFindings.map((x) => x.toJson()).toList()),
       'selected_symptoms': condition.selectedSymptoms != null ? jsonEncode(condition.selectedSymptoms) : null,
       'selected_diagnostic_criteria': condition.selectedDiagnosticCriteria != null ? jsonEncode(condition.selectedDiagnosticCriteria) : null,
       'selected_complications': condition.selectedComplications != null ? jsonEncode(condition.selectedComplications) : null,
@@ -1242,6 +1321,11 @@ class DatabaseHelper {
       'is_active': condition.isActive ? 1 : 0,
     };
 
+    // Add patient_name only if column exists (for backward compatibility)
+    if (hasPatientName) {
+      updateData['patient_name'] = condition.patientName;
+    }
+
     return await db.update(
       'endocrine_conditions',
       updateData,
@@ -1255,7 +1339,11 @@ class DatabaseHelper {
   Future<String> saveEndocrineVisit(EndocrineCondition condition, String doctorId) async {
     final db = await this.database;
 
-    final visitData = {
+    // Check if patient_name and lab_test_results columns exist (for migration compatibility)
+    final hasPatientName = await _columnExists(db, 'endocrine_visits', 'patient_name');
+    final hasLabTestResults = await _columnExists(db, 'endocrine_visits', 'lab_test_results');
+
+    final visitData = <String, dynamic>{
       'id': condition.id,
       'patient_id': condition.patientId,
       'doctor_id': doctorId,
@@ -1275,9 +1363,9 @@ class DatabaseHelper {
       'measurements': condition.measurements != null ? jsonEncode(condition.measurements) : null,
       'ordered_lab_tests': condition.orderedLabTests != null ? jsonEncode(condition.orderedLabTests) : null,
       'ordered_investigations': condition.orderedInvestigations != null ? jsonEncode(condition.orderedInvestigations) : null,
+      'investigation_findings': jsonEncode(condition.investigationFindings.map((x) => x.toJson()).toList()),
       'clinical_features': jsonEncode(condition.clinicalFeatures.map((f) => f.toJson()).toList()),
       'lab_readings': jsonEncode(condition.labReadings.map((r) => r.toJson()).toList()),
-      'investigation_findings': condition.investigationFindings != null ? jsonEncode(condition.investigationFindings) : null,
       'images': jsonEncode(condition.images.map((i) => i.toJson()).toList()),
       'medications': jsonEncode(condition.medications.map((m) => m.toJson()).toList()),
       'treatment_plan': condition.treatmentPlan != null ? jsonEncode(condition.treatmentPlan!.toJson()) : null,
@@ -1290,7 +1378,23 @@ class DatabaseHelper {
       'is_active': condition.isActive ? 1 : 0,
     };
 
+    // Add patient_name and lab_test_results only if columns exist (for backward compatibility)
+    if (hasPatientName) {
+      visitData['patient_name'] = condition.patientName;
+    }
+    if (hasLabTestResults) {
+      visitData['lab_test_results'] = jsonEncode(condition.labTestResults.map((x) => x.toJson()).toList());
+    }
+
     await db.insert('endocrine_visits', visitData, conflictAlgorithm: ConflictAlgorithm.replace);
+
+    // Sync visit to cloud if authenticated
+    if (_cloudSync.isAuthenticated) {
+      _cloudSync.syncEndocrineVisitToCloud(visitData).catchError((e) {
+        print('⚠️ Failed to sync endocrine visit to cloud: $e');
+      });
+    }
+
     return condition.id;
   }
 
@@ -1488,7 +1592,7 @@ class DatabaseHelper {
       whereArgs: [patientId],
     );
   }
-  uture<DiseaseTemplate?> getDiseaseTemplateById(int id) async {
+  Future<DiseaseTemplate?> getDiseaseTemplateById(int id) async {
     final db = await database;
     final result = await db.query(
       'disease_templates',
