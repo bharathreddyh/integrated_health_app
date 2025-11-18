@@ -449,6 +449,40 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ],
                                       ),
                                     ),
+
+                                    // Developer Login Button
+                                    SizedBox(height: spacing * 0.6),
+                                    OutlinedButton.icon(
+                                      onPressed: () async {
+                                        // Create a demo developer user
+                                        final devUser = User(
+                                          id: 'DEV_USER',
+                                          name: 'Developer',
+                                          email: 'dev@localhost',
+                                          role: UserRole.doctor,
+                                          specialty: 'Developer',
+                                          createdAt: DateTime.now(),
+                                        );
+
+                                        // Save login state
+                                        await UserService.login(devUser);
+
+                                        if (!mounted) return;
+
+                                        // Navigate to doctor home
+                                        Navigator.pushReplacementNamed(context, '/doctor-home');
+                                      },
+                                      icon: const Icon(Icons.code, size: 16),
+                                      label: const Text(
+                                        'Developer Login (No Auth)',
+                                        style: TextStyle(fontSize: 11),
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: Colors.blue.shade700,
+                                        side: BorderSide(color: Colors.blue.shade300),
+                                        padding: const EdgeInsets.symmetric(vertical: 8),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
