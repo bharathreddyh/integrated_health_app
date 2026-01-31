@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/database_helper.dart';
 import '../../models/disease_template.dart';
-import '../templates/disease_template_edit_screen.dart'; // adjust path if needed
 
 class VisitHistoryScreen extends StatefulWidget {
   const VisitHistoryScreen({super.key});
@@ -25,33 +24,16 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
     });
   }
 
-  void _openTemplate(DiseaseTemplate template) async {
-    print('📱 Opening template: ${template.name}');
-    print('   Template ID: ${template.id}');
-
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => DiseaseTemplateEditScreen(templateId: template.id),
-      ),
+  void _openTemplate(DiseaseTemplate template) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Template: ${template.name}')),
     );
-
-    if (result == true) {
-      _loadTemplates(); // Refresh the list
-    }
   }
 
-  void _createNewTemplate() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => DiseaseTemplateEditScreen(), // No ID = new template
-      ),
+  void _createNewTemplate() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Template editor coming soon')),
     );
-
-    if (result == true) {
-      _loadTemplates();
-    }
   }
 
   void _deleteTemplate(DiseaseTemplate template) async {

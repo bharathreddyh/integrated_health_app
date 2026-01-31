@@ -1184,20 +1184,19 @@ class DatabaseHelper {
     return null;
   }
 
-// ==================== FIXED METHOD 2: getActiveEndocrineCondition ====================
-  Future<EndocrineCondition?> getActiveEndocrineCondition(String patientId, String diseaseId) async {
-    final db = await this.database;
-    final maps = await db.query(
-      'endocrine_conditions',
-      where: 'patient_id = ? AND disease_id = ? AND is_active = ?',
-      whereArgs: [patientId, diseaseId, 1],
-      limit: 1,
-    );
-    if (maps.isEmpty) return null;
-
-    // FIX: Convert snake_case database fields to camelCase
-    final convertedMap = _convertDatabaseMapToJson(maps.first);
-    return EndocrineCondition.fromJson(convertedMap);
+  /// Convert snake_case database column names to camelCase for fromJson
+  Map<String, dynamic> _convertDatabaseMapToJson(Map<String, dynamic> dbMap) {
+    final result = <String, dynamic>{};
+    for (final entry in dbMap.entries) {
+      final camelKey = entry.key.replaceAllMapped(
+        RegExp(r'_([a-z])'),
+        (m) => m.group(1)!.toUpperCase(),
+      );
+      result[camelKey] = entry.value;
+    }
+    // Also keep original keys so fromJson can match either format
+    result.addAll(dbMap);
+    return result;
   }
 
 
@@ -1488,7 +1487,7 @@ class DatabaseHelper {
       whereArgs: [patientId],
     );
   }
-  uture<DiseaseTemplate?> getDiseaseTemplateById(int id) async {
+  Future<DiseaseTemplate?> getDiseaseTemplateById(int id) async {
     final db = await database;
     final result = await db.query(
       'disease_templates',

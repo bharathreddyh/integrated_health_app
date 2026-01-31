@@ -8,7 +8,6 @@ import '../canvas/canvas_screen.dart';
 import '../patient/patient_registration_screen.dart';
 import 'package:intl/intl.dart';
 import '../medical_templates/patient_selection_dialog.dart';
-import '../canvas/canvas_patient_selection_dialog.dart';
 import '../patient/visit_history_screen.dart';
 import '../asset_download_screen.dart';
 
