@@ -49,6 +49,9 @@ dependencies:
   # UI Icons
   cupertino_icons: ^1.0.2
 
+dependency_overrides:
+  android_intent_plus: 5.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
