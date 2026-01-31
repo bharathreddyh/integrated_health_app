@@ -15,7 +15,7 @@ class Model3DService {
   /// Replace with your actual Firebase Storage URLs after uploading.
   static const Map<String, String> modelUrls = {
     'uterus':
-        'https://firebasestorage.googleapis.com/v0/b/YOUR-PROJECT.appspot.com/o/models%2Futerus.glb?alt=media&token=YOUR_TOKEN',
+        'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_models_1.glb?alt=media&token=fcf140dd-c35d-4bde-9ade-4cf743b10653',
   };
 
   /// Returns the local cache directory for 3D models.
