@@ -7,7 +7,7 @@ plugins {
 android {
     namespace = "com.example.integrated_health_app"
     compileSdk = 36// ✅ 36 isn’t officially released yet; safest to use 34 for now
-    ndkVersion = "28.0.13004108"
+    ndkVersion = "28.2.13676358"
 
     defaultConfig {
         applicationId = "com.example.integrated_health_app"
