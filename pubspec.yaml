@@ -18,7 +18,7 @@ dependencies:
   intl: ^0.18.1
   vector_math: ^2.1.4
   syncfusion_flutter_charts: ^24.1.41
-  open_file: ^3.3.2
+  open_filex: ^4.5.0
 
 
   # State Management
