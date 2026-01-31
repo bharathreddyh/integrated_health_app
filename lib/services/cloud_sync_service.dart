@@ -4,12 +4,17 @@
 class CloudSyncService {
   CloudSyncService();
 
-  /// Placeholder — logs sync events for future implementation.
-  Future<void> syncPatientData(String patientId) async {
-    // No-op: cloud sync not yet configured
-  }
+  bool get isAuthenticated => false;
 
-  Future<void> syncAll() async {
-    // No-op: cloud sync not yet configured
-  }
+  Future<void> syncPatientToCloud(dynamic patient) async {}
+
+  Future<void> deletePatientFromCloud(dynamic id) async {}
+
+  Future<void> syncEndocrineConditionToCloud(dynamic data) async {}
+
+  Future<void> syncEndocrineVisitToCloud(dynamic data) async {}
+
+  Future<void> syncPatientData(String patientId) async {}
+
+  Future<void> syncAll() async {}
 }
