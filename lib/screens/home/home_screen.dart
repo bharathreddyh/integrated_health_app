@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import '../medical_templates/patient_selection_dialog.dart';
 import '../canvas/canvas_patient_selection_dialog.dart';
 import '../patient/visit_history_screen.dart';
+import '../asset_download_screen.dart';
 
 
 
@@ -199,6 +200,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         _buildSidebarAction('Recent Patients', Icons.history, Colors.indigo, () {}),
                         _buildSidebarAction('Templates', Icons.file_copy_outlined, Colors.purple, () {}),
+                        _buildSidebarAction('Downloads', Icons.download_rounded, Colors.blue, () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AssetDownloadScreen(),
+                            ),
+                          );
+                        }),
                         _buildSidebarAction('Settings', Icons.settings_outlined, Colors.grey, () {}),
                         const SizedBox(height: 8),
                         const Divider(),
