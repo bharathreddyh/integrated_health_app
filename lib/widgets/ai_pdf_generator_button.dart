@@ -5,7 +5,8 @@
 // ✅ Success dialog with open/share options
 
 import 'package:flutter/material.dart';
-import 'package:open_filex/open_filex.dart';
+import 'dart:io';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/endocrine/endocrine_condition.dart';
 import '../models/patient.dart';
@@ -273,7 +274,7 @@ class _AIPDFGeneratorButtonState extends State<AIPDFGeneratorButton> {
                       onPressed: () async {
                         Navigator.pop(context);
                         if (_generatedPdfPath != null) {
-                          await OpenFilex.open(_generatedPdfPath!);
+                          await launchUrl(Uri.file(_generatedPdfPath!));
                         }
                       },
                       icon: const Icon(Icons.open_in_new),
