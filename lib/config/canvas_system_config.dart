@@ -385,6 +385,129 @@ class CanvasSystemConfig {
         ),
       },
     ),
+
+    // ==================== OBSTETRIC SYSTEM ====================
+    'obstetric': SystemConfig(
+      id: 'obstetric',
+      name: 'Obstetric System',
+      icon: '🤰',
+      tools: [
+        ConditionTool(id: 'pan', name: 'Pan Tool', color: Colors.grey, defaultSize: 0),
+        ConditionTool(id: 'placenta', name: 'Placenta', color: Color(0xFFDC2626), defaultSize: 16),
+        ConditionTool(id: 'fetus', name: 'Fetus Position', color: Color(0xFF2563EB), defaultSize: 14),
+        ConditionTool(id: 'cord', name: 'Umbilical Cord', color: Color(0xFF7C3AED), defaultSize: 10),
+        ConditionTool(id: 'fluid', name: 'Amniotic Fluid', color: Color(0xFF0EA5E9), defaultSize: 14),
+        ConditionTool(id: 'abnormality', name: 'Abnormality', color: Color(0xFFEA580C), defaultSize: 12),
+      ],
+      anatomyDiagrams: {
+        'uterus_pregnancy': DiagramConfig(
+          id: 'uterus_pregnancy',
+          name: 'Gravid Uterus',
+          imagePath: 'assets/images/obstetric_gravid_uterus.png',
+          category: 'anatomy',
+        ),
+        'fetal_presentation': DiagramConfig(
+          id: 'fetal_presentation',
+          name: 'Fetal Presentation',
+          imagePath: 'assets/images/obstetric_fetal_presentation.png',
+          category: 'anatomy',
+        ),
+        'placental': DiagramConfig(
+          id: 'placental',
+          name: 'Placental Anatomy',
+          imagePath: 'assets/images/obstetric_placental.png',
+          category: 'anatomy',
+        ),
+      },
+      systemTemplates: {
+        'placenta_previa': DiagramConfig(
+          id: 'placenta_previa',
+          name: 'Placenta Previa',
+          imagePath: 'assets/images/obstetric_placenta_previa.png',
+          category: 'template',
+        ),
+        'ectopic': DiagramConfig(
+          id: 'ectopic',
+          name: 'Ectopic Pregnancy',
+          imagePath: 'assets/images/obstetric_ectopic.png',
+          category: 'template',
+        ),
+        'abruption': DiagramConfig(
+          id: 'abruption',
+          name: 'Placental Abruption',
+          imagePath: 'assets/images/obstetric_abruption.png',
+          category: 'template',
+        ),
+      },
+    ),
+
+    // ==================== GYNAECOLOGY SYSTEM ====================
+    'gynaec': SystemConfig(
+      id: 'gynaec',
+      name: 'Gynaecology System',
+      icon: '🩺',
+      tools: [
+        ConditionTool(id: 'pan', name: 'Pan Tool', color: Colors.grey, defaultSize: 0),
+        ConditionTool(id: 'fibroid', name: 'Fibroid', color: Color(0xFF78716C), defaultSize: 14),
+        ConditionTool(id: 'cyst', name: 'Ovarian Cyst', color: Color(0xFF2563EB), defaultSize: 12),
+        ConditionTool(id: 'tumor', name: 'Tumor', color: Color(0xFF7C2D12), defaultSize: 16),
+        ConditionTool(id: 'endometriosis', name: 'Endometriosis', color: Color(0xFFDC2626), defaultSize: 12),
+        ConditionTool(id: 'inflammation', name: 'Inflammation', color: Color(0xFFEA580C), defaultSize: 14),
+        ConditionTool(id: 'polyp', name: 'Polyp', color: Color(0xFF9333EA), defaultSize: 8),
+      ],
+      anatomyDiagrams: {
+        'uterus_anterior': DiagramConfig(
+          id: 'uterus_anterior',
+          name: 'Uterus (Anterior)',
+          imagePath: 'assets/images/gynaec_uterus_anterior.png',
+          category: 'anatomy',
+        ),
+        'uterus_cross_section': DiagramConfig(
+          id: 'uterus_cross_section',
+          name: 'Uterus (Cross-Section)',
+          imagePath: 'assets/images/gynaec_uterus_cross_section.png',
+          category: 'anatomy',
+        ),
+        'ovary': DiagramConfig(
+          id: 'ovary',
+          name: 'Ovary & Fallopian Tube',
+          imagePath: 'assets/images/gynaec_ovary.png',
+          category: 'anatomy',
+        ),
+        'pelvis': DiagramConfig(
+          id: 'pelvis',
+          name: 'Female Pelvis',
+          imagePath: 'assets/images/gynaec_pelvis.png',
+          category: 'anatomy',
+        ),
+      },
+      systemTemplates: {
+        'fibroids': DiagramConfig(
+          id: 'fibroids',
+          name: 'Uterine Fibroids',
+          imagePath: 'assets/images/gynaec_fibroids.png',
+          category: 'template',
+        ),
+        'pcos': DiagramConfig(
+          id: 'pcos',
+          name: 'PCOS',
+          imagePath: 'assets/images/gynaec_pcos.png',
+          category: 'template',
+        ),
+        'endometriosis': DiagramConfig(
+          id: 'endometriosis',
+          name: 'Endometriosis',
+          imagePath: 'assets/images/gynaec_endometriosis.png',
+          category: 'template',
+        ),
+        'cervical': DiagramConfig(
+          id: 'cervical',
+          name: 'Cervical Pathology',
+          imagePath: 'assets/images/gynaec_cervical.png',
+          category: 'template',
+        ),
+      },
+    ),
   };
 
   // Helper method to get system config by ID
