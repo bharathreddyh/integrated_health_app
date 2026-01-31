@@ -149,12 +149,6 @@ class CanvasSystemConfig {
           imagePath: 'assets/images/kidney_nephron.png',
           category: 'anatomy',
         ),
-        'kidney_3d': DiagramConfig(
-          id: 'kidney_3d',
-          name: '3D Kidney',
-          imagePath: 'assets/models/kidney.glb',
-          category: 'anatomy',
-        ),
       },
       systemTemplates: {
         'polycystic': DiagramConfig(
@@ -478,6 +472,12 @@ class CanvasSystemConfig {
           id: 'pelvis',
           name: 'Female Pelvis',
           imagePath: 'assets/images/gynaec_pelvis.png',
+          category: 'anatomy',
+        ),
+        'uterus_3d': DiagramConfig(
+          id: 'uterus_3d',
+          name: '3D Uterus',
+          imagePath: 'assets/models/uterus.glb',
           category: 'anatomy',
         ),
       },

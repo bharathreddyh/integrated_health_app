@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 
-class Kidney3DViewerScreen extends StatelessWidget {
-  const Kidney3DViewerScreen({super.key});
+class Uterus3DViewerScreen extends StatelessWidget {
+  const Uterus3DViewerScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('3D Kidney Model'),
+        title: const Text('3D Uterus Model'),
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
         actions: [
@@ -19,8 +19,8 @@ class Kidney3DViewerScreen extends StatelessWidget {
         ],
       ),
       body: ModelViewer(
-        src: 'assets/models/kidney.glb',
-        alt: '3D model of a kidney',
+        src: 'assets/models/uterus.glb',
+        alt: '3D model of a uterus',
         ar: true,
         autoRotate: true,
         autoRotateDelay: 0,
@@ -36,7 +36,7 @@ class Kidney3DViewerScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('3D Kidney Model'),
+        title: const Text('3D Uterus Model'),
         content: const Text(
           'Use gestures to interact with the model:\n\n'
           '- Drag to rotate\n'

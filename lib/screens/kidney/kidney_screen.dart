@@ -880,7 +880,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
 
                       // CANVAS AREA
                       Expanded(
-                        child: selectedPreset == 'kidney_3d'
+                        child: selectedPreset == 'uterus_3d'
                             ? Container(
                                 color: Colors.grey.shade100,
                                 child: Center(
@@ -903,8 +903,8 @@ class _CanvasScreenState extends State<CanvasScreen> {
                                       child: Stack(
                                         children: [
                                           ModelViewer(
-                                            src: 'assets/models/kidney.glb',
-                                            alt: '3D model of a kidney',
+                                            src: 'assets/models/uterus.glb',
+                                            alt: '3D model of a uterus',
                                             ar: true,
                                             autoRotate: true,
                                             autoRotateDelay: 0,
