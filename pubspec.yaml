@@ -43,14 +43,11 @@ dependencies:
   # HTTP Client (for Firebase Storage model downloads)
   http: ^1.1.0
 
-  # 3D Model Viewer
-  model_viewer_plus: ^1.6.0
+  # 3D Model Viewer (WebView-based, no android_intent_plus dependency)
+  webview_flutter: ^4.10.0
 
   # UI Icons
   cupertino_icons: ^1.0.2
-
-dependency_overrides:
-  android_intent_plus: 5.1.0
 
 dev_dependencies:
   flutter_test:

@@ -1,10 +1,11 @@
 // lib/screens/model_viewer_screen.dart
-// Displays a 3D .glb model downloaded from Firebase Storage.
-// Shows a progress bar on first download; loads from cache afterwards.
+// Displays a 3D .glb model using Google's <model-viewer> web component
+// via webview_flutter. No android_intent_plus dependency.
 
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:model_viewer_plus/model_viewer_plus.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import '../services/model_3d_service.dart';
 
 class ModelViewerScreen extends StatefulWidget {
@@ -28,6 +29,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
   double _progress = 0.0;
   String? _localPath;
   String? _error;
+  WebViewController? _webController;
 
   @override
   void initState() {
@@ -54,6 +56,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
           _localPath = path;
           _state = _LoadState.ready;
         });
+        _initWebView(path);
       }
     } catch (e) {
       if (mounted) {
@@ -63,6 +66,49 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
         });
       }
     }
+  }
+
+  void _initWebView(String modelPath) {
+    final fileUri = Uri.file(modelPath).toString();
+
+    final html = '''
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <style>
+    body { margin: 0; padding: 0; overflow: hidden; background: #f0f0f0; }
+    model-viewer {
+      width: 100vw;
+      height: 100vh;
+      --poster-color: transparent;
+    }
+  </style>
+</head>
+<body>
+  <model-viewer
+    src="$fileUri"
+    alt="${widget.title}"
+    auto-rotate
+    camera-controls
+    shadow-intensity="1"
+    touch-action="pan-y"
+    style="width:100%;height:100%;">
+  </model-viewer>
+</body>
+</html>
+''';
+
+    _webController = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(const Color(0xFFF0F0F0))
+      ..loadRequest(Uri.dataFromString(
+        html,
+        mimeType: 'text/html',
+        encoding: Encoding.getByName('utf-8'),
+      ));
   }
 
   @override
@@ -76,7 +122,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
               icon: const Icon(Icons.refresh),
               tooltip: 'Re-download model',
               onPressed: () async {
-                await _service.clearCache(widget.modelName);
+                await _service.clearAssetCache(widget.modelName);
                 _loadModel();
               },
             ),
@@ -126,16 +172,10 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
   }
 
   Widget _buildViewer() {
-    // model_viewer_plus accepts a file:// URI for local files
-    final fileUri = 'file://$_localPath';
-
-    return ModelViewer(
-      src: fileUri,
-      alt: widget.title,
-      autoRotate: true,
-      cameraControls: true,
-      disableZoom: false,
-    );
+    if (_webController == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return WebViewWidget(controller: _webController!);
   }
 
   Widget _buildError() {
