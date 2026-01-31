@@ -16,6 +16,7 @@ import '../../services/multi_image_pdf_service.dart';
 import '../../widgets/voice_feedback_overlay.dart';
 import '../../widgets/image_selection_dialog.dart';
 import '../patient/visit_history_screen.dart';
+import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'widgets/kidney_canvas.dart';
 import 'widgets/tool_panel.dart';
 import 'widgets/drawing_tool_panel.dart';
@@ -879,7 +880,68 @@ class _CanvasScreenState extends State<CanvasScreen> {
 
                       // CANVAS AREA
                       Expanded(
-                        child: Container(
+                        child: selectedPreset == 'kidney_3d'
+                            ? Container(
+                                color: Colors.grey.shade100,
+                                child: Center(
+                                  child: Container(
+                                    width: 600,
+                                    height: 400,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Stack(
+                                        children: [
+                                          ModelViewer(
+                                            src: 'assets/models/kidney.glb',
+                                            alt: '3D model of a kidney',
+                                            ar: true,
+                                            autoRotate: true,
+                                            autoRotateDelay: 0,
+                                            rotationPerSecond: '30deg',
+                                            cameraControls: true,
+                                            disableZoom: false,
+                                            backgroundColor: const Color(0xFFF5F5F5),
+                                          ),
+                                          Positioned(
+                                            top: 8,
+                                            right: 8,
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: Colors.teal.withOpacity(0.85),
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                              child: const Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(Icons.view_in_ar, color: Colors.white, size: 14),
+                                                  SizedBox(width: 4),
+                                                  Text(
+                                                    '3D View',
+                                                    style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Container(
                           color: Colors.grey.shade100,
                           child: Center(
                             child: Container(

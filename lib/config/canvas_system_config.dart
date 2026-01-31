@@ -149,6 +149,12 @@ class CanvasSystemConfig {
           imagePath: 'assets/images/kidney_nephron.png',
           category: 'anatomy',
         ),
+        'kidney_3d': DiagramConfig(
+          id: 'kidney_3d',
+          name: '3D Kidney',
+          imagePath: 'assets/models/kidney.glb',
+          category: 'anatomy',
+        ),
       },
       systemTemplates: {
         'polycystic': DiagramConfig(
