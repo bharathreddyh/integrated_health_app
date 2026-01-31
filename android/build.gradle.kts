@@ -11,15 +11,13 @@ allprojects {
     }
 }
 
-// Force compileSdk for all subprojects (fixes android_intent_plus missing compileSdk)
+// Force compileSdk on subprojects that reference flutter.compileSdkVersion
+// (fixes android_intent_plus build.gradle referencing undefined 'flutter' property)
 subprojects {
-    afterEvaluate {
-        if (project.hasProperty("android")) {
-            val android = project.extensions.getByName("android")
-            if (android is com.android.build.gradle.BaseExtension) {
-                if (android.compileSdkVersion == null) {
-                    android.compileSdkVersion(36)
-                }
+    project.plugins.whenPluginAdded {
+        if (this is com.android.build.gradle.api.AndroidBasePlugin) {
+            project.extensions.configure<com.android.build.gradle.BaseExtension> {
+                compileSdkVersion(36)
             }
         }
     }
