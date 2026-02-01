@@ -49,12 +49,7 @@ class ClinicClarityApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
 
         builder: (context, child) {
-          return Stack(
-            children: [
-              child!,
-              const FloatingVoiceButton(),
-            ],
-          );
+          return child!;
         },
 
         home: const AuthWrapper(),

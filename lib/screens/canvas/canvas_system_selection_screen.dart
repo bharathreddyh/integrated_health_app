@@ -12,23 +12,35 @@ class CanvasSystemSelectionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final systems = CanvasSystemConfig.systems.entries.toList();
+    final screenHeight = MediaQuery.of(context).size.height;
+    final appBarHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
+    final availableHeight = screenHeight - appBarHeight;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFFF1F5F9),
       appBar: AppBar(
-        title: const Text('Select System'),
+        title: const Text(
+          'Select System',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
-        elevation: 1,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: Colors.grey.shade200),
+        ),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(16),
         child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 20,
-            mainAxisSpacing: 20,
-            childAspectRatio: 1.2,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 4,
+            crossAxisSpacing: 14,
+            mainAxisSpacing: 14,
+            childAspectRatio: _calcAspectRatio(availableHeight, systems.length),
           ),
           itemCount: systems.length,
           itemBuilder: (context, index) {
@@ -42,6 +54,14 @@ class CanvasSystemSelectionScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  double _calcAspectRatio(double availableHeight, int itemCount) {
+    final rows = (itemCount / 4).ceil();
+    final gridHeight = availableHeight - 32; // padding
+    final tileHeight = (gridHeight - (rows - 1) * 14) / rows;
+    // We'll calculate from width later; just use a reasonable ratio
+    return 1.0; // square-ish tiles
   }
 
   Future<void> _selectPatientThenOpen(BuildContext context, SystemConfig system) async {
@@ -82,7 +102,6 @@ class CanvasSystemSelectionScreen extends StatelessWidget {
         return;
       }
 
-      // blank canvas
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -103,7 +122,6 @@ class CanvasSystemSelectionScreen extends StatelessWidget {
       return;
     }
 
-    // Show patient picker
     final selected = await showDialog<Patient>(
       context: context,
       builder: (ctx) => _PatientPickerDialog(patients: patients),
@@ -131,7 +149,7 @@ class _SystemCard extends StatelessWidget {
 
   static const _systemColors = <String, List<Color>>{
     'thyroid': [Color(0xFFF59E0B), Color(0xFFD97706)],
-    'kidney': [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+    'kidney': [Color(0xFF3B82F6), Color(0xFF2563EB)],
     'cardiac': [Color(0xFFEF4444), Color(0xFFDC2626)],
     'pulmonary': [Color(0xFF10B981), Color(0xFF059669)],
     'neuro': [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
@@ -143,47 +161,54 @@ class _SystemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = _systemColors[config.id] ?? [Colors.blueGrey, Colors.blueGrey.shade700];
+    final diagramCount = config.anatomyDiagrams.length + config.systemTemplates.length;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: colors),
-            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              colors: colors,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: colors[0].withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
+                color: colors[0].withOpacity(0.35),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
-          padding: const EdgeInsets.all(20),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 config.icon,
-                style: const TextStyle(fontSize: 32),
+                style: const TextStyle(fontSize: 52),
               ),
-              const Spacer(),
+              const SizedBox(height: 12),
               Text(
                 config.name,
+                textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
                   color: Colors.white,
+                  letterSpacing: 0.3,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                '${config.anatomyDiagrams.length + config.systemTemplates.length} diagrams',
+                '$diagramCount diagrams',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withOpacity(0.85),
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             ],
