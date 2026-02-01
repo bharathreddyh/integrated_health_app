@@ -379,6 +379,61 @@ class CanvasSystemConfig {
         ),
       },
     ),
+
+    // ==================== OBS & GYNAEC SYSTEM ====================
+    'obsgynaec': SystemConfig(
+      id: 'obsgynaec',
+      name: 'Obs & Gynaec',
+      icon: '🩷',
+      tools: [
+        ConditionTool(id: 'pan', name: 'Pan Tool', color: Colors.grey, defaultSize: 0),
+        ConditionTool(id: 'lesion', name: 'Lesion', color: Color(0xFFDC2626), defaultSize: 12),
+        ConditionTool(id: 'cyst', name: 'Cyst', color: Color(0xFF2563EB), defaultSize: 12),
+        ConditionTool(id: 'fibroid', name: 'Fibroid', color: Color(0xFF7C2D12), defaultSize: 16),
+        ConditionTool(id: 'polyp', name: 'Polyp', color: Color(0xFFEA580C), defaultSize: 10),
+        ConditionTool(id: 'mass', name: 'Mass', color: Color(0xFF9333EA), defaultSize: 14),
+      ],
+      anatomyDiagrams: {
+        'anterior': DiagramConfig(
+          id: 'anterior',
+          name: 'Anterior View',
+          imagePath: 'assets/images/obsgynaec_anterior.png',
+          category: 'anatomy',
+        ),
+        'uterus': DiagramConfig(
+          id: 'uterus',
+          name: 'Uterus',
+          imagePath: 'assets/images/obsgynaec_uterus.png',
+          category: 'anatomy',
+        ),
+        'ovaries': DiagramConfig(
+          id: 'ovaries',
+          name: 'Ovaries',
+          imagePath: 'assets/images/obsgynaec_ovaries.png',
+          category: 'anatomy',
+        ),
+      },
+      systemTemplates: {
+        'fibroids': DiagramConfig(
+          id: 'fibroids',
+          name: 'Uterine Fibroids',
+          imagePath: 'assets/images/obsgynaec_fibroids.png',
+          category: 'template',
+        ),
+        'pcos': DiagramConfig(
+          id: 'pcos',
+          name: 'PCOS',
+          imagePath: 'assets/images/obsgynaec_pcos.png',
+          category: 'template',
+        ),
+        'endometriosis': DiagramConfig(
+          id: 'endometriosis',
+          name: 'Endometriosis',
+          imagePath: 'assets/images/obsgynaec_endometriosis.png',
+          category: 'template',
+        ),
+      },
+    ),
   };
 
   // Helper method to get system config by ID
