@@ -214,6 +214,161 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     }
   }
 
+  Future<void> _viewSavedImages() async {
+    final dir = Directory(await _service.getCacheDirectory());
+    if (!await dir.exists()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No saved images yet')),
+        );
+      }
+      return;
+    }
+
+    final files = dir
+        .listSync()
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.png'))
+        .toList()
+      ..sort((a, b) => b.path.compareTo(a.path)); // newest first
+
+    if (files.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No saved images yet')),
+        );
+      }
+      return;
+    }
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        insetPadding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 8, 0),
+              child: Row(
+                children: [
+                  const Icon(Icons.photo_library, size: 22),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Saved Annotations (${files.length})',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(),
+            Flexible(
+              child: GridView.builder(
+                shrinkWrap: true,
+                padding: const EdgeInsets.all(12),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                ),
+                itemCount: files.length,
+                itemBuilder: (context, index) {
+                  final file = files[index];
+                  final name = file.path.split('/').last;
+                  return GestureDetector(
+                    onTap: () => _showFullImage(ctx, file),
+                    onLongPress: () => _confirmDeleteImage(ctx, file),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.file(file, fit: BoxFit.cover),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                'Tap to view  |  Long press to delete',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showFullImage(BuildContext parentCtx, File file) {
+    showDialog(
+      context: parentCtx,
+      builder: (ctx) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppBar(
+              title: const Text('Annotation', style: TextStyle(fontSize: 16)),
+              automaticallyImplyLeading: false,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            Flexible(
+              child: InteractiveViewer(
+                child: Image.file(file),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmDeleteImage(BuildContext parentCtx, File file) {
+    showDialog(
+      context: parentCtx,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Image?'),
+        content: const Text('This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx); // close confirm dialog
+              Navigator.pop(parentCtx); // close gallery
+              await file.delete();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Image deleted'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _buildHtml(int port) {
     return '''
 <!DOCTYPE html>
@@ -299,7 +454,12 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
                 onPressed: _saveScreenshot,
               ),
             ],
-            if (!_drawMode)
+            if (!_drawMode) ...[
+              IconButton(
+                icon: const Icon(Icons.photo_library_outlined),
+                tooltip: 'Saved images',
+                onPressed: _viewSavedImages,
+              ),
               IconButton(
                 icon: const Icon(Icons.refresh),
                 tooltip: 'Re-download model',
@@ -308,6 +468,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
                   _loadModel();
                 },
               ),
+            ],
           ],
         ],
       ),
