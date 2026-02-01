@@ -9,6 +9,7 @@ import '../patient/patient_registration_screen.dart';
 import 'package:intl/intl.dart';
 import '../medical_templates/patient_selection_dialog.dart';
 import '../patient/visit_history_screen.dart';
+import '../canvas/canvas_system_selection_screen.dart';
 
 
 
@@ -457,7 +458,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       gradient: const LinearGradient(
                         colors: [Color(0xFFF97316), Color(0xFFEA580C)],
                       ),
-                      onTap: () => _openCanvasWithPatientSelection(),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const CanvasSystemSelectionScreen(),
+                          ),
+                        );
+                      },
                     ),
                   ),
                   SizedBox(
