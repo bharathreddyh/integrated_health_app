@@ -131,12 +131,20 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     setState(() {
       _drawMode = !_drawMode;
     });
-    // Disable/enable camera-controls in WebView
-    _webController?.runJavaScript(
-      _drawMode
-          ? "document.querySelector('model-viewer').removeAttribute('camera-controls');"
-          : "document.querySelector('model-viewer').setAttribute('camera-controls', '');",
-    );
+    // Disable/enable camera-controls and auto-rotate in WebView
+    if (_drawMode) {
+      _webController?.runJavaScript(
+        "var mv = document.querySelector('model-viewer');"
+        "mv.removeAttribute('camera-controls');"
+        "mv.removeAttribute('auto-rotate');",
+      );
+    } else {
+      _webController?.runJavaScript(
+        "var mv = document.querySelector('model-viewer');"
+        "mv.setAttribute('camera-controls', '');"
+        "mv.setAttribute('auto-rotate', '');",
+      );
+    }
   }
 
   void _undo() {
