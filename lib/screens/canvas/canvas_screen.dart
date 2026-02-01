@@ -1158,6 +1158,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
     final templates = diagrams['templates'] ?? {};
 
     return DropdownButtonFormField<String>(
+      key: ValueKey('diagram_$selectedPreset'),
       value: selectedPreset,
       decoration: const InputDecoration(
         labelText: 'Diagram Type',
@@ -1240,6 +1241,8 @@ class _CanvasScreenState extends State<CanvasScreen> {
                 ),
               ),
             );
+            // Reset dropdown back to current preset so canvas doesn't break
+            setState(() {});
             return;
           }
           if (markers.isNotEmpty || drawingPaths.isNotEmpty) {
