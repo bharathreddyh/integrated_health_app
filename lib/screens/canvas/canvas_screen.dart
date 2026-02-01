@@ -19,6 +19,7 @@ import 'widgets/tool_panel.dart';
 import 'widgets/drawing_tool_panel.dart';
 import '../../services/user_service.dart';
 import '../../config/canvas_system_config.dart';
+import '../model_viewer_screen.dart';
 
 class CanvasScreen extends StatefulWidget {
   final Patient patient;
@@ -889,6 +890,27 @@ class _CanvasScreenState extends State<CanvasScreen> {
                             ),
                             const SizedBox(width: 16),
 
+                            if (selectedSystem == 'obsgynaec')
+                              OutlinedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const ModelViewerScreen(
+                                        modelName: 'uterus',
+                                        title: '3D Uterus Model',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.view_in_ar, size: 18),
+                                label: const Text('3D Uterus', style: TextStyle(fontSize: 12)),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                ),
+                              ),
+                            if (selectedSystem == 'obsgynaec')
+                              const SizedBox(width: 8),
                             OutlinedButton.icon(
                               onPressed: () {
                                 Navigator.push(
