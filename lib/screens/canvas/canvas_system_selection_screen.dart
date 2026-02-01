@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../config/canvas_system_config.dart';
 import '../../models/patient.dart';
-import '../../services/database_helper.dart';
-import '../patient/patient_registration_screen.dart';
 import 'canvas_screen.dart';
 
 class CanvasSystemSelectionScreen extends StatelessWidget {
@@ -48,7 +46,7 @@ class CanvasSystemSelectionScreen extends StatelessWidget {
             final config = entry.value;
             return _SystemCard(
               config: config,
-              onTap: () => _selectPatientThenOpen(context, config),
+              onTap: () => _openCanvas(context, config),
             );
           },
         ),
@@ -64,80 +62,24 @@ class CanvasSystemSelectionScreen extends StatelessWidget {
     return 1.0; // square-ish tiles
   }
 
-  Future<void> _selectPatientThenOpen(BuildContext context, SystemConfig system) async {
-    final patients = await DatabaseHelper.instance.getAllPatients();
-
-    if (!context.mounted) return;
-
-    if (patients.isEmpty) {
-      final action = await showDialog<String>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('No Patients'),
-          content: const Text('Register a patient or open a blank canvas.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, 'cancel'),
-              child: const Text('Cancel'),
-            ),
-            OutlinedButton(
-              onPressed: () => Navigator.pop(ctx, 'blank'),
-              child: const Text('Blank Canvas'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx, 'register'),
-              child: const Text('Register Patient'),
-            ),
-          ],
-        ),
-      );
-
-      if (!context.mounted || action == null || action == 'cancel') return;
-
-      if (action == 'register') {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const PatientRegistrationScreen()),
-        );
-        return;
-      }
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CanvasScreen(
-            patient: Patient(
-              id: 'TEMP_${DateTime.now().millisecondsSinceEpoch}',
-              name: 'Quick Canvas',
-              age: 0,
-              phone: '',
-              date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
-              conditions: [],
-              visits: 0,
-            ),
-            preSelectedSystem: system.id,
+  void _openCanvas(BuildContext context, SystemConfig system) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CanvasScreen(
+          patient: Patient(
+            id: 'TEMP_${DateTime.now().millisecondsSinceEpoch}',
+            name: 'Quick Canvas',
+            age: 0,
+            phone: '',
+            date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+            conditions: [],
+            visits: 0,
           ),
+          preSelectedSystem: system.id,
         ),
-      );
-      return;
-    }
-
-    final selected = await showDialog<Patient>(
-      context: context,
-      builder: (ctx) => _PatientPickerDialog(patients: patients),
+      ),
     );
-
-    if (selected != null && context.mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CanvasScreen(
-            patient: selected,
-            preSelectedSystem: system.id,
-          ),
-        ),
-      );
-    }
   }
 }
 
@@ -213,109 +155,6 @@ class _SystemCard extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PatientPickerDialog extends StatefulWidget {
-  final List<Patient> patients;
-  const _PatientPickerDialog({required this.patients});
-
-  @override
-  State<_PatientPickerDialog> createState() => _PatientPickerDialogState();
-}
-
-class _PatientPickerDialogState extends State<_PatientPickerDialog> {
-  final _searchController = TextEditingController();
-  late List<Patient> _filtered;
-
-  @override
-  void initState() {
-    super.initState();
-    _filtered = widget.patients;
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  void _filter(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        _filtered = widget.patients;
-      } else {
-        final q = query.toLowerCase();
-        _filtered = widget.patients.where((p) =>
-            p.name.toLowerCase().contains(q) ||
-            p.phone.contains(q) ||
-            p.id.toLowerCase().contains(q)).toList();
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      child: Container(
-        width: 500,
-        height: 600,
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            const Text(
-              'Select Patient',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _searchController,
-              onChanged: _filter,
-              decoration: InputDecoration(
-                hintText: 'Search by name, phone, or ID...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: _filtered.isEmpty
-                  ? Center(
-                      child: Text('No patients found', style: TextStyle(color: Colors.grey.shade500)),
-                    )
-                  : ListView.builder(
-                      itemCount: _filtered.length,
-                      itemBuilder: (context, index) {
-                        final p = _filtered[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: const Color(0xFF3B82F6),
-                              child: Text(
-                                p.name[0].toUpperCase(),
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                            subtitle: Text('${p.id} | ${p.age} yrs'),
-                            onTap: () => Navigator.pop(context, p),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-          ],
         ),
       ),
     );
