@@ -1,8 +1,7 @@
 // lib/screens/model_viewer_screen.dart
 // Displays a 3D .glb model using Google's <model-viewer> web component
-// via webview_flutter. No android_intent_plus dependency.
+// via webview_flutter with a local HTTP server to serve the file.
 
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -30,11 +29,18 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
   String? _localPath;
   String? _error;
   WebViewController? _webController;
+  HttpServer? _server;
 
   @override
   void initState() {
     super.initState();
     _loadModel();
+  }
+
+  @override
+  void dispose() {
+    _server?.close(force: true);
+    super.dispose();
   }
 
   Future<void> _loadModel() async {
@@ -56,7 +62,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
           _localPath = path;
           _state = _LoadState.ready;
         });
-        _initWebView(path);
+        await _initWebView(path);
       }
     } catch (e) {
       if (mounted) {
@@ -68,10 +74,50 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     }
   }
 
-  void _initWebView(String modelPath) {
-    final fileUri = Uri.file(modelPath).toString();
+  Future<void> _initWebView(String modelPath) async {
+    // Start a local HTTP server to serve the .glb file
+    // WebView can't access file:// URIs directly on Android
+    _server?.close(force: true);
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    _server = server;
+    final port = server.port;
 
-    final html = '''
+    server.listen((request) async {
+      if (request.uri.path == '/model.glb') {
+        final file = File(modelPath);
+        if (await file.exists()) {
+          request.response.headers.set('Content-Type', 'model/gltf-binary');
+          request.response.headers.set('Access-Control-Allow-Origin', '*');
+          await request.response.addStream(file.openRead());
+          await request.response.close();
+        } else {
+          request.response.statusCode = 404;
+          await request.response.close();
+        }
+      } else if (request.uri.path == '/') {
+        request.response.headers.set('Content-Type', 'text/html');
+        request.response.write(_buildHtml(port));
+        await request.response.close();
+      } else {
+        request.response.statusCode = 404;
+        await request.response.close();
+      }
+    });
+
+    final controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(const Color(0xFFF0F0F0))
+      ..loadRequest(Uri.parse('http://127.0.0.1:$port/'));
+
+    if (mounted) {
+      setState(() {
+        _webController = controller;
+      });
+    }
+  }
+
+  String _buildHtml(int port) {
+    return '''
 <!DOCTYPE html>
 <html>
 <head>
@@ -79,36 +125,43 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
-    body { margin: 0; padding: 0; overflow: hidden; background: #f0f0f0; }
+    * { margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #f0f0f0; }
     model-viewer {
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
       --poster-color: transparent;
+    }
+    #loading {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: sans-serif;
+      color: #666;
+      font-size: 16px;
     }
   </style>
 </head>
 <body>
+  <div id="loading">Loading 3D model...</div>
   <model-viewer
-    src="$fileUri"
+    src="http://127.0.0.1:$port/model.glb"
     alt="${widget.title}"
     auto-rotate
     camera-controls
     shadow-intensity="1"
     touch-action="pan-y"
-    style="width:100%;height:100%;">
+    style="width:100%;height:100%;"
+    loading="eager">
   </model-viewer>
+  <script>
+    document.querySelector('model-viewer').addEventListener('load', function() {
+      document.getElementById('loading').style.display = 'none';
+    });
+  </script>
 </body>
 </html>
 ''';
-
-    _webController = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0xFFF0F0F0))
-      ..loadRequest(Uri.dataFromString(
-        html,
-        mimeType: 'text/html',
-        encoding: Encoding.getByName('utf-8'),
-      ));
   }
 
   @override
