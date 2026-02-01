@@ -3,6 +3,8 @@
 // via webview_flutter with a local HTTP server to serve the file.
 
 import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../services/model_3d_service.dart';
@@ -122,14 +124,15 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
-    * { margin: 0; padding: 0; }
+    * { margin: 0; padding: 0; touch-action: none; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #f0f0f0; }
     model-viewer {
       width: 100%;
       height: 100%;
+      touch-action: none;
       --poster-color: transparent;
     }
     #loading {
@@ -139,6 +142,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
       font-family: sans-serif;
       color: #666;
       font-size: 16px;
+      z-index: 10;
     }
   </style>
 </head>
@@ -149,8 +153,10 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     alt="${widget.title}"
     auto-rotate
     camera-controls
+    disable-zoom="false"
     shadow-intensity="1"
-    touch-action="pan-y"
+    touch-action="none"
+    interaction-prompt="auto"
     style="width:100%;height:100%;"
     loading="eager">
   </model-viewer>
@@ -228,7 +234,12 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     if (_webController == null) {
       return const Center(child: CircularProgressIndicator());
     }
-    return WebViewWidget(controller: _webController!);
+    return WebViewWidget(
+      controller: _webController!,
+      gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+        Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
+      },
+    );
   }
 
   Widget _buildError() {
