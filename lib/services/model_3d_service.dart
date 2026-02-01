@@ -186,6 +186,11 @@ class Model3DService {
 
   // ─── Cache directory (app-scoped, deleted on uninstall) ────────────
 
+  Future<String> getCacheDirectory() async {
+    final dir = await _cacheDir;
+    return dir.path;
+  }
+
   Future<Directory> get _cacheDir async {
     // getApplicationSupportDirectory is app-scoped on both Android & iOS
     // and is automatically deleted when the app is uninstalled.
