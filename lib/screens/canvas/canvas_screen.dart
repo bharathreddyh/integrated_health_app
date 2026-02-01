@@ -19,7 +19,6 @@ import 'widgets/tool_panel.dart';
 import 'widgets/drawing_tool_panel.dart';
 import '../../services/user_service.dart';
 import '../../config/canvas_system_config.dart';
-import '../model_viewer_screen.dart';
 
 class CanvasScreen extends StatefulWidget {
   final Patient patient;
@@ -1229,20 +1228,6 @@ class _CanvasScreenState extends State<CanvasScreen> {
       ],
       onChanged: (value) async {
         if (value != null) {
-          // Intercept 3D model selections
-          if (value == 'uterus_3d') {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ModelViewerScreen(
-                  modelName: 'uterus',
-                  title: 'Uterus Normal 3D',
-                ),
-              ),
-            );
-            return;
-          }
-
           if (markers.isNotEmpty || drawingPaths.isNotEmpty) {
             final shouldSave = await showDialog<bool>(
               context: context,

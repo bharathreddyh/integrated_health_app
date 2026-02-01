@@ -9,7 +9,6 @@ import '../patient/patient_registration_screen.dart';
 import 'package:intl/intl.dart';
 import '../medical_templates/patient_selection_dialog.dart';
 import '../patient/visit_history_screen.dart';
-import '../asset_download_screen.dart';
 
 
 
@@ -199,14 +198,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         _buildSidebarAction('Recent Patients', Icons.history, Colors.indigo, () {}),
                         _buildSidebarAction('Templates', Icons.file_copy_outlined, Colors.purple, () {}),
-                        _buildSidebarAction('Downloads', Icons.download_rounded, Colors.blue, () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AssetDownloadScreen(),
-                            ),
-                          );
-                        }),
                         _buildSidebarAction('Settings', Icons.settings_outlined, Colors.grey, () {}),
                         const SizedBox(height: 8),
                         const Divider(),
@@ -448,28 +439,15 @@ class _HomeScreenState extends State<HomeScreen> {
           Text('Select an action to begin', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
           const SizedBox(height: 32),
 
-          // ✅ UPDATED: 3x3 GRID LAYOUT
+          // 2-CARD LAYOUT: Canvas + Medical Templates
           LayoutBuilder(
             builder: (context, constraints) {
-              final cardWidth = (constraints.maxWidth - 48) / 3;
+              final cardWidth = (constraints.maxWidth - 24) / 2;
 
               return Wrap(
                 spacing: 24,
                 runSpacing: 24,
                 children: [
-                  // ROW 1
-                  SizedBox(
-                    width: cardWidth,
-                    child: _buildFeatureCard(
-                      icon: Icons.play_circle_outline,
-                      title: 'Start Consultation',
-                      subtitle: 'Begin patient session',
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF3B82F6), Color(0xFF1E40AF)],
-                      ),
-                      onTap: () => Navigator.pushNamed(context, '/patient-selection'),
-                    ),
-                  ),
                   SizedBox(
                     width: cardWidth,
                     child: _buildFeatureCard(
@@ -482,18 +460,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       onTap: () => _openCanvasWithPatientSelection(),
                     ),
                   ),
-                  // ✅ CHANGED: Medical Templates (was Library)
                   SizedBox(
                     width: cardWidth,
                     child: _buildFeatureCard(
-                      icon: Icons.healing, // ✅ CHANGED from Icons.description_outlined
+                      icon: Icons.healing,
                       title: 'Medical Templates',
-                      subtitle: 'Disease assessment & tracking', // ✅ CHANGED subtitle
+                      subtitle: 'Disease assessment & tracking',
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF9333EA), Color(0xFF7E22CE)], // Purple
+                        colors: [Color(0xFF9333EA), Color(0xFF7E22CE)],
                       ),
                       onTap: () async {
-                        // ✅ NEW: Show patient selection dialog
                         final result = await showDialog<Map<String, dynamic>>(
                           context: context,
                           builder: (context) => const MedicalTemplatePatientSelectionDialog(),
@@ -504,7 +480,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           final isQuickMode = result['quickMode'] as bool? ?? false;
 
                           if (patient != null) {
-                            // Navigate to Medical Systems Screen
                             Navigator.pushNamed(
                               context,
                               '/medical-systems',
@@ -515,131 +490,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             );
                           }
                         }
-                      },
-                    ),
-                  ),
-
-                  // ROW 2
-                  SizedBox(
-                    width: cardWidth,
-                    child: _buildFeatureCard(
-                      icon: Icons.history,
-                      title: 'Past Summaries',
-                      subtitle: 'Patient records',
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF14B8A6), Color(0xFF0D9488)],
-                      ),
-                      onTap: () {
-                        // TODO: Navigate to past summaries
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Past Summaries - Coming Soon'),
-                            backgroundColor: Colors.teal,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  // ✅ CHANGED: Library (was Quick Access)
-                  SizedBox(
-                    width: cardWidth,
-                    child: _buildFeatureCard(
-                      icon: Icons.local_library_outlined,
-                      title: 'Library',
-                      subtitle: 'Medical resources',
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF10B981), Color(0xFF059669)],
-                      ),
-                      onTap: () {
-                        // TODO: Navigate to library screen
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Library - Coming Soon'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    width: cardWidth,
-                    child: _buildFeatureCard(
-                      icon: Icons.language,
-                      title: 'Language',
-                      subtitle: 'Change language',
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
-                      ),
-                      onTap: () {
-                        // TODO: Open language selector
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Language Settings - Coming Soon'),
-                            backgroundColor: Colors.indigo,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-
-                  // ROW 3
-                  SizedBox(
-                    width: cardWidth,
-                    child: _buildFeatureCard(
-                      icon: Icons.chat_bubble_outline,
-                      title: 'WhatsApp',
-                      subtitle: 'Share summaries',
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF16A34A), Color(0xFF15803D)],
-                      ),
-                      onTap: () {
-                        // TODO: Open WhatsApp integration
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('WhatsApp Integration - Coming Soon'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    width: cardWidth,
-                    child: _buildFeatureCard(
-                      icon: Icons.analytics_outlined,
-                      title: 'Analytics',
-                      subtitle: 'Practice insights',
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF06B6D4), Color(0xFF0891B2)],
-                      ),
-                      onTap: () {
-                        // TODO: Navigate to analytics
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Analytics - Coming Soon'),
-                            backgroundColor: Colors.cyan,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  SizedBox(
-                    width: cardWidth,
-                    child: _buildFeatureCard(
-                      icon: Icons.admin_panel_settings_outlined,
-                      title: 'Admin',
-                      subtitle: 'System settings',
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
-                      ),
-                      onTap: () {
-                        // TODO: Navigate to admin panel
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Admin Panel - Coming Soon'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
                       },
                     ),
                   ),

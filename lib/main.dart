@@ -17,8 +17,6 @@ import 'widgets/floating_voice_button.dart';
 import 'screens/medical_templates/medical_systems_screen.dart';
 import 'screens/patient/visit_history_screen.dart';
 import 'screens/endocrine/thyroid_disease_module_screen.dart';
-import 'screens/asset_download_screen.dart';
-import 'services/model_3d_service.dart';
 
 
 
@@ -67,7 +65,6 @@ class ClinicClarityApp extends StatelessWidget {
           '/patient-home': (context) => const PatientHomeScreen(),
           '/patient-selection': (context) => const PatientSelectionScreen(),
           '/patient-registration': (context) => const PatientRegistrationScreen(),
-          '/asset-downloads': (context) => const AssetDownloadScreen(),
         },
         onGenerateRoute: (settings) {
           // Handle 3-page consultation with patient data
@@ -141,40 +138,24 @@ class ClinicClarityApp extends StatelessWidget {
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
-  Future<Map<String, dynamic>> _checkState() async {
-    final loggedIn = await UserService.isLoggedIn();
-    final setupDone = await Model3DService.isSetupDone();
-    return {'loggedIn': loggedIn, 'setupDone': setupDone};
-  }
-
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>>(
-      future: _checkState(),
+    return FutureBuilder<bool>(
+      future: UserService.isLoggedIn(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
+            body: Center(child: CircularProgressIndicator()),
           );
         }
 
-        final loggedIn = snapshot.data?['loggedIn'] == true;
-        final setupDone = snapshot.data?['setupDone'] == true;
-
-        if (!loggedIn) {
+        if (snapshot.data != true) {
           return const LoginScreen();
         }
 
         final user = UserService.currentUser;
         if (user == null) {
           return const LoginScreen();
-        }
-
-        // Show asset download screen on first launch for doctors
-        if (!setupDone && user.role == 'doctor') {
-          return const AssetDownloadScreen(isFirstLaunch: true);
         }
 
         switch (user.role) {

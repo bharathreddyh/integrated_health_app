@@ -20,6 +20,28 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _errorMessage;
 
   @override
+  void initState() {
+    super.initState();
+    // Dev auto-login: skip password entry
+    _devAutoLogin();
+  }
+
+  Future<void> _devAutoLogin() async {
+    try {
+      final user = await DatabaseHelper.instance.authenticateUser(
+        'admin@clinic.com',
+        'admin123',
+      );
+      if (user != null && mounted) {
+        await UserService.login(user);
+        Navigator.pushReplacementNamed(context, '/doctor-home');
+      }
+    } catch (_) {
+      // Fall through to manual login if auto-login fails
+    }
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();

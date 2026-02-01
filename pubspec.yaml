@@ -40,11 +40,8 @@ dependencies:
   permission_handler: ^12.0.1
   pdf: ^3.10.7
 
-  # HTTP Client (for Firebase Storage model downloads)
+  # HTTP Client
   http: ^1.1.0
-
-  # 3D Model Viewer (WebView-based, no android_intent_plus dependency)
-  webview_flutter: ^4.10.0
 
   # UI Icons
   cupertino_icons: ^1.0.2
