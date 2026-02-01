@@ -188,16 +188,54 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
 
       final bytes = byteData.buffer.asUint8List();
 
-      // Save to app's cache directory
+      if (!mounted) return;
+
+      // Ask user for a name
+      final nameController = TextEditingController();
+      final name = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Save Annotation'),
+          content: TextField(
+            controller: nameController,
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: 'e.g. Fibroid anterior wall',
+              labelText: 'Name',
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: (val) => Navigator.pop(ctx, val.trim()),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, nameController.text.trim()),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      );
+
+      nameController.dispose();
+
+      if (name == null) return; // cancelled
+
       final dir = await _service.getCacheDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final file = File('$dir/3d_annotation_$timestamp.png');
+      // Use sanitized name in filename, fallback to timestamp only
+      final safeName = name.isEmpty
+          ? '3d_annotation_$timestamp'
+          : '${name.replaceAll(RegExp(r'[^\w\s\-]'), '').replaceAll(' ', '_')}_$timestamp';
+      final file = File('$dir/$safeName.png');
       await file.writeAsBytes(bytes);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Screenshot saved: ${file.path}'),
+            content: Text('Saved: ${name.isEmpty ? 'annotation' : name}'),
             backgroundColor: Colors.green,
           ),
         );

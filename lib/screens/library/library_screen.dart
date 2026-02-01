@@ -120,6 +120,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 final modified = file.lastModifiedSync();
                 final dateStr =
                     '${modified.day}/${modified.month}/${modified.year} ${modified.hour}:${modified.minute.toString().padLeft(2, '0')}';
+                // Extract display name from filename (strip timestamp suffix and extension)
+                final rawName = file.path.split('/').last.replaceAll('.png', '');
+                final displayName = rawName
+                    .replaceAll(RegExp(r'_\d{13}$'), '') // remove timestamp
+                    .replaceAll('_', ' ')
+                    .replaceAll('3d annotation', 'Annotation')
+                    .trim();
+                final label = displayName.isEmpty ? 'Annotation' : displayName;
 
                 return GestureDetector(
                   onTap: () => _showFullImage(file),
@@ -147,16 +155,32 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             right: 0,
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                 gradient: LinearGradient(
                                   begin: Alignment.bottomCenter,
                                   end: Alignment.topCenter,
-                                  colors: [Colors.black54, Colors.transparent],
+                                  colors: [Colors.black87, Colors.transparent],
                                 ),
                               ),
-                              child: Text(
-                                dateStr,
-                                style: const TextStyle(color: Colors.white, fontSize: 11),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    label,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    dateStr,
+                                    style: const TextStyle(color: Colors.white70, fontSize: 10),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
