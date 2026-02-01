@@ -43,6 +43,9 @@ dependencies:
   # HTTP Client
   http: ^1.1.0
 
+  # 3D Model Viewer
+  webview_flutter: ^4.10.0
+
   # UI Icons
   cupertino_icons: ^1.0.2
 
