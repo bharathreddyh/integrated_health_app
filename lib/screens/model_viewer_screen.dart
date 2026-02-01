@@ -294,7 +294,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
                 onPressed: _strokes.isNotEmpty ? _clearDrawings : null,
               ),
               IconButton(
-                icon: const Icon(Icons.save_alt),
+                icon: const Icon(Icons.save),
                 tooltip: 'Save screenshot',
                 onPressed: _saveScreenshot,
               ),
@@ -477,22 +477,44 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
                 ),
               ),
             ),
-          // Draw mode indicator
+          // Draw mode indicator - tappable to exit
           if (_drawMode)
             Positioned(
               top: 12,
               left: 0,
               right: 0,
               child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.85),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'Draw Mode - camera locked',
-                    style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+                child: GestureDetector(
+                  onTap: _toggleDrawMode,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.lock, color: Colors.white, size: 16),
+                        SizedBox(width: 8),
+                        Text(
+                          'Drawing Mode ON',
+                          style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          '| Tap to unlock camera',
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
