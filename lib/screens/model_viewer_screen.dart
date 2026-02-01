@@ -16,11 +16,13 @@ import '../services/model_3d_service.dart';
 class ModelViewerScreen extends StatefulWidget {
   final String modelName;
   final String title;
+  final String systemId;
 
   const ModelViewerScreen({
     super.key,
     required this.modelName,
     required this.title,
+    this.systemId = 'general',
   });
 
   @override
@@ -223,13 +225,16 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
 
       if (name == null) return; // cancelled
 
-      final dir = await _service.getCacheDirectory();
+      final baseDir = await _service.getCacheDirectory();
+      final systemDir = Directory('$baseDir/annotations/${widget.systemId}');
+      if (!await systemDir.exists()) {
+        await systemDir.create(recursive: true);
+      }
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      // Use sanitized name in filename, fallback to timestamp only
       final safeName = name.isEmpty
           ? '3d_annotation_$timestamp'
           : '${name.replaceAll(RegExp(r'[^\w\s\-]'), '').replaceAll(' ', '_')}_$timestamp';
-      final file = File('$dir/$safeName.png');
+      final file = File('${systemDir.path}/$safeName.png');
       await file.writeAsBytes(bytes);
 
       if (mounted) {
@@ -253,7 +258,8 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
   }
 
   Future<void> _viewSavedImages() async {
-    final dir = Directory(await _service.getCacheDirectory());
+    final baseDir = await _service.getCacheDirectory();
+    final dir = Directory('$baseDir/annotations/${widget.systemId}');
     if (!await dir.exists()) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

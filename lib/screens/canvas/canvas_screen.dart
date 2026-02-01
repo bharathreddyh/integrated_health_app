@@ -1235,9 +1235,10 @@ class _CanvasScreenState extends State<CanvasScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => const ModelViewerScreen(
+                builder: (_) => ModelViewerScreen(
                   modelName: 'uterus',
                   title: 'Uterus Normal 3D',
+                  systemId: selectedSystem,
                 ),
               ),
             );

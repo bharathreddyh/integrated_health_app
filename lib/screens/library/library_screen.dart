@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import '../../config/canvas_system_config.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -9,9 +10,22 @@ class LibraryScreen extends StatefulWidget {
   State<LibraryScreen> createState() => _LibraryScreenState();
 }
 
-class _LibraryScreenState extends State<LibraryScreen> {
-  List<File> _savedImages = [];
+class _LibraryScreenState extends State<LibraryScreen> with TickerProviderStateMixin {
+  Map<String, List<File>> _imagesBySystem = {};
+  List<String> _systemIds = [];
   bool _loading = true;
+  TabController? _tabController;
+
+  static const _systemColors = <String, Color>{
+    'thyroid': Color(0xFFF59E0B),
+    'kidney': Color(0xFF3B82F6),
+    'cardiac': Color(0xFFEF4444),
+    'pulmonary': Color(0xFF10B981),
+    'neuro': Color(0xFF8B5CF6),
+    'hepatic': Color(0xFFF97316),
+    'gynaecology': Color(0xFFEC4899),
+    'obstetrics': Color(0xFFA855F7),
+  };
 
   @override
   void initState() {
@@ -19,26 +33,78 @@ class _LibraryScreenState extends State<LibraryScreen> {
     _loadSavedImages();
   }
 
+  @override
+  void dispose() {
+    _tabController?.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadSavedImages() async {
     final appDir = await getApplicationSupportDirectory();
-    final cacheDir = Directory('${appDir.path}/models_cache');
+    final annotationsDir = Directory('${appDir.path}/models_cache/annotations');
 
-    List<File> images = [];
-    if (await cacheDir.exists()) {
-      images = cacheDir
+    Map<String, List<File>> grouped = {};
+
+    // Also check old flat directory for backward compat
+    final oldDir = Directory('${appDir.path}/models_cache');
+    if (await oldDir.exists()) {
+      final oldFiles = oldDir
           .listSync()
           .whereType<File>()
           .where((f) => f.path.endsWith('.png'))
           .toList()
         ..sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+      if (oldFiles.isNotEmpty) {
+        grouped['general'] = oldFiles;
+      }
+    }
+
+    // Load system subdirectories
+    if (await annotationsDir.exists()) {
+      for (final entity in annotationsDir.listSync()) {
+        if (entity is Directory) {
+          final systemId = entity.path.split('/').last;
+          final files = entity
+              .listSync()
+              .whereType<File>()
+              .where((f) => f.path.endsWith('.png'))
+              .toList()
+            ..sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+          if (files.isNotEmpty) {
+            grouped[systemId] = files;
+          }
+        }
+      }
+    }
+
+    // Build ordered system list: known systems first (in config order), then unknown
+    final knownOrder = CanvasSystemConfig.systems.keys.toList();
+    final systemIds = <String>[];
+    for (final id in knownOrder) {
+      if (grouped.containsKey(id)) systemIds.add(id);
+    }
+    for (final id in grouped.keys) {
+      if (!systemIds.contains(id)) systemIds.add(id);
     }
 
     if (mounted) {
+      _tabController?.dispose();
+      _tabController = systemIds.isNotEmpty
+          ? TabController(length: systemIds.length, vsync: this)
+          : null;
       setState(() {
-        _savedImages = images;
+        _imagesBySystem = grouped;
+        _systemIds = systemIds;
         _loading = false;
       });
     }
+  }
+
+  String _systemDisplayName(String id) {
+    final config = CanvasSystemConfig.systems[id];
+    if (config != null) return '${config.icon} ${config.name}';
+    if (id == 'general') return '📁 General';
+    return id[0].toUpperCase() + id.substring(1);
   }
 
   @override
@@ -51,16 +117,34 @@ class _LibraryScreenState extends State<LibraryScreen> {
         foregroundColor: Colors.black87,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: Colors.grey.shade200),
-        ),
+        bottom: _tabController != null
+            ? TabBar(
+                controller: _tabController,
+                isScrollable: true,
+                labelColor: Colors.black87,
+                unselectedLabelColor: Colors.grey.shade500,
+                indicatorColor: Colors.blue,
+                indicatorWeight: 3,
+                tabs: _systemIds.map((id) {
+                  final count = _imagesBySystem[id]?.length ?? 0;
+                  return Tab(text: '${_systemDisplayName(id)} ($count)');
+                }).toList(),
+              )
+            : PreferredSize(
+                preferredSize: const Size.fromHeight(1),
+                child: Container(height: 1, color: Colors.grey.shade200),
+              ),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _savedImages.isEmpty
+          : _systemIds.isEmpty
               ? _buildEmptyState()
-              : _buildImageGrid(),
+              : TabBarView(
+                  controller: _tabController,
+                  children: _systemIds.map((id) {
+                    return _buildSystemImages(id, _imagesBySystem[id] ?? []);
+                  }).toList(),
+                ),
     );
   }
 
@@ -85,7 +169,13 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  Widget _buildImageGrid() {
+  Widget _buildSystemImages(String systemId, List<File> images) {
+    if (images.isEmpty) {
+      return Center(
+        child: Text('No images for this system', style: TextStyle(color: Colors.grey.shade500)),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -93,20 +183,18 @@ class _LibraryScreenState extends State<LibraryScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.photo_library, size: 20),
-              const SizedBox(width: 8),
               Text(
-                'Saved Annotations (${_savedImages.length})',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                '${images.length} saved annotation${images.length == 1 ? '' : 's'}',
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
               ),
               const Spacer(),
               Text(
                 'Tap to view  |  Long press to delete',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Expanded(
             child: GridView.builder(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -114,24 +202,24 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
               ),
-              itemCount: _savedImages.length,
+              itemCount: images.length,
               itemBuilder: (context, index) {
-                final file = _savedImages[index];
+                final file = images[index];
                 final modified = file.lastModifiedSync();
                 final dateStr =
                     '${modified.day}/${modified.month}/${modified.year} ${modified.hour}:${modified.minute.toString().padLeft(2, '0')}';
-                // Extract display name from filename (strip timestamp suffix and extension)
                 final rawName = file.path.split('/').last.replaceAll('.png', '');
                 final displayName = rawName
-                    .replaceAll(RegExp(r'_\d{13}$'), '') // remove timestamp
+                    .replaceAll(RegExp(r'_\d{13}$'), '')
                     .replaceAll('_', ' ')
                     .replaceAll('3d annotation', 'Annotation')
                     .trim();
                 final label = displayName.isEmpty ? 'Annotation' : displayName;
+                final color = _systemColors[systemId] ?? Colors.blueGrey;
 
                 return GestureDetector(
-                  onTap: () => _showFullImage(file),
-                  onLongPress: () => _confirmDelete(file),
+                  onTap: () => _showFullImage(file, label),
+                  onLongPress: () => _confirmDelete(file, systemId),
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
@@ -197,7 +285,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  void _showFullImage(File file) {
+  void _showFullImage(File file, String label) {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
@@ -207,18 +295,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
           children: [
             Row(
               children: [
-                const Padding(
-                  padding: EdgeInsets.only(left: 16),
-                  child: Text('Annotation', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                Padding(
+                  padding: const EdgeInsets.only(left: 16),
+                  child: Text(label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                 ),
                 const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    _confirmDelete(file);
-                  },
-                ),
                 IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: () => Navigator.pop(ctx),
@@ -237,7 +318,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  void _confirmDelete(File file) {
+  void _confirmDelete(File file, String systemId) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -252,7 +333,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
             onPressed: () async {
               Navigator.pop(ctx);
               await file.delete();
-              _loadSavedImages();
+              _loadSavedImages(); // reload
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Image deleted'), backgroundColor: Colors.orange),
