@@ -136,7 +136,8 @@ class _SystemCard extends StatelessWidget {
     'pulmonary': [Color(0xFF10B981), Color(0xFF059669)],
     'neuro': [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
     'hepatic': [Color(0xFFF97316), Color(0xFFEA580C)],
-    'obsgynaec': [Color(0xFFEC4899), Color(0xFFDB2777)],
+    'gynaecology': [Color(0xFFEC4899), Color(0xFFDB2777)],
+    'obstetrics': [Color(0xFFA855F7), Color(0xFF9333EA)],
   };
 
   @override

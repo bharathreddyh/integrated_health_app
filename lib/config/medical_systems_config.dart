@@ -241,12 +241,12 @@ class MedicalSystemsConfig {
     ],
   );
 
-  // 🩷 OBS & GYNAEC SYSTEM
-  static const obsGynaecSystem = MedicalSystemConfig(
-    id: 'obsgynaec',
-    name: 'Obs & Gynaec',
-    description: 'Obstetrics, Gynaecology, Female Reproductive',
-    icon: Icons.pregnant_woman,
+  // 🩷 GYNAECOLOGY SYSTEM
+  static const gynaecologySystem = MedicalSystemConfig(
+    id: 'gynaecology',
+    name: 'Gynaecology',
+    description: 'Female Reproductive, Menstrual, Oncology',
+    icon: Icons.female,
     color: Color(0xFFEC4899), // Pink
     categories: [
       DiseaseCategory(
@@ -262,23 +262,6 @@ class MedicalSystemsConfig {
           'Cervical Dysplasia',
           'Adenomyosis',
           'Menopause',
-        ],
-      ),
-      DiseaseCategory(
-        id: 'obstetrics',
-        name: 'Obstetrics',
-        icon: Icons.child_friendly,
-        diseases: [
-          'Normal Pregnancy',
-          'Gestational Diabetes',
-          'Pre-eclampsia',
-          'Eclampsia',
-          'Ectopic Pregnancy',
-          'Placenta Previa',
-          'Placental Abruption',
-          'Miscarriage',
-          'Preterm Labour',
-          'HELLP Syndrome',
         ],
       ),
       DiseaseCategory(
@@ -314,6 +297,72 @@ class MedicalSystemsConfig {
           'Endometrial Cancer',
           'Vulvar Cancer',
           'Gestational Trophoblastic Disease',
+        ],
+      ),
+    ],
+  );
+
+  // 🤰 OBSTETRICS SYSTEM
+  static const obstetricsSystem = MedicalSystemConfig(
+    id: 'obstetrics',
+    name: 'Obstetrics',
+    description: 'Pregnancy, Labour, Antenatal Care',
+    icon: Icons.pregnant_woman,
+    color: Color(0xFFA855F7), // Purple
+    categories: [
+      DiseaseCategory(
+        id: 'antenatal',
+        name: 'Antenatal Conditions',
+        icon: Icons.child_friendly,
+        diseases: [
+          'Normal Pregnancy',
+          'Gestational Diabetes',
+          'Pre-eclampsia',
+          'Eclampsia',
+          'HELLP Syndrome',
+          'Hyperemesis Gravidarum',
+          'Gestational Hypertension',
+          'Rh Incompatibility',
+        ],
+      ),
+      DiseaseCategory(
+        id: 'complications',
+        name: 'Pregnancy Complications',
+        icon: Icons.warning,
+        diseases: [
+          'Ectopic Pregnancy',
+          'Placenta Previa',
+          'Placental Abruption',
+          'Miscarriage',
+          'Preterm Labour',
+          'Premature Rupture of Membranes',
+          'Intrauterine Growth Restriction',
+          'Molar Pregnancy',
+        ],
+      ),
+      DiseaseCategory(
+        id: 'labour',
+        name: 'Labour & Delivery',
+        icon: Icons.local_hospital,
+        diseases: [
+          'Normal Labour',
+          'Prolonged Labour',
+          'Obstructed Labour',
+          'Cord Prolapse',
+          'Shoulder Dystocia',
+          'Postpartum Haemorrhage',
+          'Caesarean Section',
+        ],
+      ),
+      DiseaseCategory(
+        id: 'postnatal',
+        name: 'Postnatal',
+        icon: Icons.healing,
+        diseases: [
+          'Postpartum Depression',
+          'Puerperal Sepsis',
+          'Lactation Disorders',
+          'Deep Vein Thrombosis',
         ],
       ),
     ],
@@ -564,7 +613,8 @@ class MedicalSystemsConfig {
     endocrineSystem,
     renalSystem,
     genitourinarySystem,
-    obsGynaecSystem,
+    gynaecologySystem,
+    obstetricsSystem,
     hepatobiliarySystem,
     cardiovascularSystem,
     respiratorySystem,

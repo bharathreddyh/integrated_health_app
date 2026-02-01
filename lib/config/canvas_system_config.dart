@@ -380,10 +380,10 @@ class CanvasSystemConfig {
       },
     ),
 
-    // ==================== OBS & GYNAEC SYSTEM ====================
-    'obsgynaec': SystemConfig(
-      id: 'obsgynaec',
-      name: 'Obs & Gynaec',
+    // ==================== GYNAECOLOGY SYSTEM ====================
+    'gynaecology': SystemConfig(
+      id: 'gynaecology',
+      name: 'Gynaecology',
       icon: '🩷',
       tools: [
         ConditionTool(id: 'pan', name: 'Pan Tool', color: Colors.grey, defaultSize: 0),
@@ -394,22 +394,22 @@ class CanvasSystemConfig {
         ConditionTool(id: 'mass', name: 'Mass', color: Color(0xFF9333EA), defaultSize: 14),
       ],
       anatomyDiagrams: {
-        'anterior': DiagramConfig(
-          id: 'anterior',
-          name: 'Anterior View',
-          imagePath: 'assets/images/obsgynaec_anterior.png',
-          category: 'anatomy',
-        ),
         'uterus': DiagramConfig(
           id: 'uterus',
           name: 'Uterus',
-          imagePath: 'assets/images/obsgynaec_uterus.png',
+          imagePath: 'assets/images/gynae_uterus.png',
           category: 'anatomy',
         ),
         'ovaries': DiagramConfig(
           id: 'ovaries',
           name: 'Ovaries',
-          imagePath: 'assets/images/obsgynaec_ovaries.png',
+          imagePath: 'assets/images/gynae_ovaries.png',
+          category: 'anatomy',
+        ),
+        'cervix': DiagramConfig(
+          id: 'cervix',
+          name: 'Cervix',
+          imagePath: 'assets/images/gynae_cervix.png',
           category: 'anatomy',
         ),
       },
@@ -417,19 +417,73 @@ class CanvasSystemConfig {
         'fibroids': DiagramConfig(
           id: 'fibroids',
           name: 'Uterine Fibroids',
-          imagePath: 'assets/images/obsgynaec_fibroids.png',
+          imagePath: 'assets/images/gynae_fibroids.png',
           category: 'template',
         ),
         'pcos': DiagramConfig(
           id: 'pcos',
           name: 'PCOS',
-          imagePath: 'assets/images/obsgynaec_pcos.png',
+          imagePath: 'assets/images/gynae_pcos.png',
           category: 'template',
         ),
         'endometriosis': DiagramConfig(
           id: 'endometriosis',
           name: 'Endometriosis',
-          imagePath: 'assets/images/obsgynaec_endometriosis.png',
+          imagePath: 'assets/images/gynae_endometriosis.png',
+          category: 'template',
+        ),
+      },
+    ),
+
+    // ==================== OBSTETRICS SYSTEM ====================
+    'obstetrics': SystemConfig(
+      id: 'obstetrics',
+      name: 'Obstetrics',
+      icon: '🤰',
+      tools: [
+        ConditionTool(id: 'pan', name: 'Pan Tool', color: Colors.grey, defaultSize: 0),
+        ConditionTool(id: 'marker', name: 'Marker', color: Color(0xFFDC2626), defaultSize: 12),
+        ConditionTool(id: 'placenta', name: 'Placenta', color: Color(0xFF7C2D12), defaultSize: 16),
+        ConditionTool(id: 'fetus', name: 'Fetus', color: Color(0xFF2563EB), defaultSize: 14),
+        ConditionTool(id: 'cord', name: 'Cord', color: Color(0xFF9333EA), defaultSize: 10),
+      ],
+      anatomyDiagrams: {
+        'uterus_pregnant': DiagramConfig(
+          id: 'uterus_pregnant',
+          name: 'Pregnant Uterus',
+          imagePath: 'assets/images/obs_uterus_pregnant.png',
+          category: 'anatomy',
+        ),
+        'pelvis': DiagramConfig(
+          id: 'pelvis',
+          name: 'Pelvis',
+          imagePath: 'assets/images/obs_pelvis.png',
+          category: 'anatomy',
+        ),
+        'fetal_positions': DiagramConfig(
+          id: 'fetal_positions',
+          name: 'Fetal Positions',
+          imagePath: 'assets/images/obs_fetal_positions.png',
+          category: 'anatomy',
+        ),
+      },
+      systemTemplates: {
+        'preeclampsia': DiagramConfig(
+          id: 'preeclampsia',
+          name: 'Pre-eclampsia',
+          imagePath: 'assets/images/obs_preeclampsia.png',
+          category: 'template',
+        ),
+        'placenta_previa': DiagramConfig(
+          id: 'placenta_previa',
+          name: 'Placenta Previa',
+          imagePath: 'assets/images/obs_placenta_previa.png',
+          category: 'template',
+        ),
+        'ectopic': DiagramConfig(
+          id: 'ectopic',
+          name: 'Ectopic Pregnancy',
+          imagePath: 'assets/images/obs_ectopic.png',
           category: 'template',
         ),
       },
