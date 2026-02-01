@@ -115,7 +115,7 @@ class CanvasSystemConfig {
     'kidney': SystemConfig(
       id: 'kidney',
       name: 'Renal System',
-      icon: '🫘',
+      icon: '💧',
       tools: [
         ConditionTool(id: 'pan', name: 'Pan Tool', color: Colors.grey, defaultSize: 0),
         ConditionTool(id: 'calculi', name: 'Calculi', color: Colors.grey, defaultSize: 8),
@@ -231,7 +231,7 @@ class CanvasSystemConfig {
     'pulmonary': SystemConfig(
       id: 'pulmonary',
       name: 'Pulmonary System',
-      icon: '🫁',
+      icon: '💨',
       tools: [
         ConditionTool(id: 'pan', name: 'Pan Tool', color: Colors.grey, defaultSize: 0),
         ConditionTool(id: 'consolidation', name: 'Consolidation', color: Color(0xFFDC2626), defaultSize: 16),
@@ -335,7 +335,7 @@ class CanvasSystemConfig {
     'hepatic': SystemConfig(
       id: 'hepatic',
       name: 'Hepatic System',
-      icon: '🟤',
+      icon: '🔶',
       tools: [
         ConditionTool(id: 'pan', name: 'Pan Tool', color: Colors.grey, defaultSize: 0),
         ConditionTool(id: 'lesion', name: 'Lesion', color: Color(0xFFDC2626), defaultSize: 12),
@@ -384,7 +384,7 @@ class CanvasSystemConfig {
     'gynaecology': SystemConfig(
       id: 'gynaecology',
       name: 'Gynaecology',
-      icon: '🩷',
+      icon: '♀️',
       tools: [
         ConditionTool(id: 'pan', name: 'Pan Tool', color: Colors.grey, defaultSize: 0),
         ConditionTool(id: 'lesion', name: 'Lesion', color: Color(0xFFDC2626), defaultSize: 12),
