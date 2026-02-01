@@ -222,6 +222,7 @@ class _LibraryScreenState extends State<LibraryScreen> with TickerProviderStateM
                   onLongPress: () => _confirmDelete(file, systemId),
                   child: Container(
                     decoration: BoxDecoration(
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
@@ -233,43 +234,34 @@ class _LibraryScreenState extends State<LibraryScreen> with TickerProviderStateM
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Stack(
-                        fit: StackFit.expand,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Image.file(file, fit: BoxFit.cover),
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                              decoration: const BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.bottomCenter,
-                                  end: Alignment.topCenter,
-                                  colors: [Colors.black87, Colors.transparent],
+                          Expanded(
+                            child: Image.file(file, fit: BoxFit.cover),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            color: const Color(0xFF1E293B),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  label,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    label,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  Text(
-                                    dateStr,
-                                    style: const TextStyle(color: Colors.white70, fontSize: 10),
-                                  ),
-                                ],
-                              ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  dateStr,
+                                  style: const TextStyle(color: Colors.white60, fontSize: 11),
+                                ),
+                              ],
                             ),
                           ),
                         ],
