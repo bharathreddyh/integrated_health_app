@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import '../medical_templates/patient_selection_dialog.dart';
 import '../patient/visit_history_screen.dart';
 import '../canvas/canvas_system_selection_screen.dart';
+import '../library/library_screen.dart';
 
 
 
@@ -440,10 +441,10 @@ class _HomeScreenState extends State<HomeScreen> {
           Text('Select an action to begin', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
           const SizedBox(height: 32),
 
-          // 2-CARD LAYOUT: Canvas + Medical Templates
+          // 3-CARD LAYOUT: Canvas + Medical Templates + Library
           LayoutBuilder(
             builder: (context, constraints) {
-              final cardWidth = (constraints.maxWidth - 24) / 2;
+              final cardWidth = (constraints.maxWidth - 48) / 3;
 
               return Wrap(
                 spacing: 24,
@@ -498,6 +499,25 @@ class _HomeScreenState extends State<HomeScreen> {
                             );
                           }
                         }
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: cardWidth,
+                    child: _buildFeatureCard(
+                      icon: Icons.photo_library,
+                      title: 'Library',
+                      subtitle: 'Saved annotations & images',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const LibraryScreen(),
+                          ),
+                        );
                       },
                     ),
                   ),
