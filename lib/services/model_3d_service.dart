@@ -3,6 +3,8 @@
 // Caches to app-scoped directory (auto-deleted on uninstall).
 // No Firebase SDK required.
 
+import 'package:flutter/material.dart';
+
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -34,7 +36,7 @@ class SystemAssetGroup {
   final String name;
   final String description;
   final int colorValue;
-  final int iconCodePoint;
+  final IconData icon;
   final List<AssetInfo> assets;
 
   const SystemAssetGroup({
@@ -42,7 +44,7 @@ class SystemAssetGroup {
     required this.name,
     required this.description,
     required this.colorValue,
-    required this.iconCodePoint,
+    required this.icon,
     required this.assets,
   });
 
@@ -75,7 +77,7 @@ class Model3DService {
       name: 'Genitourinary System',
       description: '3D models: Uterus, Reproductive organs',
       colorValue: 0xFF8B5CF6,
-      iconCodePoint: 0xe491, // Icons.personal_injury
+      icon: Icons.personal_injury,
       assets: [
         AssetInfo(
           id: 'uterus',
@@ -92,7 +94,7 @@ class Model3DService {
       name: 'Endocrine System',
       description: '3D models: Thyroid, Pituitary, Adrenal',
       colorValue: 0xFFEC4899,
-      iconCodePoint: 0xf0625, // Icons.science
+      icon: Icons.science,
       assets: [
         // Add assets here when available
         // AssetInfo(id: 'thyroid', name: '3D Thyroid', ...),
@@ -103,7 +105,7 @@ class Model3DService {
       name: 'Renal System',
       description: '3D models: Kidney, Nephron',
       colorValue: 0xFF3B82F6,
-      iconCodePoint: 0xe798, // Icons.water_drop
+      icon: Icons.water_drop,
       assets: [
         // Add assets here when available
       ],
@@ -113,7 +115,7 @@ class Model3DService {
       name: 'Cardiovascular System',
       description: '3D models: Heart, Vessels',
       colorValue: 0xFFEF4444,
-      iconCodePoint: 0xe25c, // Icons.favorite
+      icon: Icons.favorite,
       assets: [
         // Add assets here when available
       ],
@@ -123,7 +125,7 @@ class Model3DService {
       name: 'Respiratory System',
       description: '3D models: Lungs, Airways',
       colorValue: 0xFF10B981,
-      iconCodePoint: 0xe03e, // Icons.air
+      icon: Icons.air,
       assets: [
         // Add assets here when available
       ],
@@ -133,7 +135,7 @@ class Model3DService {
       name: 'Hepatobiliary System',
       description: '3D models: Liver, Gallbladder',
       colorValue: 0xFFF59E0B,
-      iconCodePoint: 0xe401, // Icons.local_hospital
+      icon: Icons.local_hospital,
       assets: [
         // Add assets here when available
       ],
@@ -143,7 +145,7 @@ class Model3DService {
       name: 'Neurological System',
       description: '3D models: Brain, Nerves',
       colorValue: 0xFF6366F1,
-      iconCodePoint: 0xe4ab, // Icons.psychology
+      icon: Icons.psychology,
       assets: [
         // Add assets here when available
       ],
@@ -153,7 +155,7 @@ class Model3DService {
       name: 'Musculoskeletal System',
       description: '3D models: Bones, Joints',
       colorValue: 0xFFA855F7,
-      iconCodePoint: 0xe006, // Icons.accessibility_new
+      icon: Icons.accessibility_new,
       assets: [
         // Add assets here when available
       ],

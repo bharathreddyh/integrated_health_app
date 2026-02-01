@@ -340,7 +340,7 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
-                      IconData(system.iconCodePoint, fontFamily: 'MaterialIcons'),
+                      system.icon,
                       color: color,
                       size: 24,
                     ),
