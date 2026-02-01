@@ -412,6 +412,12 @@ class CanvasSystemConfig {
           imagePath: 'assets/images/gynae_cervix.png',
           category: 'anatomy',
         ),
+        'uterus_3d': DiagramConfig(
+          id: 'uterus_3d',
+          name: 'Uterus Normal 3D',
+          imagePath: '',
+          category: 'anatomy',
+        ),
       },
       systemTemplates: {
         'fibroids': DiagramConfig(
