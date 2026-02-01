@@ -406,6 +406,12 @@ class CanvasSystemConfig {
           imagePath: 'assets/images/obsgynaec_uterus.png',
           category: 'anatomy',
         ),
+        'uterus_3d': DiagramConfig(
+          id: 'uterus_3d',
+          name: 'Uterus Normal 3D',
+          imagePath: '3d_model:uterus',
+          category: 'anatomy',
+        ),
         'ovaries': DiagramConfig(
           id: 'ovaries',
           name: 'Ovaries',
