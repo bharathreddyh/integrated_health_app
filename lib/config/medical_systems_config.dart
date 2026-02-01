@@ -199,7 +199,7 @@ class MedicalSystemsConfig {
   static const genitourinarySystem = MedicalSystemConfig(
     id: 'genitourinary',
     name: 'Genitourinary System',
-    description: 'Bladder, Prostate, Reproductive',
+    description: 'Bladder, Prostate, Male Reproductive',
     icon: Icons.personal_injury,
     color: Color(0xFF8B5CF6), // Purple
     categories: [
@@ -238,16 +238,82 @@ class MedicalSystemsConfig {
           'Testicular Torsion',
         ],
       ),
+    ],
+  );
+
+  // 🩷 OBS & GYNAEC SYSTEM
+  static const obsGynaecSystem = MedicalSystemConfig(
+    id: 'obsgynaec',
+    name: 'Obs & Gynaec',
+    description: 'Obstetrics, Gynaecology, Female Reproductive',
+    icon: Icons.pregnant_woman,
+    color: Color(0xFFEC4899), // Pink
+    categories: [
       DiseaseCategory(
-        id: 'female_reproductive',
-        name: 'Female Reproductive',
+        id: 'gynaecology',
+        name: 'Gynaecology',
         icon: Icons.female,
         diseases: [
           'PCOS',
           'Endometriosis',
           'Uterine Fibroids',
           'Pelvic Inflammatory Disease',
+          'Ovarian Cysts',
+          'Cervical Dysplasia',
+          'Adenomyosis',
           'Menopause',
+        ],
+      ),
+      DiseaseCategory(
+        id: 'obstetrics',
+        name: 'Obstetrics',
+        icon: Icons.child_friendly,
+        diseases: [
+          'Normal Pregnancy',
+          'Gestational Diabetes',
+          'Pre-eclampsia',
+          'Eclampsia',
+          'Ectopic Pregnancy',
+          'Placenta Previa',
+          'Placental Abruption',
+          'Miscarriage',
+          'Preterm Labour',
+          'HELLP Syndrome',
+        ],
+      ),
+      DiseaseCategory(
+        id: 'menstrual',
+        name: 'Menstrual Disorders',
+        icon: Icons.calendar_month,
+        diseases: [
+          'Dysmenorrhoea',
+          'Amenorrhoea',
+          'Menorrhagia',
+          'Oligomenorrhoea',
+          'Premenstrual Syndrome',
+        ],
+      ),
+      DiseaseCategory(
+        id: 'fertility',
+        name: 'Fertility & Contraception',
+        icon: Icons.favorite,
+        diseases: [
+          'Female Infertility',
+          'Recurrent Pregnancy Loss',
+          'Contraception Counselling',
+          'IVF Management',
+        ],
+      ),
+      DiseaseCategory(
+        id: 'gyn_oncology',
+        name: 'Gynaecological Oncology',
+        icon: Icons.warning,
+        diseases: [
+          'Cervical Cancer',
+          'Ovarian Cancer',
+          'Endometrial Cancer',
+          'Vulvar Cancer',
+          'Gestational Trophoblastic Disease',
         ],
       ),
     ],
@@ -498,6 +564,7 @@ class MedicalSystemsConfig {
     endocrineSystem,
     renalSystem,
     genitourinarySystem,
+    obsGynaecSystem,
     hepatobiliarySystem,
     cardiovascularSystem,
     respiratorySystem,
