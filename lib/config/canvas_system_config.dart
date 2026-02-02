@@ -47,7 +47,7 @@ class CanvasSystemConfig {
     'thyroid': SystemConfig(
       id: 'thyroid',
       name: 'Thyroid System',
-      icon: '🦋',
+      icon: '⚕️',
       tools: [
         ConditionTool(id: 'pan', name: 'Pan Tool', color: Colors.grey, defaultSize: 0),
         ConditionTool(id: 'nodule', name: 'Nodule', color: Color(0xFF78716C), defaultSize: 12),
@@ -115,7 +115,7 @@ class CanvasSystemConfig {
     'kidney': SystemConfig(
       id: 'kidney',
       name: 'Renal System',
-      icon: '💧',
+      icon: '🔴',
       tools: [
         ConditionTool(id: 'pan', name: 'Pan Tool', color: Colors.grey, defaultSize: 0),
         ConditionTool(id: 'calculi', name: 'Calculi', color: Colors.grey, defaultSize: 8),
@@ -415,6 +415,60 @@ class CanvasSystemConfig {
         'uterus_3d': DiagramConfig(
           id: 'uterus_3d',
           name: 'Uterus Normal 3D',
+          imagePath: '',
+          category: 'anatomy',
+        ),
+        'fibroid_uterus_3d': DiagramConfig(
+          id: 'fibroid_uterus_3d',
+          name: 'Fibroid Uterus 3D',
+          imagePath: '',
+          category: 'anatomy',
+        ),
+        'simple_cyst_3d': DiagramConfig(
+          id: 'simple_cyst_3d',
+          name: 'Ovarian Cyst - Simple 3D',
+          imagePath: '',
+          category: 'anatomy',
+        ),
+        'hemorrhagic_cyst_3d': DiagramConfig(
+          id: 'hemorrhagic_cyst_3d',
+          name: 'Ovarian Cyst - Hemorrhagic 3D',
+          imagePath: '',
+          category: 'anatomy',
+        ),
+        'endometrioid_cyst_3d': DiagramConfig(
+          id: 'endometrioid_cyst_3d',
+          name: 'Ovarian Cyst - Endometrioid 3D',
+          imagePath: '',
+          category: 'anatomy',
+        ),
+        'dermoid_cyst_3d': DiagramConfig(
+          id: 'dermoid_cyst_3d',
+          name: 'Ovarian Cyst - Dermoid 3D',
+          imagePath: '',
+          category: 'anatomy',
+        ),
+        'adenomyosis_3d': DiagramConfig(
+          id: 'adenomyosis_3d',
+          name: 'Adenomyosis 3D',
+          imagePath: '',
+          category: 'anatomy',
+        ),
+        'endometrioma_3d': DiagramConfig(
+          id: 'endometrioma_3d',
+          name: 'Endometrioma 3D',
+          imagePath: '',
+          category: 'anatomy',
+        ),
+        'pcos_ovary_3d': DiagramConfig(
+          id: 'pcos_ovary_3d',
+          name: 'PCOS Ovary 3D',
+          imagePath: '',
+          category: 'anatomy',
+        ),
+        'uterine_anomalies_3d': DiagramConfig(
+          id: 'uterine_anomalies_3d',
+          name: 'Uterine Anomalies 3D',
           imagePath: '',
           category: 'anatomy',
         ),

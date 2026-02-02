@@ -1230,14 +1230,17 @@ class _CanvasScreenState extends State<CanvasScreen> {
       ],
       onChanged: (value) async {
         if (value != null) {
-          // Intercept 3D model selection
-          if (value == 'uterus_3d') {
+          // Intercept 3D model selection (any diagram ending with _3d)
+          if (value.endsWith('_3d')) {
+            final modelName = value.replaceAll('_3d', '');
+            final systemConfig = CanvasSystemConfig.systems[selectedSystem];
+            final diagramName = systemConfig?.allDiagrams[value]?.name ?? value;
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (_) => ModelViewerScreen(
-                  modelName: 'uterus',
-                  title: 'Uterus Normal 3D',
+                  modelName: modelName,
+                  title: diagramName,
                   systemId: selectedSystem,
                 ),
               ),
