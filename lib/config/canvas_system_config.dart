@@ -486,7 +486,25 @@ class CanvasSystemConfig {
         ),
         'adenomyosis_3d': DiagramConfig(
           id: 'adenomyosis_3d',
-          name: 'Adenomyosis 3D',
+          name: 'Uterine Adenomyosis 3D',
+          imagePath: '',
+          category: 'anatomy',
+        ),
+        'endometrial_polyp_3d': DiagramConfig(
+          id: 'endometrial_polyp_3d',
+          name: 'Endometrial Polyp 3D',
+          imagePath: '',
+          category: 'anatomy',
+        ),
+        'endometrial_hyperplasia_3d': DiagramConfig(
+          id: 'endometrial_hyperplasia_3d',
+          name: 'Endometrial Hyperplasia 3D',
+          imagePath: '',
+          category: 'anatomy',
+        ),
+        'endometrial_carcinoma_3d': DiagramConfig(
+          id: 'endometrial_carcinoma_3d',
+          name: 'Endometrial Carcinoma 3D',
           imagePath: '',
           category: 'anatomy',
         ),
