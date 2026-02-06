@@ -17,6 +17,8 @@ import 'widgets/floating_voice_button.dart';
 import 'screens/medical_templates/medical_systems_screen.dart';
 import 'screens/patient/visit_history_screen.dart';
 import 'screens/endocrine/thyroid_disease_module_screen.dart';
+import 'screens/setup/asset_download_screen.dart';
+import 'services/model_3d_service.dart';
 
 
 
@@ -130,40 +132,71 @@ class ClinicClarityApp extends StatelessWidget {
   }
 }
 
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
 
   @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  bool? _setupDone;
+  bool? _isLoggedIn;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkStatus();
+  }
+
+  Future<void> _checkStatus() async {
+    final setupDone = await Model3DService.isSetupDone();
+    final loggedIn = await UserService.isLoggedIn();
+    if (mounted) {
+      setState(() {
+        _setupDone = setupDone;
+        _isLoggedIn = loggedIn;
+      });
+    }
+  }
+
+  void _onSetupComplete() {
+    setState(() => _setupDone = true);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: UserService.isLoggedIn(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
+    // Still loading
+    if (_setupDone == null || _isLoggedIn == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
-        if (snapshot.data != true) {
-          return const LoginScreen();
-        }
+    // Show download screen on first launch
+    if (!_setupDone!) {
+      return AssetDownloadScreen(onComplete: _onSetupComplete);
+    }
 
-        final user = UserService.currentUser;
-        if (user == null) {
-          return const LoginScreen();
-        }
+    // Not logged in
+    if (_isLoggedIn != true) {
+      return const LoginScreen();
+    }
 
-        switch (user.role) {
-          case 'doctor':
-            return const HomeScreen();
-          case 'nurse':
-            return const NurseHomeScreen();
-          case 'patient':
-            return const PatientHomeScreen();
-          default:
-            return const LoginScreen();
-        }
-      },
-    );
+    final user = UserService.currentUser;
+    if (user == null) {
+      return const LoginScreen();
+    }
+
+    switch (user.role) {
+      case 'doctor':
+        return const HomeScreen();
+      case 'nurse':
+        return const NurseHomeScreen();
+      case 'patient':
+        return const PatientHomeScreen();
+      default:
+        return const LoginScreen();
+    }
   }
 }

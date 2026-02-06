@@ -73,20 +73,22 @@ class Model3DService {
 
   static const List<SystemAssetGroup> systemAssets = [
     SystemAssetGroup(
-      systemId: 'genitourinary',
-      name: 'Genitourinary System',
-      description: '3D models: Uterus, Reproductive organs',
-      colorValue: 0xFF8B5CF6,
-      icon: Icons.personal_injury,
+      systemId: 'gynaecology',
+      name: 'Gynaecology',
+      description: '3D models: Uterus, Fibroids, Ovarian cysts, PCOS',
+      colorValue: 0xFFEC4899,
+      icon: Icons.favorite,
       assets: [
         AssetInfo(
           id: 'uterus',
-          name: '3D Uterus',
-          systemId: 'genitourinary',
+          name: '3D Uterus (Normal)',
+          systemId: 'gynaecology',
           url:
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_models_1.glb?alt=media&token=fcf140dd-c35d-4bde-9ade-4cf743b10653',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
+        // More models will be added here as they become available:
+        // fibroid_intramural, fibroid_submucosal, fibroid_subserosal, etc.
       ],
     ),
     SystemAssetGroup(
