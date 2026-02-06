@@ -45,7 +45,7 @@ class ToolPanel extends StatefulWidget {
 
 class _ToolPanelState extends State<ToolPanel> {
   // ✅ NEW: Track expanded state for each section
-  bool _isToolsExpanded = true;
+  bool _isToolsExpanded = false;
   bool _isViewControlsExpanded = false;
   bool _isMarkersExpanded = true;
 
