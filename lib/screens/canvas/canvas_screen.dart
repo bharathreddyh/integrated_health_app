@@ -1235,6 +1235,11 @@ class _CanvasScreenState extends State<CanvasScreen> {
             final modelName = value.replaceAll('_3d', '');
             final systemConfig = CanvasSystemConfig.systems[selectedSystem];
             final diagramName = systemConfig?.allDiagrams[value]?.name ?? value;
+
+            // Find first non-3D diagram to reset to after viewing 3D
+            final firstNon3D = systemConfig?.anatomyDiagrams.keys
+                .firstWhere((k) => !k.endsWith('_3d'), orElse: () => 'uterus_normal');
+
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -1245,8 +1250,10 @@ class _CanvasScreenState extends State<CanvasScreen> {
                 ),
               ),
             );
-            // Reset dropdown back to current preset so canvas doesn't break
-            setState(() {});
+            // Reset dropdown to first non-3D diagram
+            setState(() {
+              selectedPreset = firstNon3D ?? 'uterus_normal';
+            });
             return;
           }
           if (markers.isNotEmpty || drawingPaths.isNotEmpty) {
