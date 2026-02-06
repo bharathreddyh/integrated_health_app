@@ -312,14 +312,21 @@ class Model3DService {
 
   // ─── Legacy helper (for ModelViewerScreen compatibility) ───────────
 
+  /// Download a model by name. Falls back to 'uterus' if model not found.
   Future<String> downloadModel(
     String modelName, {
     ValueChanged<double>? onProgress,
   }) async {
-    final asset = allAssets.firstWhere(
-      (a) => a.id == modelName,
-      orElse: () => throw Exception('No asset found with id: $modelName'),
-    );
+    AssetInfo? asset;
+    try {
+      asset = allAssets.firstWhere((a) => a.id == modelName);
+    } catch (_) {
+      // Model not registered - fallback to uterus as placeholder
+      asset = allAssets.firstWhere(
+        (a) => a.id == 'uterus',
+        orElse: () => throw Exception('No fallback model available'),
+      );
+    }
     return downloadAsset(asset, onProgress: onProgress);
   }
 
