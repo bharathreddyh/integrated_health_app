@@ -418,9 +418,45 @@ class CanvasSystemConfig {
           imagePath: '',
           category: 'anatomy',
         ),
-        'fibroid_uterus_3d': DiagramConfig(
-          id: 'fibroid_uterus_3d',
-          name: 'Fibroid Uterus 3D',
+        'fibroid_intramural_3d': DiagramConfig(
+          id: 'fibroid_intramural_3d',
+          name: 'Fibroid - Intramural 3D',
+          imagePath: '',
+          category: 'anatomy',
+        ),
+        'fibroid_submucosal_3d': DiagramConfig(
+          id: 'fibroid_submucosal_3d',
+          name: 'Fibroid - Submucosal 3D',
+          imagePath: '',
+          category: 'anatomy',
+        ),
+        'fibroid_subserosal_3d': DiagramConfig(
+          id: 'fibroid_subserosal_3d',
+          name: 'Fibroid - Subserosal 3D',
+          imagePath: '',
+          category: 'anatomy',
+        ),
+        'fibroid_pedunculated_3d': DiagramConfig(
+          id: 'fibroid_pedunculated_3d',
+          name: 'Fibroid - Pedunculated 3D',
+          imagePath: '',
+          category: 'anatomy',
+        ),
+        'fibroid_cervical_3d': DiagramConfig(
+          id: 'fibroid_cervical_3d',
+          name: 'Fibroid - Cervical 3D',
+          imagePath: '',
+          category: 'anatomy',
+        ),
+        'fibroid_multiple_3d': DiagramConfig(
+          id: 'fibroid_multiple_3d',
+          name: 'Fibroid - Multiple 3D',
+          imagePath: '',
+          category: 'anatomy',
+        ),
+        'fibroid_degenerating_3d': DiagramConfig(
+          id: 'fibroid_degenerating_3d',
+          name: 'Fibroid - Degenerating 3D',
           imagePath: '',
           category: 'anatomy',
         ),
