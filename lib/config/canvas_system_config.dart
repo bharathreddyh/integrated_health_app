@@ -47,7 +47,7 @@ class CanvasSystemConfig {
     'thyroid': SystemConfig(
       id: 'thyroid',
       name: 'Thyroid System',
-      icon: '⚕️',
+      icon: '🦋',
       tools: [
         ConditionTool(id: 'pan', name: 'Pan Tool', color: Colors.grey, defaultSize: 0),
         ConditionTool(id: 'nodule', name: 'Nodule', color: Color(0xFF78716C), defaultSize: 12),
@@ -115,7 +115,7 @@ class CanvasSystemConfig {
     'kidney': SystemConfig(
       id: 'kidney',
       name: 'Renal System',
-      icon: '🔴',
+      icon: '💎',
       tools: [
         ConditionTool(id: 'pan', name: 'Pan Tool', color: Colors.grey, defaultSize: 0),
         ConditionTool(id: 'calculi', name: 'Calculi', color: Colors.grey, defaultSize: 8),
@@ -384,7 +384,7 @@ class CanvasSystemConfig {
     'gynaecology': SystemConfig(
       id: 'gynaecology',
       name: 'Gynaecology',
-      icon: '♀️',
+      icon: '🌸',
       tools: [
         ConditionTool(id: 'pan', name: 'Pan Tool', color: Colors.grey, defaultSize: 0),
         ConditionTool(id: 'lesion', name: 'Lesion', color: Color(0xFFDC2626), defaultSize: 12),
