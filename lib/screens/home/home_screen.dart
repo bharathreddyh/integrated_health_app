@@ -11,6 +11,7 @@ import '../medical_templates/patient_selection_dialog.dart';
 import '../patient/visit_history_screen.dart';
 import '../canvas/canvas_system_selection_screen.dart';
 import '../library/library_screen.dart';
+import '../setup/asset_download_screen.dart';
 
 
 
@@ -441,10 +442,10 @@ class _HomeScreenState extends State<HomeScreen> {
           Text('Select an action to begin', style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
           const SizedBox(height: 32),
 
-          // 3-CARD LAYOUT: Canvas + Medical Templates + Library
+          // 4-CARD LAYOUT: Canvas + Medical Templates + Library + Downloads
           LayoutBuilder(
             builder: (context, constraints) {
-              final cardWidth = (constraints.maxWidth - 48) / 3;
+              final cardWidth = (constraints.maxWidth - 72) / 4;
 
               return Wrap(
                 spacing: 24,
@@ -516,6 +517,27 @@ class _HomeScreenState extends State<HomeScreen> {
                           context,
                           MaterialPageRoute(
                             builder: (_) => const LibraryScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: cardWidth,
+                    child: _buildFeatureCard(
+                      icon: Icons.download,
+                      title: 'Downloads',
+                      subtitle: '3D models & assets',
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF10B981), Color(0xFF059669)],
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AssetDownloadScreen(
+                              onComplete: () => Navigator.pop(context),
+                            ),
                           ),
                         );
                       },
