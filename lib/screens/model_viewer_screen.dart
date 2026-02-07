@@ -627,6 +627,33 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     );
   }
 
+  void _zoomIn() {
+    _webController?.runJavaScript('''
+      var mv = document.querySelector('model-viewer');
+      var orbit = mv.getCameraOrbit();
+      orbit.radius = Math.max(orbit.radius * 0.8, 0.5);
+      mv.cameraOrbit = orbit.toString();
+    ''');
+  }
+
+  void _zoomOut() {
+    _webController?.runJavaScript('''
+      var mv = document.querySelector('model-viewer');
+      var orbit = mv.getCameraOrbit();
+      orbit.radius = Math.min(orbit.radius * 1.25, 20);
+      mv.cameraOrbit = orbit.toString();
+    ''');
+  }
+
+  void _resetView() {
+    _webController?.runJavaScript('''
+      var mv = document.querySelector('model-viewer');
+      mv.cameraOrbit = 'auto auto auto';
+      mv.cameraTarget = 'auto auto auto';
+      mv.fieldOfView = 'auto';
+    ''');
+  }
+
   Widget _buildViewer() {
     if (_webController == null) {
       return const Center(child: CircularProgressIndicator());
@@ -734,7 +761,75 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
                 ),
               ),
             ),
+          // Zoom controls - only show when not in draw mode
+          if (!_drawMode)
+            Positioned(
+              right: 16,
+              bottom: 24,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Zoom In
+                  _buildZoomButton(
+                    icon: Icons.add,
+                    onPressed: _zoomIn,
+                    tooltip: 'Zoom in',
+                  ),
+                  const SizedBox(height: 8),
+                  // Reset View
+                  _buildZoomButton(
+                    icon: Icons.crop_free,
+                    onPressed: _resetView,
+                    tooltip: 'Reset view',
+                    isSmall: true,
+                  ),
+                  const SizedBox(height: 8),
+                  // Zoom Out
+                  _buildZoomButton(
+                    icon: Icons.remove,
+                    onPressed: _zoomOut,
+                    tooltip: 'Zoom out',
+                  ),
+                ],
+              ),
+            ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildZoomButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    required String tooltip,
+    bool isSmall = false,
+  }) {
+    final size = isSmall ? 40.0 : 48.0;
+    final iconSize = isSmall ? 20.0 : 24.0;
+
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.white,
+        elevation: 4,
+        shadowColor: Colors.black26,
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onPressed,
+          customBorder: const CircleBorder(),
+          child: Container(
+            width: size,
+            height: size,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: iconSize,
+              color: Colors.grey.shade700,
+            ),
+          ),
+        ),
       ),
     );
   }
