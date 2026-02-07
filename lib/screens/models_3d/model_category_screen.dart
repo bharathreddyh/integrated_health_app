@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import '../../config/model_3d_config.dart';
+import '../../widgets/model_thumbnail_widget.dart';
 import '../model_viewer_screen.dart';
 import 'model_compare_screen.dart';
 
@@ -565,20 +566,12 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
 
                     const Spacer(),
 
-                    // 3D Preview Placeholder
+                    // 3D Preview Thumbnail
                     Center(
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: widget.category.color.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.view_in_ar_rounded,
-                          size: 40,
-                          color: widget.category.color,
-                        ),
+                      child: ModelThumbnailWidget(
+                        modelId: model.modelFileName,
+                        accentColor: widget.category.color,
+                        size: 80,
                       ),
                     ),
 
