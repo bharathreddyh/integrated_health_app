@@ -48,6 +48,9 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
   List<_DrawingStroke> _strokes = [];
   _DrawingStroke? _currentStroke;
 
+  // Drawing visibility toggle
+  bool _showDrawings = true;
+
   // UI capture state - hide overlays during screenshot
   bool _hideUIForCapture = false;
 
@@ -515,6 +518,16 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
               ),
             ],
             if (!_drawMode) ...[
+              // Show/hide drawings toggle (only if there are drawings)
+              if (_strokes.isNotEmpty)
+                IconButton(
+                  icon: Icon(
+                    _showDrawings ? Icons.visibility : Icons.visibility_off,
+                    color: _showDrawings ? Colors.blue : null,
+                  ),
+                  tooltip: _showDrawings ? 'Hide drawings' : 'Show drawings',
+                  onPressed: () => setState(() => _showDrawings = !_showDrawings),
+                ),
               IconButton(
                 icon: const Icon(Icons.photo_library_outlined),
                 tooltip: 'Saved images',
@@ -767,8 +780,8 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
                 ),
               ),
             ),
-          // Existing drawings shown even when not in draw mode
-          if (!_drawMode && _strokes.isNotEmpty)
+          // Existing drawings shown even when not in draw mode (respects visibility toggle)
+          if (!_drawMode && _strokes.isNotEmpty && _showDrawings)
             Positioned.fill(
               child: IgnorePointer(
                 child: CustomPaint(
