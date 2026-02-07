@@ -3,6 +3,7 @@
 // via webview_flutter with a local HTTP server to serve the file.
 // Includes a drawing overlay for annotation on the 3D model.
 
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -56,6 +57,12 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
   // Annotation visibility toggle
   bool _showAnnotations = true;
 
+  // Annotation edit mode
+  bool _annotationEditMode = false;
+
+  // Custom annotations (user-added)
+  List<ModelAnnotation> _customAnnotations = [];
+
   // UI capture state - hide overlays during screenshot
   bool _hideUIForCapture = false;
 
@@ -66,6 +73,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
   void initState() {
     super.initState();
     _findCurrentModelConfig();
+    _loadCustomAnnotations();
     _loadModel();
   }
 
@@ -79,6 +87,53 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
         }
       }
     }
+  }
+
+  Future<void> _loadCustomAnnotations() async {
+    try {
+      final baseDir = await _service.getCacheDirectory();
+      final file = File('$baseDir/annotations/${widget.modelName}_hotspots.json');
+      if (await file.exists()) {
+        final jsonStr = await file.readAsString();
+        final List<dynamic> jsonList = jsonDecode(jsonStr);
+        setState(() {
+          _customAnnotations = jsonList.map((j) => ModelAnnotation(
+            id: j['id'] as String,
+            label: j['label'] as String,
+            description: j['description'] as String?,
+            position: j['position'] as String,
+            normal: j['normal'] as String? ?? '0 0 1',
+          )).toList();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading custom annotations: $e');
+    }
+  }
+
+  Future<void> _saveCustomAnnotations() async {
+    try {
+      final baseDir = await _service.getCacheDirectory();
+      final dir = Directory('$baseDir/annotations');
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+      final file = File('${dir.path}/${widget.modelName}_hotspots.json');
+      final jsonList = _customAnnotations.map((a) => {
+        'id': a.id,
+        'label': a.label,
+        'description': a.description,
+        'position': a.position,
+        'normal': a.normal,
+      }).toList();
+      await file.writeAsString(jsonEncode(jsonList));
+    } catch (e) {
+      debugPrint('Error saving custom annotations: $e');
+    }
+  }
+
+  List<ModelAnnotation> get _allAnnotations {
+    return [...(_currentModelConfig?.annotations ?? []), ..._customAnnotations];
   }
 
   @override
@@ -149,10 +204,65 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     final controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0xFFF0F0F0))
+      ..addJavaScriptChannel(
+        'AnnotationBridge',
+        onMessageReceived: (message) {
+          _handleAnnotationTap(message.message);
+        },
+      )
       ..loadRequest(Uri.parse('http://127.0.0.1:$port/'));
 
     if (mounted) {
       setState(() => _webController = controller);
+    }
+  }
+
+  void _handleAnnotationTap(String message) async {
+    if (!_annotationEditMode) return;
+
+    try {
+      final data = jsonDecode(message);
+      final position = data['position'] as String;
+      final normal = data['normal'] as String;
+
+      if (!mounted) return;
+
+      // Show dialog to add annotation
+      final result = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (ctx) => _AddAnnotationDialog(position: position, normal: normal),
+      );
+
+      if (result != null && mounted) {
+        final newAnnotation = ModelAnnotation(
+          id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
+          label: result['label'] as String,
+          description: result['description'] as String?,
+          position: result['position'] as String,
+          normal: result['normal'] as String,
+        );
+
+        setState(() {
+          _customAnnotations.add(newAnnotation);
+        });
+        await _saveCustomAnnotations();
+
+        // Reload WebView to show new annotation
+        if (_localPath != null) {
+          await _initWebView(_localPath!);
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Added annotation: ${result['label']}'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error handling annotation tap: $e');
     }
   }
 
@@ -188,6 +298,43 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     });
     // Toggle annotations in WebView via JavaScript
     _webController?.runJavaScript('toggleAnnotations($_showAnnotations);');
+  }
+
+  void _toggleAnnotationEditMode() {
+    setState(() {
+      _annotationEditMode = !_annotationEditMode;
+    });
+    // Toggle edit mode in WebView via JavaScript
+    _webController?.runJavaScript('setEditMode($_annotationEditMode);');
+  }
+
+  void _showManageAnnotationsDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => _ManageAnnotationsDialog(
+        customAnnotations: _customAnnotations,
+        onDelete: (annotation) async {
+          setState(() {
+            _customAnnotations.removeWhere((a) => a.id == annotation.id);
+          });
+          await _saveCustomAnnotations();
+          // Reload WebView
+          if (_localPath != null) {
+            await _initWebView(_localPath!);
+          }
+        },
+        onDeleteAll: () async {
+          setState(() {
+            _customAnnotations.clear();
+          });
+          await _saveCustomAnnotations();
+          // Reload WebView
+          if (_localPath != null) {
+            await _initWebView(_localPath!);
+          }
+        },
+      ),
+    );
   }
 
   void _clearDrawings() {
@@ -470,11 +617,12 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
   }
 
   String _buildHtml(int port) {
-    // Generate hotspot HTML from annotations
-    final annotations = _currentModelConfig?.annotations ?? [];
+    // Generate hotspot HTML from ALL annotations (config + custom)
+    final annotations = _allAnnotations;
     final hotspotsHtml = annotations.map((annotation) {
+      final isCustom = annotation.id.startsWith('custom_');
       return '''
-    <button class="hotspot" slot="hotspot-${annotation.id}"
+    <button class="hotspot${isCustom ? ' custom' : ''}" slot="hotspot-${annotation.id}"
             data-position="${annotation.position}"
             data-normal="${annotation.normal}"
             data-visibility-attribute="visible">
@@ -519,6 +667,9 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
       cursor: pointer;
       transition: transform 0.2s, opacity 0.3s;
     }
+    .hotspot.custom {
+      background: #2196F3;
+    }
     .hotspot:hover {
       transform: scale(1.2);
     }
@@ -550,11 +701,16 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     .hotspot.show-label .annotation-label {
       opacity: 1;
     }
+    /* Edit mode cursor */
+    model-viewer.edit-mode {
+      cursor: crosshair;
+    }
   </style>
 </head>
 <body>
   <div id="loading">Loading 3D model...</div>
   <model-viewer
+    id="viewer"
     src="http://127.0.0.1:$port/model.glb"
     alt="${widget.title}"
     auto-rotate
@@ -568,8 +724,36 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
 $hotspotsHtml
   </model-viewer>
   <script>
-    document.querySelector('model-viewer').addEventListener('load', function() {
+    var modelViewer = document.getElementById('viewer');
+    var editMode = false;
+
+    modelViewer.addEventListener('load', function() {
       document.getElementById('loading').style.display = 'none';
+    });
+
+    // Handle click on model to get 3D position
+    modelViewer.addEventListener('click', function(event) {
+      if (!editMode) return;
+
+      // Get position on the model surface
+      var rect = modelViewer.getBoundingClientRect();
+      var x = event.clientX - rect.left;
+      var y = event.clientY - rect.top;
+
+      // Use model-viewer's positionAndNormalFromPoint method
+      var hit = modelViewer.positionAndNormalFromPoint(x, y);
+      if (hit) {
+        var pos = hit.position;
+        var norm = hit.normal;
+        var posStr = pos.x.toFixed(4) + ' ' + pos.y.toFixed(4) + ' ' + pos.z.toFixed(4);
+        var normStr = norm.x.toFixed(4) + ' ' + norm.y.toFixed(4) + ' ' + norm.z.toFixed(4);
+
+        // Send to Flutter
+        AnnotationBridge.postMessage(JSON.stringify({
+          position: posStr,
+          normal: normStr
+        }));
+      }
     });
 
     // Function to toggle annotation visibility
@@ -582,6 +766,18 @@ $hotspotsHtml
           h.classList.add('hidden');
         }
       });
+    }
+
+    // Function to toggle edit mode
+    function setEditMode(enabled) {
+      editMode = enabled;
+      if (enabled) {
+        modelViewer.classList.add('edit-mode');
+        modelViewer.removeAttribute('auto-rotate');
+      } else {
+        modelViewer.classList.remove('edit-mode');
+        modelViewer.setAttribute('auto-rotate', '');
+      }
     }
 
     // Function to toggle labels always visible
@@ -634,9 +830,9 @@ $hotspotsHtml
                 onPressed: _saveScreenshot,
               ),
             ],
-            if (!_drawMode) ...[
-              // Annotation toggle (only if model has annotations)
-              if (_currentModelConfig?.hasAnnotations ?? false)
+            if (!_drawMode && !_annotationEditMode) ...[
+              // Annotation toggle (only if there are any annotations)
+              if (_allAnnotations.isNotEmpty)
                 IconButton(
                   icon: Icon(
                     _showAnnotations ? Icons.label : Icons.label_off_outlined,
@@ -644,6 +840,19 @@ $hotspotsHtml
                   ),
                   tooltip: _showAnnotations ? 'Hide annotations' : 'Show annotations',
                   onPressed: _toggleAnnotations,
+                ),
+              // Add annotation mode
+              IconButton(
+                icon: const Icon(Icons.add_location_alt_outlined),
+                tooltip: 'Add annotations',
+                onPressed: _toggleAnnotationEditMode,
+              ),
+              // Manage custom annotations (only if there are custom annotations)
+              if (_customAnnotations.isNotEmpty)
+                IconButton(
+                  icon: const Icon(Icons.edit_location_alt),
+                  tooltip: 'Manage annotations',
+                  onPressed: _showManageAnnotationsDialog,
                 ),
               // Compare with another model
               IconButton(
@@ -923,8 +1132,50 @@ $hotspotsHtml
                 ),
               ),
             ),
-          // Zoom controls - only show when not in draw mode
-          if (!_drawMode)
+          // Annotation edit mode indicator
+          if (_annotationEditMode && !_hideUIForCapture)
+            Positioned(
+              top: 12,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: GestureDetector(
+                  onTap: _toggleAnnotationEditMode,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add_location_alt, color: Colors.white, size: 16),
+                        SizedBox(width: 8),
+                        Text(
+                          'Tap on model to add annotation',
+                          style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          '| Tap to exit',
+                          style: TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          // Zoom controls - only show when not in draw mode or edit mode
+          if (!_drawMode && !_annotationEditMode)
             Positioned(
               right: 16,
               bottom: 24,
@@ -1607,6 +1858,294 @@ class _ModelPickerSheetState extends State<_ModelPickerSheet> {
                       );
                     },
                   ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Dialog to add a new annotation
+class _AddAnnotationDialog extends StatefulWidget {
+  final String position;
+  final String normal;
+
+  const _AddAnnotationDialog({
+    required this.position,
+    required this.normal,
+  });
+
+  @override
+  State<_AddAnnotationDialog> createState() => _AddAnnotationDialogState();
+}
+
+class _AddAnnotationDialogState extends State<_AddAnnotationDialog> {
+  final _labelController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _positionController = TextEditingController();
+  final _normalController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _positionController.text = widget.position;
+    _normalController.text = widget.normal;
+  }
+
+  @override
+  void dispose() {
+    _labelController.dispose();
+    _descriptionController.dispose();
+    _positionController.dispose();
+    _normalController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Row(
+        children: [
+          Icon(Icons.add_location_alt, color: Colors.green),
+          SizedBox(width: 10),
+          Text('Add Annotation'),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _labelController,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Label *',
+                hintText: 'e.g. Fundus, Fibroid, etc.',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Description (optional)',
+                hintText: 'Additional details...',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 2,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Position (x y z)',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 4),
+            TextField(
+              controller: _positionController,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Normal (x y z)',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 4),
+            TextField(
+              controller: _normalController,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final label = _labelController.text.trim();
+            if (label.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Label is required')),
+              );
+              return;
+            }
+            Navigator.pop(context, {
+              'label': label,
+              'description': _descriptionController.text.trim().isEmpty
+                  ? null
+                  : _descriptionController.text.trim(),
+              'position': _positionController.text.trim(),
+              'normal': _normalController.text.trim(),
+            });
+          },
+          child: const Text('Add'),
+        ),
+      ],
+    );
+  }
+}
+
+// Dialog to manage custom annotations
+class _ManageAnnotationsDialog extends StatelessWidget {
+  final List<ModelAnnotation> customAnnotations;
+  final Function(ModelAnnotation) onDelete;
+  final VoidCallback onDeleteAll;
+
+  const _ManageAnnotationsDialog({
+    required this.customAnnotations,
+    required this.onDelete,
+    required this.onDeleteAll,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      insetPadding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 8, 0),
+            child: Row(
+              children: [
+                const Icon(Icons.edit_location_alt, size: 22, color: Colors.blue),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Custom Annotations (${customAnnotations.length})',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                if (customAnnotations.length > 1)
+                  TextButton.icon(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Delete All?'),
+                          content: Text('Delete all ${customAnnotations.length} custom annotations?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('Cancel'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                Navigator.pop(context);
+                                onDeleteAll();
+                              },
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                              child: const Text('Delete All', style: TextStyle(color: Colors.white)),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.delete_sweep, size: 18, color: Colors.red),
+                    label: const Text('Clear All', style: TextStyle(color: Colors.red)),
+                  ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+          const Divider(),
+          Flexible(
+            child: ListView.builder(
+              shrinkWrap: true,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              itemCount: customAnnotations.length,
+              itemBuilder: (context, index) {
+                final annotation = customAnnotations[index];
+                return Card(
+                  child: ListTile(
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.location_on, color: Colors.blue, size: 20),
+                    ),
+                    title: Text(
+                      annotation.label,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (annotation.description != null)
+                          Text(
+                            annotation.description!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                          ),
+                        Text(
+                          'pos: ${annotation.position}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontFamily: 'monospace',
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Delete Annotation?'),
+                            content: Text('Delete "${annotation.label}"?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: const Text('Cancel'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.pop(ctx);
+                                  Navigator.pop(context);
+                                  onDelete(annotation);
+                                },
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                child: const Text('Delete', style: TextStyle(color: Colors.white)),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    isThreeLine: annotation.description != null,
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              'Blue dots are custom annotations, green are preset',
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+            ),
           ),
         ],
       ),
