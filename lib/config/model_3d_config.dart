@@ -4,6 +4,25 @@
 
 import 'package:flutter/material.dart';
 
+/// Annotation/hotspot for 3D models
+/// Position is in 3D space coordinates (x y z) relative to the model
+/// Normal is the direction the annotation faces (for proper positioning)
+class ModelAnnotation {
+  final String id;
+  final String label;
+  final String? description;
+  final String position; // "x y z" format, e.g., "0 0.5 0.2"
+  final String normal; // "x y z" format, e.g., "0 1 0" (pointing up)
+
+  const ModelAnnotation({
+    required this.id,
+    required this.label,
+    this.description,
+    required this.position,
+    this.normal = '0 0 1', // Default facing camera
+  });
+}
+
 class Model3DItem {
   final String id;
   final String name;
@@ -11,6 +30,7 @@ class Model3DItem {
   final String modelFileName; // Firebase model filename (without extension)
   final List<String> tags;
   final bool isPremium;
+  final List<ModelAnnotation> annotations; // Hotspots/labels on the model
 
   const Model3DItem({
     required this.id,
@@ -19,6 +39,7 @@ class Model3DItem {
     required this.modelFileName,
     this.tags = const [],
     this.isPremium = false,
+    this.annotations = const [],
   });
 
   /// Get the thumbnail asset path for this model
@@ -28,6 +49,9 @@ class Model3DItem {
 
   /// Animated thumbnail (GIF) path - optional, for rotating preview
   String get animatedThumbnailPath => 'assets/images/model_thumbnails/$modelFileName.gif';
+
+  /// Check if model has annotations
+  bool get hasAnnotations => annotations.isNotEmpty;
 }
 
 class Model3DCategory {
@@ -67,6 +91,71 @@ class Model3DConfig {
           description: 'Normal uterine anatomy showing myometrium, endometrium, and cervix',
           modelFileName: 'uterus',
           tags: ['anatomy', 'normal', 'uterus'],
+          annotations: [
+            ModelAnnotation(
+              id: 'fundus',
+              label: 'Fundus',
+              description: 'Upper rounded portion of the uterus',
+              position: '0 0.08 0.02',
+              normal: '0 1 0.3',
+            ),
+            ModelAnnotation(
+              id: 'body',
+              label: 'Body (Corpus)',
+              description: 'Main body of the uterus',
+              position: '0 0.03 0.03',
+              normal: '0 0 1',
+            ),
+            ModelAnnotation(
+              id: 'cervix',
+              label: 'Cervix',
+              description: 'Lower narrow portion connecting to vagina',
+              position: '0 -0.05 0.02',
+              normal: '0 -0.5 1',
+            ),
+            ModelAnnotation(
+              id: 'endometrium',
+              label: 'Endometrium',
+              description: 'Inner lining of the uterus',
+              position: '0.01 0.02 0.01',
+              normal: '0.5 0 1',
+            ),
+            ModelAnnotation(
+              id: 'myometrium',
+              label: 'Myometrium',
+              description: 'Muscular wall of the uterus',
+              position: '-0.03 0.04 0.03',
+              normal: '-1 0 0.5',
+            ),
+            ModelAnnotation(
+              id: 'left_tube',
+              label: 'Left Fallopian Tube',
+              description: 'Tube connecting ovary to uterus',
+              position: '-0.06 0.06 0',
+              normal: '-1 0.5 0',
+            ),
+            ModelAnnotation(
+              id: 'right_tube',
+              label: 'Right Fallopian Tube',
+              description: 'Tube connecting ovary to uterus',
+              position: '0.06 0.06 0',
+              normal: '1 0.5 0',
+            ),
+            ModelAnnotation(
+              id: 'left_ovary',
+              label: 'Left Ovary',
+              description: 'Female gonad producing eggs',
+              position: '-0.08 0.04 0',
+              normal: '-1 0 0',
+            ),
+            ModelAnnotation(
+              id: 'right_ovary',
+              label: 'Right Ovary',
+              description: 'Female gonad producing eggs',
+              position: '0.08 0.04 0',
+              normal: '1 0 0',
+            ),
+          ],
         ),
 
         // Fibroids

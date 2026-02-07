@@ -53,13 +53,32 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
   // Drawing visibility toggle
   bool _showDrawings = true;
 
+  // Annotation visibility toggle
+  bool _showAnnotations = true;
+
   // UI capture state - hide overlays during screenshot
   bool _hideUIForCapture = false;
+
+  // Current model config (for annotations)
+  Model3DItem? _currentModelConfig;
 
   @override
   void initState() {
     super.initState();
+    _findCurrentModelConfig();
     _loadModel();
+  }
+
+  void _findCurrentModelConfig() {
+    // Find the current model in config to get annotations
+    for (final category in Model3DConfig.categories) {
+      for (final model in category.models) {
+        if (model.modelFileName == widget.modelName) {
+          _currentModelConfig = model;
+          return;
+        }
+      }
+    }
   }
 
   @override
@@ -161,6 +180,14 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     if (_strokes.isNotEmpty) {
       setState(() => _strokes.removeLast());
     }
+  }
+
+  void _toggleAnnotations() {
+    setState(() {
+      _showAnnotations = !_showAnnotations;
+    });
+    // Toggle annotations in WebView via JavaScript
+    _webController?.runJavaScript('toggleAnnotations($_showAnnotations);');
   }
 
   void _clearDrawings() {
@@ -443,6 +470,18 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
   }
 
   String _buildHtml(int port) {
+    // Generate hotspot HTML from annotations
+    final annotations = _currentModelConfig?.annotations ?? [];
+    final hotspotsHtml = annotations.map((annotation) {
+      return '''
+    <button class="hotspot" slot="hotspot-${annotation.id}"
+            data-position="${annotation.position}"
+            data-normal="${annotation.normal}"
+            data-visibility-attribute="visible">
+      <div class="annotation-label">${annotation.label}</div>
+    </button>''';
+    }).join('\n');
+
     return '''
 <!DOCTYPE html>
 <html>
@@ -468,6 +507,49 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
       font-size: 16px;
       z-index: 10;
     }
+    /* Annotation hotspot styles */
+    .hotspot {
+      display: block;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      background: #4CAF50;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: transform 0.2s, opacity 0.3s;
+    }
+    .hotspot:hover {
+      transform: scale(1.2);
+    }
+    .hotspot.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .annotation-label {
+      position: absolute;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .hotspot:hover .annotation-label {
+      opacity: 1;
+    }
+    /* Always show labels when annotations visible */
+    .hotspot.show-label .annotation-label {
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
@@ -483,11 +565,36 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     interaction-prompt="auto"
     style="width:100%;height:100%;"
     loading="eager">
+$hotspotsHtml
   </model-viewer>
   <script>
     document.querySelector('model-viewer').addEventListener('load', function() {
       document.getElementById('loading').style.display = 'none';
     });
+
+    // Function to toggle annotation visibility
+    function toggleAnnotations(visible) {
+      var hotspots = document.querySelectorAll('.hotspot');
+      hotspots.forEach(function(h) {
+        if (visible) {
+          h.classList.remove('hidden');
+        } else {
+          h.classList.add('hidden');
+        }
+      });
+    }
+
+    // Function to toggle labels always visible
+    function toggleLabelsAlwaysVisible(visible) {
+      var hotspots = document.querySelectorAll('.hotspot');
+      hotspots.forEach(function(h) {
+        if (visible) {
+          h.classList.add('show-label');
+        } else {
+          h.classList.remove('show-label');
+        }
+      });
+    }
   </script>
 </body>
 </html>
@@ -528,6 +635,16 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
               ),
             ],
             if (!_drawMode) ...[
+              // Annotation toggle (only if model has annotations)
+              if (_currentModelConfig?.hasAnnotations ?? false)
+                IconButton(
+                  icon: Icon(
+                    _showAnnotations ? Icons.label : Icons.label_off_outlined,
+                    color: _showAnnotations ? Colors.green : null,
+                  ),
+                  tooltip: _showAnnotations ? 'Hide annotations' : 'Show annotations',
+                  onPressed: _toggleAnnotations,
+                ),
               // Compare with another model
               IconButton(
                 icon: const Icon(Icons.compare_arrows),
