@@ -1,13 +1,18 @@
 // lib/screens/setup/asset_download_screen.dart
-// First-launch screen for downloading 3D model assets
+// Screen for downloading 3D model assets
 
 import 'package:flutter/material.dart';
 import '../../services/model_3d_service.dart';
 
 class AssetDownloadScreen extends StatefulWidget {
   final VoidCallback onComplete;
+  final bool isFirstLaunch;
 
-  const AssetDownloadScreen({super.key, required this.onComplete});
+  const AssetDownloadScreen({
+    super.key,
+    required this.onComplete,
+    this.isFirstLaunch = false,
+  });
 
   @override
   State<AssetDownloadScreen> createState() => _AssetDownloadScreenState();
@@ -19,12 +24,12 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
   final Map<String, double> _downloadProgress = {};
   final Map<String, bool> _downloadComplete = {};
   bool _isDownloading = false;
+  bool _downloadFinished = false;
   String? _currentlyDownloading;
 
   @override
   void initState() {
     super.initState();
-    // Pre-select systems that have assets
     for (final system in Model3DService.availableSystems) {
       _selectedSystems[system.systemId] = true;
       _downloadProgress[system.systemId] = 0.0;
@@ -46,13 +51,44 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
     }
   }
 
-  Future<void> _startDownload() async {
-    setState(() => _isDownloading = true);
+  bool get _allDownloaded {
+    return Model3DService.availableSystems.every(
+      (s) => _downloadComplete[s.systemId] == true,
+    );
+  }
 
+  int get _pendingDownloadCount {
+    return _selectedSystems.entries
+        .where((e) => e.value && !(_downloadComplete[e.key] ?? false))
+        .length;
+  }
+
+  Future<void> _startDownload() async {
     final systemsToDownload = _selectedSystems.entries
         .where((e) => e.value && !(_downloadComplete[e.key] ?? false))
         .map((e) => e.key)
         .toList();
+
+    if (systemsToDownload.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 12),
+              Text('All selected systems are already downloaded!'),
+            ],
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isDownloading = true;
+      _downloadFinished = false;
+    });
 
     for (final systemId in systemsToDownload) {
       setState(() => _currentlyDownloading = systemId);
@@ -84,13 +120,28 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
     setState(() {
       _isDownloading = false;
       _currentlyDownloading = null;
+      _downloadFinished = true;
     });
 
     await Model3DService.markSetupDone();
-    widget.onComplete();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Download complete!'),
+            ],
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
   }
 
-  void _skip() async {
+  void _goBack() async {
     await Model3DService.markSetupDone();
     widget.onComplete();
   }
@@ -122,6 +173,14 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
     final availableSystems = Model3DService.availableSystems;
 
     return Scaffold(
+      appBar: widget.isFirstLaunch
+          ? null
+          : AppBar(
+              title: const Text('Downloads'),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              foregroundColor: Colors.black87,
+            ),
       body: SafeArea(
         child: Column(
           children: [
@@ -130,22 +189,24 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  const Icon(
-                    Icons.download_rounded,
+                  Icon(
+                    _allDownloaded ? Icons.check_circle : Icons.download_rounded,
                     size: 64,
-                    color: Color(0xFF3B82F6),
+                    color: _allDownloaded ? Colors.green : const Color(0xFF3B82F6),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Download 3D Models',
-                    style: TextStyle(
+                  Text(
+                    _allDownloaded ? 'All Models Downloaded' : 'Download 3D Models',
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Select which medical systems to download.\nYou can download more later from settings.',
+                    _allDownloaded
+                        ? 'All 3D models are ready to use.'
+                        : 'Select which medical systems to download.\nYou can download more later from settings.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
@@ -163,7 +224,7 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.check_circle, size: 64, color: Colors.green),
+                          const Icon(Icons.check_circle, size: 64, color: Colors.green),
                           const SizedBox(height: 16),
                           const Text('No downloads available'),
                           const SizedBox(height: 8),
@@ -250,12 +311,37 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          system.name,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 16,
-                                          ),
+                                        Row(
+                                          children: [
+                                            Text(
+                                              system.name,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 16,
+                                              ),
+                                            ),
+                                            if (isComplete) ...[
+                                              const SizedBox(width: 8),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 6,
+                                                  vertical: 2,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.green.shade100,
+                                                  borderRadius: BorderRadius.circular(4),
+                                                ),
+                                                child: Text(
+                                                  'Downloaded',
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    color: Colors.green.shade700,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
@@ -291,14 +377,18 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.grey[100],
+                                      color: isComplete
+                                          ? Colors.green.shade50
+                                          : Colors.grey[100],
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
                                       system.formattedSize,
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: Colors.grey[700],
+                                        color: isComplete
+                                            ? Colors.green.shade700
+                                            : Colors.grey[700],
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -327,11 +417,11 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
               ),
               child: Column(
                 children: [
-                  if (_selectedCount > 0 && !_isDownloading)
+                  if (!_isDownloading && !_allDownloaded && _pendingDownloadCount > 0)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Text(
-                        '$_selectedCount system(s) selected • ${_formatSize(_totalSelectedSize)}',
+                        '$_pendingDownloadCount system(s) to download • ${_formatSize(_totalSelectedSize)}',
                         style: TextStyle(
                           fontSize: 13,
                           color: Colors.grey[600],
@@ -340,48 +430,58 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
                     ),
                   Row(
                     children: [
-                      // Skip button
+                      // Back/Skip button
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: _isDownloading ? null : _skip,
+                          onPressed: _isDownloading ? null : _goBack,
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: const Text('Skip for Now'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Download button
-                      Expanded(
-                        flex: 2,
-                        child: ElevatedButton(
-                          onPressed: (_isDownloading || _selectedCount == 0)
-                              ? null
-                              : _startDownload,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF3B82F6),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Text(
+                            widget.isFirstLaunch
+                                ? (_downloadFinished || _allDownloaded ? 'Continue' : 'Skip for Now')
+                                : 'Back',
                           ),
-                          child: _isDownloading
-                              ? const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    SizedBox(width: 12),
-                                    Text('Downloading...'),
-                                  ],
-                                )
-                              : Text('Download ${_selectedCount > 0 ? "($_selectedCount)" : ""}'),
                         ),
                       ),
+                      if (!_allDownloaded) ...[
+                        const SizedBox(width: 12),
+                        // Download button
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton(
+                            onPressed: (_isDownloading || _pendingDownloadCount == 0)
+                                ? null
+                                : _startDownload,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF3B82F6),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                            ),
+                            child: _isDownloading
+                                ? const Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      SizedBox(width: 12),
+                                      Text('Downloading...'),
+                                    ],
+                                  )
+                                : Text(
+                                    _pendingDownloadCount > 0
+                                        ? 'Download ($_pendingDownloadCount)'
+                                        : 'All Downloaded',
+                                  ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ],

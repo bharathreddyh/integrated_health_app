@@ -175,7 +175,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
     // Show download screen on first launch
     if (!_setupDone!) {
-      return AssetDownloadScreen(onComplete: _onSetupComplete);
+      return AssetDownloadScreen(
+        onComplete: _onSetupComplete,
+        isFirstLaunch: true,
+      );
     }
 
     // Not logged in
