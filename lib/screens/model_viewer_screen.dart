@@ -14,6 +14,7 @@ import 'package:flutter/rendering.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../config/model_3d_config.dart';
 import '../services/model_3d_service.dart';
+import '../services/annotation_sync_service.dart';
 import 'models_3d/model_compare_screen.dart';
 
 class ModelViewerScreen extends StatefulWidget {
@@ -90,6 +91,31 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
   }
 
   Future<void> _loadCustomAnnotations() async {
+    final syncService = AnnotationSyncService.instance;
+
+    // Try to load from cloud first if user is logged in
+    if (syncService.canSync) {
+      try {
+        final cloudAnnotations = await syncService.loadAnnotations(widget.modelName);
+        if (cloudAnnotations.isNotEmpty) {
+          setState(() {
+            _customAnnotations = cloudAnnotations;
+          });
+          // Also save to local cache for offline access
+          await _saveToLocalCache();
+          debugPrint('Loaded ${cloudAnnotations.length} annotations from cloud');
+          return;
+        }
+      } catch (e) {
+        debugPrint('Error loading from cloud, trying local: $e');
+      }
+    }
+
+    // Fallback to local storage
+    await _loadFromLocalCache();
+  }
+
+  Future<void> _loadFromLocalCache() async {
     try {
       final baseDir = await _service.getCacheDirectory();
       final file = File('$baseDir/annotations/${widget.modelName}_hotspots.json');
@@ -105,13 +131,14 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
             normal: j['normal'] as String? ?? '0 0 1',
           )).toList();
         });
+        debugPrint('Loaded ${_customAnnotations.length} annotations from local cache');
       }
     } catch (e) {
-      debugPrint('Error loading custom annotations: $e');
+      debugPrint('Error loading custom annotations from local: $e');
     }
   }
 
-  Future<void> _saveCustomAnnotations() async {
+  Future<void> _saveToLocalCache() async {
     try {
       final baseDir = await _service.getCacheDirectory();
       final dir = Directory('$baseDir/annotations');
@@ -128,7 +155,26 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
       }).toList();
       await file.writeAsString(jsonEncode(jsonList));
     } catch (e) {
-      debugPrint('Error saving custom annotations: $e');
+      debugPrint('Error saving to local cache: $e');
+    }
+  }
+
+  Future<void> _saveCustomAnnotations() async {
+    final syncService = AnnotationSyncService.instance;
+
+    // Save to local cache first (always works offline)
+    await _saveToLocalCache();
+
+    // Then sync to cloud if user is logged in
+    if (syncService.canSync) {
+      try {
+        final success = await syncService.saveAnnotations(widget.modelName, _customAnnotations);
+        if (success) {
+          debugPrint('Annotations synced to cloud');
+        }
+      } catch (e) {
+        debugPrint('Error syncing to cloud (saved locally): $e');
+      }
     }
   }
 

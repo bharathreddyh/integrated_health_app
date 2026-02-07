@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/home/nurse_home_screen.dart';
@@ -26,10 +27,19 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  print('🚀 App starting...');
+  print('App starting...');
+
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp();
+    print('Firebase initialized');
+  } catch (e) {
+    print('Firebase initialization failed: $e');
+    // App can still work offline without Firebase
+  }
 
   final initialized = await WhisperVoiceService.instance.initialize();
-  print('🎤 Voice service initialized: $initialized');
+  print('Voice service initialized: $initialized');
 
   runApp(const ClinicClarityApp());
 }
