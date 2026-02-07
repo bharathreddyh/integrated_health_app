@@ -1,10 +1,11 @@
 // lib/screens/models_3d/model_category_screen.dart
 // Displays all 3D models within a specific anatomical system category
-// Features: Grid view, model cards, quick launch to viewer
+// Features: Grid view, model cards, quick launch to viewer, comparison mode
 
 import 'package:flutter/material.dart';
 import '../../config/model_3d_config.dart';
 import '../model_viewer_screen.dart';
+import 'model_compare_screen.dart';
 
 class ModelCategoryScreen extends StatefulWidget {
   final Model3DCategory category;
@@ -24,6 +25,10 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
   String _selectedFilter = 'all';
   late List<Model3DItem> _filteredModels;
 
+  // Compare mode
+  bool _compareMode = false;
+  final List<Model3DItem> _selectedForCompare = [];
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +44,25 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
         _openModelViewer(model);
       });
     }
+  }
+
+  void _toggleCompareMode() {
+    setState(() {
+      _compareMode = !_compareMode;
+      if (!_compareMode) {
+        _selectedForCompare.clear();
+      }
+    });
+  }
+
+  void _toggleModelSelection(Model3DItem model) {
+    setState(() {
+      if (_selectedForCompare.contains(model)) {
+        _selectedForCompare.remove(model);
+      } else if (_selectedForCompare.length < 2) {
+        _selectedForCompare.add(model);
+      }
+    });
   }
 
   void _applyFilter(String filter) {
@@ -70,6 +94,20 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
+      floatingActionButton: _compareMode && _selectedForCompare.length == 2
+          ? FloatingActionButton.extended(
+              onPressed: _launchComparison,
+              backgroundColor: Colors.orange,
+              icon: const Icon(Icons.compare_arrows, color: Colors.white),
+              label: const Text(
+                'Compare',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          : null,
       body: SafeArea(
         child: Column(
           children: [
@@ -124,8 +162,72 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                           ],
                         ),
                       ),
+                      // Compare button in header
+                      if (widget.category.modelCount >= 2)
+                        IconButton(
+                          onPressed: _toggleCompareMode,
+                          icon: Icon(
+                            _compareMode ? Icons.close : Icons.compare_arrows,
+                            color: _compareMode
+                                ? Colors.orange
+                                : Colors.grey.shade400,
+                          ),
+                          style: IconButton.styleFrom(
+                            backgroundColor: _compareMode
+                                ? Colors.orange.withOpacity(0.15)
+                                : const Color(0xFF1E293B),
+                          ),
+                          tooltip: _compareMode ? 'Exit compare' : 'Compare models',
+                        ),
                     ],
                   ),
+
+                  // Compare mode banner
+                  if (_compareMode) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.compare_arrows,
+                            color: Colors.orange,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _selectedForCompare.isEmpty
+                                  ? 'Select 2 models to compare'
+                                  : _selectedForCompare.length == 1
+                                      ? '1 selected - pick one more'
+                                      : '2 models selected',
+                              style: const TextStyle(
+                                color: Colors.orange,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          if (_selectedForCompare.isNotEmpty)
+                            TextButton(
+                              onPressed: () {
+                                setState(() => _selectedForCompare.clear());
+                              },
+                              child: const Text(
+                                'Clear',
+                                style: TextStyle(color: Colors.orange),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
 
                   const SizedBox(height: 20),
 
@@ -259,17 +361,38 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
 
   Widget _buildModelCard(Model3DItem model) {
     final isPathology = model.tags.contains('pathology');
+    final isSelected = _selectedForCompare.contains(model);
+    final selectionIndex = _selectedForCompare.indexOf(model) + 1;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => _openModelViewer(model),
+        onTap: () {
+          if (_compareMode) {
+            _toggleModelSelection(model);
+          } else {
+            _openModelViewer(model);
+          }
+        },
+        onLongPress: () {
+          if (!_compareMode && widget.category.modelCount >= 2) {
+            setState(() {
+              _compareMode = true;
+              _selectedForCompare.add(model);
+            });
+          }
+        },
         borderRadius: BorderRadius.circular(20),
         child: Container(
           decoration: BoxDecoration(
             color: const Color(0xFF1E293B),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFF334155)),
+            border: Border.all(
+              color: isSelected
+                  ? Colors.orange
+                  : const Color(0xFF334155),
+              width: isSelected ? 2 : 1,
+            ),
           ),
           child: Stack(
             children: [
@@ -284,13 +407,39 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
                       colors: [
-                        widget.category.color.withOpacity(0.2),
+                        isSelected
+                            ? Colors.orange.withOpacity(0.3)
+                            : widget.category.color.withOpacity(0.2),
                         widget.category.color.withOpacity(0.0),
                       ],
                     ),
                   ),
                 ),
               ),
+              // Selection indicator
+              if (isSelected)
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: const BoxDecoration(
+                      color: Colors.orange,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$selectionIndex',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               // Content
               Padding(
                 padding: const EdgeInsets.all(16),
@@ -426,5 +575,26 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
         ),
       ),
     );
+  }
+
+  void _launchComparison() {
+    if (_selectedForCompare.length != 2) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ModelCompareScreen(
+          leftModel: _selectedForCompare[0],
+          rightModel: _selectedForCompare[1],
+          systemId: widget.category.id,
+        ),
+      ),
+    ).then((_) {
+      // Clear selection after returning from comparison
+      setState(() {
+        _selectedForCompare.clear();
+        _compareMode = false;
+      });
+    });
   }
 }
