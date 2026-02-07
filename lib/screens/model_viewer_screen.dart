@@ -308,64 +308,20 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
 
     showDialog(
       context: context,
-      builder: (ctx) => Dialog(
-        insetPadding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 8, 0),
-              child: Row(
-                children: [
-                  const Icon(Icons.photo_library, size: 22),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Saved Annotations (${files.length})',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
+      builder: (ctx) => _SavedImagesDialog(
+        files: files,
+        onShowFullImage: (file) => _showFullImage(ctx, file),
+        onDeleted: () {
+          Navigator.pop(ctx);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Images deleted'),
+                backgroundColor: Colors.orange,
               ),
-            ),
-            const Divider(),
-            Flexible(
-              child: GridView.builder(
-                shrinkWrap: true,
-                padding: const EdgeInsets.all(12),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                ),
-                itemCount: files.length,
-                itemBuilder: (context, index) {
-                  final file = files[index];
-                  final name = file.path.split('/').last;
-                  return GestureDetector(
-                    onTap: () => _showFullImage(ctx, file),
-                    onLongPress: () => _confirmDeleteImage(ctx, file),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.file(file, fit: BoxFit.cover),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                'Tap to view  |  Long press to delete',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-              ),
-            ),
-          ],
-        ),
+            );
+          }
+        },
       ),
     );
   }
@@ -941,4 +897,251 @@ class _DrawingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DrawingPainter oldDelegate) => true;
+}
+
+// Stateful dialog for saved images with selection mode
+class _SavedImagesDialog extends StatefulWidget {
+  final List<File> files;
+  final Function(File) onShowFullImage;
+  final VoidCallback onDeleted;
+
+  const _SavedImagesDialog({
+    required this.files,
+    required this.onShowFullImage,
+    required this.onDeleted,
+  });
+
+  @override
+  State<_SavedImagesDialog> createState() => _SavedImagesDialogState();
+}
+
+class _SavedImagesDialogState extends State<_SavedImagesDialog> {
+  bool _selectionMode = false;
+  Set<String> _selectedPaths = {};
+  late List<File> _files;
+
+  @override
+  void initState() {
+    super.initState();
+    _files = List.from(widget.files);
+  }
+
+  void _toggleSelectionMode() {
+    setState(() {
+      _selectionMode = !_selectionMode;
+      if (!_selectionMode) {
+        _selectedPaths.clear();
+      }
+    });
+  }
+
+  void _toggleSelection(File file) {
+    setState(() {
+      if (_selectedPaths.contains(file.path)) {
+        _selectedPaths.remove(file.path);
+      } else {
+        _selectedPaths.add(file.path);
+      }
+    });
+  }
+
+  void _selectAll() {
+    setState(() {
+      if (_selectedPaths.length == _files.length) {
+        _selectedPaths.clear();
+      } else {
+        _selectedPaths = _files.map((f) => f.path).toSet();
+      }
+    });
+  }
+
+  Future<void> _deleteSelected() async {
+    if (_selectedPaths.isEmpty) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Delete ${_selectedPaths.length} image${_selectedPaths.length > 1 ? 's' : ''}?'),
+        content: const Text('This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Delete selected files
+    for (final path in _selectedPaths) {
+      try {
+        await File(path).delete();
+      } catch (_) {}
+    }
+
+    // Update list
+    setState(() {
+      _files.removeWhere((f) => _selectedPaths.contains(f.path));
+      _selectedPaths.clear();
+      _selectionMode = false;
+    });
+
+    if (_files.isEmpty) {
+      widget.onDeleted();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final allSelected = _selectedPaths.length == _files.length && _files.isNotEmpty;
+
+    return Dialog(
+      insetPadding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 8, 0),
+            child: Row(
+              children: [
+                const Icon(Icons.photo_library, size: 22),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _selectionMode
+                        ? '${_selectedPaths.length} selected'
+                        : 'Saved Annotations (${_files.length})',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                if (_selectionMode) ...[
+                  // Select All button
+                  TextButton.icon(
+                    onPressed: _selectAll,
+                    icon: Icon(
+                      allSelected ? Icons.deselect : Icons.select_all,
+                      size: 20,
+                    ),
+                    label: Text(allSelected ? 'None' : 'All'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                  ),
+                  // Delete selected
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    tooltip: 'Delete selected',
+                    onPressed: _selectedPaths.isNotEmpty ? _deleteSelected : null,
+                  ),
+                ] else ...[
+                  // Enter selection mode
+                  IconButton(
+                    icon: const Icon(Icons.checklist),
+                    tooltip: 'Select multiple',
+                    onPressed: _toggleSelectionMode,
+                  ),
+                ],
+                IconButton(
+                  icon: Icon(_selectionMode ? Icons.close : Icons.close),
+                  onPressed: _selectionMode
+                      ? _toggleSelectionMode
+                      : () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+          const Divider(),
+          Flexible(
+            child: GridView.builder(
+              shrinkWrap: true,
+              padding: const EdgeInsets.all(12),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+              ),
+              itemCount: _files.length,
+              itemBuilder: (context, index) {
+                final file = _files[index];
+                final isSelected = _selectedPaths.contains(file.path);
+                return GestureDetector(
+                  onTap: () {
+                    if (_selectionMode) {
+                      _toggleSelection(file);
+                    } else {
+                      widget.onShowFullImage(file);
+                    }
+                  },
+                  onLongPress: () {
+                    if (!_selectionMode) {
+                      setState(() {
+                        _selectionMode = true;
+                        _selectedPaths.add(file.path);
+                      });
+                    }
+                  },
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(file, fit: BoxFit.cover),
+                      ),
+                      if (_selectionMode)
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isSelected ? Colors.blue : Colors.white,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSelected ? Colors.blue : Colors.grey,
+                                width: 2,
+                              ),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(2),
+                              child: Icon(
+                                Icons.check,
+                                size: 16,
+                                color: isSelected ? Colors.white : Colors.transparent,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (_selectionMode && isSelected)
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue, width: 3),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              _selectionMode
+                  ? 'Tap to select  |  Long press to start selection'
+                  : 'Tap to view  |  Long press to select',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
