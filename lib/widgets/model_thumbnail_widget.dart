@@ -17,14 +17,14 @@ class ModelThumbnailWidget extends StatefulWidget {
   final String modelId;
   final Color accentColor;
   final double size;
-  final bool preferLivePreview; // If true, prefer live 3D when available
+  final bool preferLivePreview; // If true, prefer live 3D when available (disabled by default to prevent crashes)
 
   const ModelThumbnailWidget({
     super.key,
     required this.modelId,
     required this.accentColor,
     this.size = 80,
-    this.preferLivePreview = true,
+    this.preferLivePreview = false, // Disabled by default - too many WebViews cause crashes
   });
 
   @override
