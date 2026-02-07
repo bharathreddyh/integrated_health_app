@@ -25,6 +25,10 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
   String _selectedFilter = 'all';
   late List<Model3DItem> _filteredModels;
 
+  // Search
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
   // Compare mode
   bool _compareMode = false;
   final List<Model3DItem> _selectedForCompare = [];
@@ -44,6 +48,12 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
         _openModelViewer(model);
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _toggleCompareMode() {
@@ -68,14 +78,35 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
   void _applyFilter(String filter) {
     setState(() {
       _selectedFilter = filter;
-      if (filter == 'all') {
-        _filteredModels = widget.category.models;
-      } else {
-        _filteredModels = widget.category.models
-            .where((m) => m.tags.contains(filter))
-            .toList();
-      }
+      _updateFilteredModels();
     });
+  }
+
+  void _onSearchChanged(String query) {
+    setState(() {
+      _searchQuery = query.toLowerCase();
+      _updateFilteredModels();
+    });
+  }
+
+  void _updateFilteredModels() {
+    var models = widget.category.models.toList();
+
+    // Apply tag filter
+    if (_selectedFilter != 'all') {
+      models = models.where((m) => m.tags.contains(_selectedFilter)).toList();
+    }
+
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      models = models.where((m) {
+        return m.name.toLowerCase().contains(_searchQuery) ||
+            m.description.toLowerCase().contains(_searchQuery) ||
+            m.tags.any((tag) => tag.toLowerCase().contains(_searchQuery));
+      }).toList();
+    }
+
+    _filteredModels = models;
   }
 
   Set<String> _getAvailableTags() {
@@ -229,7 +260,46 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                     ),
                   ],
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
+
+                  // Search Bar
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E293B),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF334155)),
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: _onSearchChanged,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: 'Search models...',
+                        hintStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: Colors.grey.shade500,
+                          size: 20,
+                        ),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: Icon(Icons.close, color: Colors.grey.shade500, size: 18),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  _onSearchChanged('');
+                                },
+                              )
+                            : null,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
 
                   // Filter Chips
                   SingleChildScrollView(
@@ -329,31 +399,44 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
   }
 
   Widget _buildEmptyState() {
+    final isSearching = _searchQuery.isNotEmpty;
+    final isFiltering = _selectedFilter != 'all';
+
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.view_in_ar_outlined,
+            isSearching ? Icons.search_off_rounded : Icons.view_in_ar_outlined,
             size: 64,
             color: Colors.grey.shade700,
           ),
           const SizedBox(height: 16),
           Text(
-            'No models in this filter',
+            isSearching
+                ? 'No results for "$_searchQuery"'
+                : 'No models in this filter',
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey.shade500,
             ),
           ),
           const SizedBox(height: 8),
-          TextButton(
-            onPressed: () => _applyFilter('all'),
-            child: Text(
-              'Show all models',
-              style: TextStyle(color: widget.category.color),
+          if (isSearching || isFiltering)
+            TextButton(
+              onPressed: () {
+                _searchController.clear();
+                setState(() {
+                  _searchQuery = '';
+                  _selectedFilter = 'all';
+                  _updateFilteredModels();
+                });
+              },
+              child: Text(
+                'Clear filters',
+                style: TextStyle(color: widget.category.color),
+              ),
             ),
-          ),
         ],
       ),
     );
