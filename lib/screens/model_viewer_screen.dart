@@ -658,12 +658,12 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     /* Annotation hotspot styles */
     .hotspot {
       display: block;
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
-      border: 2px solid #fff;
+      border: 1.5px solid #fff;
       background: #4CAF50;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.5);
       cursor: pointer;
       transition: transform 0.2s, opacity 0.3s;
       position: relative;
@@ -672,53 +672,106 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
       background: #2196F3;
     }
     .hotspot:hover {
-      transform: scale(1.3);
+      transform: scale(1.5);
     }
     .hotspot.hidden {
       opacity: 0;
       pointer-events: none;
     }
-    /* Connector line from dot to label */
-    .hotspot::before {
-      content: '';
-      position: absolute;
-      bottom: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 1px;
-      height: 50px;
-      background: linear-gradient(to top, rgba(255,255,255,0.9), rgba(255,255,255,0.3));
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-    .hotspot:hover::before,
-    .hotspot.show-label::before {
-      opacity: 1;
-    }
+
+    /* Label styling */
     .annotation-label {
       position: absolute;
-      bottom: 60px;
-      left: 50%;
-      transform: translateX(-50%);
       background: rgba(0,0,0,0.85);
       color: #fff;
-      padding: 5px 10px;
-      border-radius: 4px;
-      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-size: 10px;
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
       white-space: nowrap;
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.2s;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
-    .hotspot:hover .annotation-label {
-      opacity: 1;
+
+    /* Default: label on top */
+    .hotspot .annotation-label {
+      bottom: 55px;
+      left: 50%;
+      transform: translateX(-50%);
     }
-    /* Always show labels when annotations visible */
+    .hotspot::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      background: rgba(255,255,255,0.7);
+      bottom: 100%;
+      height: 45px;
+    }
+
+    /* Label on bottom */
+    .hotspot.label-bottom .annotation-label {
+      bottom: auto;
+      top: 55px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .hotspot.label-bottom::before {
+      bottom: auto;
+      top: 100%;
+      height: 45px;
+    }
+
+    /* Label on left */
+    .hotspot.label-left .annotation-label {
+      bottom: auto;
+      top: 50%;
+      left: auto;
+      right: 60px;
+      transform: translateY(-50%);
+    }
+    .hotspot.label-left::before {
+      bottom: auto;
+      top: 50%;
+      left: auto;
+      right: 100%;
+      transform: translateY(-50%);
+      width: 50px;
+      height: 1px;
+    }
+
+    /* Label on right */
+    .hotspot.label-right .annotation-label {
+      bottom: auto;
+      top: 50%;
+      left: 60px;
+      right: auto;
+      transform: translateY(-50%);
+    }
+    .hotspot.label-right::before {
+      bottom: auto;
+      top: 50%;
+      left: 100%;
+      right: auto;
+      transform: translateY(-50%);
+      width: 50px;
+      height: 1px;
+    }
+
+    .hotspot:hover .annotation-label,
     .hotspot.show-label .annotation-label {
       opacity: 1;
     }
+    .hotspot:hover::before,
+    .hotspot.show-label::before {
+      opacity: 1;
+    }
+
     /* Edit mode cursor */
     model-viewer.edit-mode {
       cursor: crosshair;
@@ -747,7 +800,69 @@ $hotspotsHtml
 
     modelViewer.addEventListener('load', function() {
       document.getElementById('loading').style.display = 'none';
+      // Position labels based on normal direction
+      positionLabels();
     });
+
+    // Determine label position based on surface normal
+    function positionLabels() {
+      var hotspots = document.querySelectorAll('.hotspot');
+      hotspots.forEach(function(h) {
+        var normalStr = h.getAttribute('data-normal');
+        if (!normalStr) return;
+
+        var parts = normalStr.split(' ').map(parseFloat);
+        if (parts.length < 3) return;
+
+        var nx = parts[0], ny = parts[1], nz = parts[2];
+
+        // Remove existing position classes
+        h.classList.remove('label-top', 'label-bottom', 'label-left', 'label-right');
+
+        // Determine dominant direction
+        var absX = Math.abs(nx);
+        var absY = Math.abs(ny);
+        var absZ = Math.abs(nz);
+
+        // If pointing mostly up/down (Y axis dominant)
+        if (absY > absX && absY > absZ) {
+          if (ny > 0) {
+            h.classList.add('label-top');  // Surface faces up, label goes up
+          } else {
+            h.classList.add('label-bottom');  // Surface faces down, label goes down
+          }
+        }
+        // If pointing mostly left/right (X axis dominant)
+        else if (absX > absY && absX > absZ) {
+          if (nx > 0) {
+            h.classList.add('label-right');  // Surface faces right, label goes right
+          } else {
+            h.classList.add('label-left');  // Surface faces left, label goes left
+          }
+        }
+        // If pointing mostly forward/back (Z axis dominant) or default
+        else {
+          // For forward-facing surfaces, use position-based logic
+          var posStr = h.getAttribute('data-position');
+          if (posStr) {
+            var posParts = posStr.split(' ').map(parseFloat);
+            if (posParts.length >= 3) {
+              var px = posParts[0], py = posParts[1];
+              // Use position to decide: if on left side of model, label left; if right, label right
+              if (px < -0.02) {
+                h.classList.add('label-left');
+              } else if (px > 0.02) {
+                h.classList.add('label-right');
+              } else if (py > 0) {
+                h.classList.add('label-top');
+              } else {
+                h.classList.add('label-bottom');
+              }
+            }
+          }
+        }
+      });
+    }
 
     // Handle click on model to get 3D position
     modelViewer.addEventListener('click', function(event) {
