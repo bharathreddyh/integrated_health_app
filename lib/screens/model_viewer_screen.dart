@@ -48,6 +48,9 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
   List<_DrawingStroke> _strokes = [];
   _DrawingStroke? _currentStroke;
 
+  // UI capture state - hide overlays during screenshot
+  bool _hideUIForCapture = false;
+
   @override
   void initState() {
     super.initState();
@@ -181,11 +184,24 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
 
   Future<void> _saveScreenshot() async {
     try {
+      // Hide UI overlays before capture
+      setState(() => _hideUIForCapture = true);
+
+      // Wait for UI to rebuild without the banner
+      await Future.delayed(const Duration(milliseconds: 100));
+
       final boundary = _captureKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary == null) return;
+      if (boundary == null) {
+        setState(() => _hideUIForCapture = false);
+        return;
+      }
 
       final image = await boundary.toImage(pixelRatio: 2.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+
+      // Restore UI overlays
+      setState(() => _hideUIForCapture = false);
+
       if (byteData == null) return;
 
       final bytes = byteData.buffer.asUint8List();
@@ -709,8 +725,8 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
                 ),
               ),
             ),
-          // Draw mode indicator - tappable to exit
-          if (_drawMode)
+          // Draw mode indicator - tappable to exit (hidden during screenshot capture)
+          if (_drawMode && !_hideUIForCapture)
             Positioned(
               top: 12,
               left: 0,
