@@ -1,12 +1,15 @@
 // lib/widgets/model_thumbnail_widget.dart
-// Widget that displays a 3D model thumbnail preview
-// Shows live WebView preview if model is downloaded, otherwise placeholder
+// Hybrid thumbnail widget for 3D models
+// Priority: 1) Live 3D preview (if model downloaded)
+//           2) Static/animated thumbnail from assets
+//           3) Placeholder icon
 
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../services/model_thumbnail_service.dart';
 
@@ -14,12 +17,14 @@ class ModelThumbnailWidget extends StatefulWidget {
   final String modelId;
   final Color accentColor;
   final double size;
+  final bool preferLivePreview; // If true, prefer live 3D when available
 
   const ModelThumbnailWidget({
     super.key,
     required this.modelId,
     required this.accentColor,
     this.size = 80,
+    this.preferLivePreview = true,
   });
 
   @override
@@ -30,22 +35,28 @@ class _ModelThumbnailWidgetState extends State<ModelThumbnailWidget>
     with AutomaticKeepAliveClientMixin {
   final _thumbnailService = ModelThumbnailService.instance;
 
+  // State
   bool _isLoading = true;
-  bool _isModelAvailable = false;
+  bool _hasStaticThumbnail = false;
+  bool _hasAnimatedThumbnail = false;
+  bool _isModelDownloaded = false;
+  bool _showLivePreview = false;
   bool _hasError = false;
-  String? _modelPath;
+
+  // Live preview
   WebViewController? _controller;
   HttpServer? _server;
+  String? _modelPath;
   int _retryCount = 0;
   static const _maxRetries = 2;
 
   @override
-  bool get wantKeepAlive => _isModelAvailable; // Keep alive if model loaded
+  bool get wantKeepAlive => _showLivePreview;
 
   @override
   void initState() {
     super.initState();
-    _initializePreview();
+    _initialize();
   }
 
   @override
@@ -59,64 +70,59 @@ class _ModelThumbnailWidgetState extends State<ModelThumbnailWidget>
     _server = null;
   }
 
-  Future<void> _initializePreview() async {
+  Future<void> _initialize() async {
     if (!mounted) return;
 
-    setState(() {
-      _isLoading = true;
-      _hasError = false;
-    });
+    // Check for static thumbnails in assets
+    await _checkStaticThumbnails();
 
-    try {
-      final isDownloaded = await _thumbnailService.isModelDownloaded(widget.modelId);
+    // Check if 3D model is downloaded
+    final isDownloaded = await _thumbnailService.isModelDownloaded(widget.modelId);
 
-      if (!mounted) return;
+    if (mounted) {
+      setState(() {
+        _isModelDownloaded = isDownloaded;
+        _isLoading = false;
+      });
 
-      if (isDownloaded) {
+      // If model is downloaded and we prefer live preview, start it
+      if (isDownloaded && widget.preferLivePreview) {
         final path = await _thumbnailService.getModelPath(widget.modelId);
         if (path != null && mounted) {
-          setState(() {
-            _isModelAvailable = true;
-            _modelPath = path;
-          });
-          await _startPreviewServer(path);
-        } else {
-          setState(() {
-            _isModelAvailable = false;
-            _isLoading = false;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            _isModelAvailable = false;
-            _isLoading = false;
-          });
+          _modelPath = path;
+          _startLivePreview(path);
         }
       }
-    } catch (e) {
+    }
+  }
+
+  Future<void> _checkStaticThumbnails() async {
+    // Check for PNG thumbnail
+    final pngPath = 'assets/images/model_thumbnails/${widget.modelId}.png';
+    final gifPath = 'assets/images/model_thumbnails/${widget.modelId}.gif';
+
+    try {
+      await rootBundle.load(pngPath);
       if (mounted) {
-        setState(() {
-          _hasError = true;
-          _isLoading = false;
-        });
-        _scheduleRetry();
+        setState(() => _hasStaticThumbnail = true);
+      }
+    } catch (_) {
+      // PNG not found, try GIF
+      try {
+        await rootBundle.load(gifPath);
+        if (mounted) {
+          setState(() {
+            _hasStaticThumbnail = true;
+            _hasAnimatedThumbnail = true;
+          });
+        }
+      } catch (_) {
+        // No static thumbnail available
       }
     }
   }
 
-  void _scheduleRetry() {
-    if (_retryCount < _maxRetries) {
-      _retryCount++;
-      Future.delayed(Duration(milliseconds: 500 * _retryCount), () {
-        if (mounted) {
-          _initializePreview();
-        }
-      });
-    }
-  }
-
-  Future<void> _startPreviewServer(String modelPath) async {
+  Future<void> _startLivePreview(String modelPath) async {
     _cleanupServer();
 
     try {
@@ -146,12 +152,9 @@ class _ModelThumbnailWidgetState extends State<ModelThumbnailWidget>
             request.response.statusCode = 404;
             await request.response.close();
           }
-        } catch (_) {
-          // Ignore request errors
-        }
+        } catch (_) {}
       });
 
-      // Small delay to ensure server is ready
       await Future.delayed(const Duration(milliseconds: 50));
 
       if (!mounted) {
@@ -166,14 +169,17 @@ class _ModelThumbnailWidgetState extends State<ModelThumbnailWidget>
           NavigationDelegate(
             onPageFinished: (_) {
               if (mounted) {
-                setState(() {
-                  _isLoading = false;
-                });
+                setState(() => _showLivePreview = true);
               }
             },
             onWebResourceError: (_) {
               if (mounted && _retryCount < _maxRetries) {
-                _scheduleRetry();
+                _retryCount++;
+                Future.delayed(Duration(milliseconds: 500 * _retryCount), () {
+                  if (mounted && _modelPath != null) {
+                    _startLivePreview(_modelPath!);
+                  }
+                });
               }
             },
           ),
@@ -181,26 +187,18 @@ class _ModelThumbnailWidgetState extends State<ModelThumbnailWidget>
         ..loadRequest(Uri.parse('http://127.0.0.1:$port/'));
 
       if (mounted) {
-        setState(() {
-          _controller = controller;
-        });
+        setState(() => _controller = controller);
 
-        // Fallback: mark as loaded after timeout
+        // Fallback timeout
         Future.delayed(const Duration(seconds: 3), () {
-          if (mounted && _isLoading) {
-            setState(() {
-              _isLoading = false;
-            });
+          if (mounted && _controller != null && !_showLivePreview) {
+            setState(() => _showLivePreview = true);
           }
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _hasError = true;
-          _isLoading = false;
-        });
-        _scheduleRetry();
+        setState(() => _hasError = true);
       }
     }
   }
@@ -215,18 +213,8 @@ class _ModelThumbnailWidgetState extends State<ModelThumbnailWidget>
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
     * { margin: 0; padding: 0; }
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: #1E293B;
-    }
-    model-viewer {
-      width: 100%;
-      height: 100%;
-      --poster-color: transparent;
-      background: #1E293B;
-    }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #1E293B; }
+    model-viewer { width: 100%; height: 100%; --poster-color: transparent; background: #1E293B; }
   </style>
 </head>
 <body>
@@ -252,18 +240,33 @@ class _ModelThumbnailWidgetState extends State<ModelThumbnailWidget>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    super.build(context);
 
-    // Show placeholder if not available or has error
-    if (!_isModelAvailable || _hasError) {
-      return _buildPlaceholder();
-    }
-
-    // Show loading while initializing
-    if (_controller == null) {
+    // Show loading state initially
+    if (_isLoading) {
       return _buildPlaceholder(showLoading: true);
     }
 
+    // Priority 1: Live 3D preview (if model downloaded and loaded)
+    if (_showLivePreview && _controller != null) {
+      return _buildLivePreview();
+    }
+
+    // Priority 2: Static/animated thumbnail from assets
+    if (_hasStaticThumbnail) {
+      return _buildStaticThumbnail();
+    }
+
+    // Priority 3: Loading state while initializing live preview
+    if (_isModelDownloaded && _controller != null && !_showLivePreview) {
+      return _buildStaticThumbnail(showLoading: true);
+    }
+
+    // Fallback: Placeholder icon
+    return _buildPlaceholder();
+  }
+
+  Widget _buildLivePreview() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: Container(
@@ -275,7 +278,6 @@ class _ModelThumbnailWidgetState extends State<ModelThumbnailWidget>
         ),
         child: Stack(
           children: [
-            // WebView
             Positioned.fill(
               child: IgnorePointer(
                 child: WebViewWidget(
@@ -284,21 +286,75 @@ class _ModelThumbnailWidgetState extends State<ModelThumbnailWidget>
                 ),
               ),
             ),
-            // Loading overlay
-            if (_isLoading)
-              Positioned.fill(
-                child: Container(
-                  color: const Color(0xFF1E293B),
-                  child: Center(
-                    child: SizedBox(
-                      width: 28,
-                      height: 28,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation(
-                          widget.accentColor.withOpacity(0.5),
-                        ),
+            // Live indicator
+            Positioned(
+              bottom: 6,
+              right: 6,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.threed_rotation, size: 10, color: Colors.white),
+                    SizedBox(width: 3),
+                    Text(
+                      '3D',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
                       ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStaticThumbnail({bool showLoading = false}) {
+    final imagePath = _hasAnimatedThumbnail
+        ? 'assets/images/model_thumbnails/${widget.modelId}.gif'
+        : 'assets/images/model_thumbnails/${widget.modelId}.png';
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: widget.size,
+        height: widget.size,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E293B),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Thumbnail image
+            Image.asset(
+              imagePath,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return _buildPlaceholder();
+              },
+            ),
+            // Loading overlay if transitioning to live
+            if (showLoading)
+              Container(
+                color: Colors.black26,
+                child: Center(
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation(widget.accentColor),
                     ),
                   ),
                 ),

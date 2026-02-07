@@ -9,7 +9,6 @@ class Model3DItem {
   final String name;
   final String description;
   final String modelFileName; // Firebase model filename (without extension)
-  final String? thumbnailPath; // Local asset thumbnail
   final List<String> tags;
   final bool isPremium;
 
@@ -18,10 +17,17 @@ class Model3DItem {
     required this.name,
     required this.description,
     required this.modelFileName,
-    this.thumbnailPath,
     this.tags = const [],
     this.isPremium = false,
   });
+
+  /// Get the thumbnail asset path for this model
+  /// Thumbnails should be placed in assets/images/model_thumbnails/{modelFileName}.png
+  /// You can use PNG, WebP, or GIF (for animated thumbnails)
+  String get thumbnailAssetPath => 'assets/images/model_thumbnails/$modelFileName.png';
+
+  /// Animated thumbnail (GIF) path - optional, for rotating preview
+  String get animatedThumbnailPath => 'assets/images/model_thumbnails/$modelFileName.gif';
 }
 
 class Model3DCategory {
