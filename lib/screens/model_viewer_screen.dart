@@ -658,41 +658,59 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     /* Annotation hotspot styles */
     .hotspot {
       display: block;
-      width: 24px;
-      height: 24px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
       border: 2px solid #fff;
       background: #4CAF50;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.4);
       cursor: pointer;
       transition: transform 0.2s, opacity 0.3s;
+      position: relative;
     }
     .hotspot.custom {
       background: #2196F3;
     }
     .hotspot:hover {
-      transform: scale(1.2);
+      transform: scale(1.3);
     }
     .hotspot.hidden {
       opacity: 0;
       pointer-events: none;
     }
+    /* Connector line from dot to label */
+    .hotspot::before {
+      content: '';
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1px;
+      height: 50px;
+      background: linear-gradient(to top, rgba(255,255,255,0.9), rgba(255,255,255,0.3));
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .hotspot:hover::before,
+    .hotspot.show-label::before {
+      opacity: 1;
+    }
     .annotation-label {
       position: absolute;
-      bottom: 32px;
+      bottom: 60px;
       left: 50%;
       transform: translateX(-50%);
       background: rgba(0,0,0,0.85);
       color: #fff;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 11px;
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
       white-space: nowrap;
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.2s;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
     .hotspot:hover .annotation-label {
       opacity: 1;
