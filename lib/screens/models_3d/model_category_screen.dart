@@ -564,18 +564,28 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                       ],
                     ),
 
-                    const Spacer(),
+                    const SizedBox(height: 8),
 
-                    // 3D Preview Thumbnail
-                    Center(
-                      child: ModelThumbnailWidget(
-                        modelId: model.modelFileName,
-                        accentColor: widget.category.color,
-                        size: 80,
+                    // 3D Preview Thumbnail - expanded to fill card
+                    Expanded(
+                      child: Center(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            // Use the smaller dimension to keep it square
+                            final size = constraints.maxWidth < constraints.maxHeight
+                                ? constraints.maxWidth
+                                : constraints.maxHeight;
+                            return ModelThumbnailWidget(
+                              modelId: model.modelFileName,
+                              accentColor: widget.category.color,
+                              size: size,
+                            );
+                          },
+                        ),
                       ),
                     ),
 
-                    const Spacer(),
+                    const SizedBox(height: 8),
 
                     // Model Name
                     Text(
