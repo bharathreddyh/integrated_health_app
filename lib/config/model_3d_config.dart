@@ -74,49 +74,49 @@ class Model3DConfig {
           id: 'fibroid_intramural',
           name: 'Intramural Fibroid',
           description: 'Fibroid within the muscular wall of the uterus',
-          modelFileName: 'fibroid_intramural',
+          modelFileName: 'uterus', // TODO: Replace with 'fibroid_intramural' when uploaded
           tags: ['pathology', 'fibroid', 'uterus'],
         ),
         Model3DItem(
           id: 'fibroid_submucosal',
           name: 'Submucosal Fibroid',
           description: 'Fibroid projecting into the uterine cavity',
-          modelFileName: 'fibroid_submucosal',
+          modelFileName: 'uterus', // TODO: Replace with 'fibroid_submucosal' when uploaded
           tags: ['pathology', 'fibroid', 'uterus'],
         ),
         Model3DItem(
           id: 'fibroid_subserosal',
           name: 'Subserosal Fibroid',
           description: 'Fibroid projecting outward from the uterine surface',
-          modelFileName: 'fibroid_subserosal',
+          modelFileName: 'uterus', // TODO: Replace with 'fibroid_subserosal' when uploaded
           tags: ['pathology', 'fibroid', 'uterus'],
         ),
         Model3DItem(
           id: 'fibroid_pedunculated',
           name: 'Pedunculated Fibroid',
           description: 'Fibroid attached by a stalk to the uterus',
-          modelFileName: 'fibroid_pedunculated',
+          modelFileName: 'uterus', // TODO: Replace with 'fibroid_pedunculated' when uploaded
           tags: ['pathology', 'fibroid', 'uterus'],
         ),
         Model3DItem(
           id: 'fibroid_cervical',
           name: 'Cervical Fibroid',
           description: 'Fibroid located in the cervical region',
-          modelFileName: 'fibroid_cervical',
+          modelFileName: 'uterus', // TODO: Replace with 'fibroid_cervical' when uploaded
           tags: ['pathology', 'fibroid', 'cervix'],
         ),
         Model3DItem(
           id: 'fibroid_multiple',
           name: 'Multiple Fibroids',
           description: 'Uterus with multiple fibroids of different types',
-          modelFileName: 'fibroid_multiple',
+          modelFileName: 'uterus', // TODO: Replace with 'fibroid_multiple' when uploaded
           tags: ['pathology', 'fibroid', 'uterus'],
         ),
         Model3DItem(
           id: 'fibroid_degenerating',
           name: 'Degenerating Fibroid',
           description: 'Fibroid undergoing degeneration',
-          modelFileName: 'fibroid_degenerating',
+          modelFileName: 'uterus', // TODO: Replace with 'fibroid_degenerating' when uploaded
           tags: ['pathology', 'fibroid', 'uterus'],
         ),
 
@@ -125,28 +125,28 @@ class Model3DConfig {
           id: 'simple_cyst',
           name: 'Simple Ovarian Cyst',
           description: 'Fluid-filled simple cyst on the ovary',
-          modelFileName: 'simple_cyst',
+          modelFileName: 'uterus', // TODO: Replace with 'simple_cyst' when uploaded
           tags: ['pathology', 'cyst', 'ovary'],
         ),
         Model3DItem(
           id: 'hemorrhagic_cyst',
           name: 'Hemorrhagic Cyst',
           description: 'Ovarian cyst with internal bleeding',
-          modelFileName: 'hemorrhagic_cyst',
+          modelFileName: 'uterus', // TODO: Replace with 'hemorrhagic_cyst' when uploaded
           tags: ['pathology', 'cyst', 'ovary'],
         ),
         Model3DItem(
           id: 'endometrioid_cyst',
           name: 'Endometrioid Cyst',
           description: 'Chocolate cyst from endometriosis',
-          modelFileName: 'endometrioid_cyst',
+          modelFileName: 'uterus', // TODO: Replace with 'endometrioid_cyst' when uploaded
           tags: ['pathology', 'cyst', 'ovary', 'endometriosis'],
         ),
         Model3DItem(
           id: 'dermoid_cyst',
           name: 'Dermoid Cyst',
           description: 'Mature cystic teratoma containing various tissues',
-          modelFileName: 'dermoid_cyst',
+          modelFileName: 'uterus', // TODO: Replace with 'dermoid_cyst' when uploaded
           tags: ['pathology', 'cyst', 'ovary', 'teratoma'],
         ),
 
@@ -155,49 +155,49 @@ class Model3DConfig {
           id: 'adenomyosis',
           name: 'Adenomyosis',
           description: 'Endometrial tissue within the myometrium',
-          modelFileName: 'adenomyosis',
+          modelFileName: 'uterus', // TODO: Replace with 'adenomyosis' when uploaded
           tags: ['pathology', 'uterus', 'endometriosis'],
         ),
         Model3DItem(
           id: 'endometrial_polyp',
           name: 'Endometrial Polyp',
           description: 'Polypoid growth from the endometrium',
-          modelFileName: 'endometrial_polyp',
+          modelFileName: 'uterus', // TODO: Replace with 'endometrial_polyp' when uploaded
           tags: ['pathology', 'polyp', 'endometrium'],
         ),
         Model3DItem(
           id: 'endometrial_hyperplasia',
           name: 'Endometrial Hyperplasia',
           description: 'Thickened endometrial lining',
-          modelFileName: 'endometrial_hyperplasia',
+          modelFileName: 'uterus', // TODO: Replace with 'endometrial_hyperplasia' when uploaded
           tags: ['pathology', 'endometrium', 'hyperplasia'],
         ),
         Model3DItem(
           id: 'endometrial_carcinoma',
           name: 'Endometrial Carcinoma',
           description: 'Malignant tumor of the endometrium',
-          modelFileName: 'endometrial_carcinoma',
+          modelFileName: 'uterus', // TODO: Replace with 'endometrial_carcinoma' when uploaded
           tags: ['pathology', 'cancer', 'endometrium'],
         ),
         Model3DItem(
           id: 'endometrioma',
           name: 'Endometrioma',
           description: 'Endometriotic cyst (chocolate cyst)',
-          modelFileName: 'endometrioma',
+          modelFileName: 'uterus', // TODO: Replace with 'endometrioma' when uploaded
           tags: ['pathology', 'endometriosis', 'ovary'],
         ),
         Model3DItem(
           id: 'pcos_ovary',
           name: 'PCOS Ovary',
           description: 'Polycystic ovary with multiple small follicles',
-          modelFileName: 'pcos_ovary',
+          modelFileName: 'uterus', // TODO: Replace with 'pcos_ovary' when uploaded
           tags: ['pathology', 'pcos', 'ovary'],
         ),
         Model3DItem(
           id: 'uterine_anomalies',
           name: 'Uterine Anomalies',
           description: 'Congenital uterine malformations',
-          modelFileName: 'uterine_anomalies',
+          modelFileName: 'uterus', // TODO: Replace with 'uterine_anomalies' when uploaded
           tags: ['anatomy', 'anomaly', 'uterus'],
         ),
       ],
