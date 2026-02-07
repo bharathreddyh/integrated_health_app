@@ -19,7 +19,6 @@ import 'widgets/tool_panel.dart';
 import 'widgets/drawing_tool_panel.dart';
 import '../../services/user_service.dart';
 import '../../config/canvas_system_config.dart';
-import '../model_viewer_screen.dart';
 
 class CanvasScreen extends StatefulWidget {
   final Patient patient;
@@ -1230,32 +1229,6 @@ class _CanvasScreenState extends State<CanvasScreen> {
       ],
       onChanged: (value) async {
         if (value != null) {
-          // Intercept 3D model selection (any diagram ending with _3d)
-          if (value.endsWith('_3d')) {
-            final modelName = value.replaceAll('_3d', '');
-            final systemConfig = CanvasSystemConfig.systems[selectedSystem];
-            final diagramName = systemConfig?.allDiagrams[value]?.name ?? value;
-
-            // Find first non-3D diagram to reset to after viewing 3D
-            final firstNon3D = systemConfig?.anatomyDiagrams.keys
-                .firstWhere((k) => !k.endsWith('_3d'), orElse: () => 'uterus_normal');
-
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ModelViewerScreen(
-                  modelName: modelName,
-                  title: diagramName,
-                  systemId: selectedSystem,
-                ),
-              ),
-            );
-            // Reset dropdown to first non-3D diagram
-            setState(() {
-              selectedPreset = firstNon3D ?? 'uterus_normal';
-            });
-            return;
-          }
           if (markers.isNotEmpty || drawingPaths.isNotEmpty) {
             final shouldSave = await showDialog<bool>(
               context: context,

@@ -12,6 +12,7 @@ import '../patient/visit_history_screen.dart';
 import '../canvas/canvas_system_selection_screen.dart';
 import '../library/library_screen.dart';
 import '../setup/asset_download_screen.dart';
+import '../models_3d/models_3d_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -191,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: const Color(0xFF8B5CF6),
                           onTap: () => Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const CanvasSystemSelectionScreen()),
+                            MaterialPageRoute(builder: (_) => const Models3DScreen()),
                           ),
                         ),
 
