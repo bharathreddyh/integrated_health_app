@@ -68,17 +68,17 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
   Future<void> _loadModel({required bool isLeft}) async {
     final model = isLeft ? widget.leftModel : widget.rightModel;
 
-    if (isLeft) {
-      setState(() {
+    if (!mounted) return;
+
+    setState(() {
+      if (isLeft) {
         _leftState = _LoadState.loading;
         _leftProgress = 0.0;
-      });
-    } else {
-      setState(() {
+      } else {
         _rightState = _LoadState.loading;
         _rightProgress = 0.0;
-      });
-    }
+      }
+    });
 
     try {
       final path = await _service.downloadModel(
@@ -96,16 +96,19 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
         },
       );
 
-      if (mounted) {
+      if (!mounted) return;
+
+      setState(() {
         if (isLeft) {
-          setState(() => _leftState = _LoadState.ready);
-          await _initWebView(path, isLeft: true);
+          _leftState = _LoadState.ready;
         } else {
-          setState(() => _rightState = _LoadState.ready);
-          await _initWebView(path, isLeft: false);
+          _rightState = _LoadState.ready;
         }
-      }
+      });
+
+      await _initWebView(path, isLeft: isLeft);
     } catch (e) {
+      debugPrint('Error loading model ${model.modelFileName}: $e');
       if (mounted) {
         setState(() {
           if (isLeft) {
@@ -119,56 +122,73 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
   }
 
   Future<void> _initWebView(String modelPath, {required bool isLeft}) async {
-    if (isLeft) {
-      _leftServer?.close(force: true);
-    } else {
-      _rightServer?.close(force: true);
-    }
-
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    if (isLeft) {
-      _leftServer = server;
-    } else {
-      _rightServer = server;
-    }
-    final port = server.port;
-    final model = isLeft ? widget.leftModel : widget.rightModel;
-
-    server.listen((request) async {
-      if (request.uri.path == '/model.glb') {
-        final file = File(modelPath);
-        if (await file.exists()) {
-          request.response.headers.set('Content-Type', 'model/gltf-binary');
-          request.response.headers.set('Access-Control-Allow-Origin', '*');
-          await request.response.addStream(file.openRead());
-          await request.response.close();
-        } else {
-          request.response.statusCode = 404;
-          await request.response.close();
-        }
-      } else if (request.uri.path == '/') {
-        request.response.headers.set('Content-Type', 'text/html');
-        request.response.write(_buildHtml(port, model.name));
-        await request.response.close();
+    try {
+      if (isLeft) {
+        _leftServer?.close(force: true);
       } else {
-        request.response.statusCode = 404;
-        await request.response.close();
+        _rightServer?.close(force: true);
       }
-    });
 
-    final controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0xFF1E293B))
-      ..loadRequest(Uri.parse('http://127.0.0.1:$port/'));
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      if (isLeft) {
+        _leftServer = server;
+      } else {
+        _rightServer = server;
+      }
+      final port = server.port;
+      final model = isLeft ? widget.leftModel : widget.rightModel;
 
-    if (mounted) {
-      setState(() {
-        if (isLeft) {
-          _leftController = controller;
-        } else {
-          _rightController = controller;
+      server.listen((request) async {
+        try {
+          if (request.uri.path == '/model.glb') {
+            final file = File(modelPath);
+            if (await file.exists()) {
+              request.response.headers.set('Content-Type', 'model/gltf-binary');
+              request.response.headers.set('Access-Control-Allow-Origin', '*');
+              await request.response.addStream(file.openRead());
+              await request.response.close();
+            } else {
+              request.response.statusCode = 404;
+              await request.response.close();
+            }
+          } else if (request.uri.path == '/') {
+            request.response.headers.set('Content-Type', 'text/html');
+            request.response.write(_buildHtml(port, model.name));
+            await request.response.close();
+          } else {
+            request.response.statusCode = 404;
+            await request.response.close();
+          }
+        } catch (e) {
+          debugPrint('Server error: $e');
         }
       });
+
+      final controller = WebViewController()
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setBackgroundColor(const Color(0xFF1E293B))
+        ..loadRequest(Uri.parse('http://127.0.0.1:$port/'));
+
+      if (mounted) {
+        setState(() {
+          if (isLeft) {
+            _leftController = controller;
+          } else {
+            _rightController = controller;
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error initializing WebView: $e');
+      if (mounted) {
+        setState(() {
+          if (isLeft) {
+            _leftState = _LoadState.error;
+          } else {
+            _rightState = _LoadState.error;
+          }
+        });
+      }
     }
   }
 
@@ -266,45 +286,47 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Comparison Area
-          Expanded(
-            child: Row(
-              children: [
-                // Left Model
-                Expanded(
-                  child: _buildModelPanel(
-                    model: widget.leftModel,
-                    state: _leftState,
-                    progress: _leftProgress,
-                    controller: _leftController,
-                    color: color,
-                    isLeft: true,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Comparison Area
+            Expanded(
+              child: Row(
+                children: [
+                  // Left Model
+                  Expanded(
+                    child: _buildModelPanel(
+                      model: widget.leftModel,
+                      state: _leftState,
+                      progress: _leftProgress,
+                      controller: _leftController,
+                      color: color,
+                      isLeft: true,
+                    ),
                   ),
-                ),
-                // Divider
-                Container(
-                  width: 2,
-                  color: const Color(0xFF334155),
-                ),
-                // Right Model
-                Expanded(
-                  child: _buildModelPanel(
-                    model: widget.rightModel,
-                    state: _rightState,
-                    progress: _rightProgress,
-                    controller: _rightController,
-                    color: color,
-                    isLeft: false,
+                  // Divider
+                  Container(
+                    width: 2,
+                    color: const Color(0xFF334155),
                   ),
-                ),
-              ],
+                  // Right Model
+                  Expanded(
+                    child: _buildModelPanel(
+                      model: widget.rightModel,
+                      state: _rightState,
+                      progress: _rightProgress,
+                      controller: _rightController,
+                      color: color,
+                      isLeft: false,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          // Bottom Info Bar
-          _buildInfoBar(color),
-        ],
+            // Bottom Info Bar
+            _buildInfoBar(color),
+          ],
+        ),
       ),
     );
   }
@@ -317,8 +339,12 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
     required Color color,
     required bool isLeft,
   }) {
+    final isPathology = model.tags.contains('pathology');
+
     return Stack(
       children: [
+        // Background
+        Container(color: const Color(0xFF1E293B)),
         // Model Viewer
         if (state == _LoadState.ready && controller != null)
           WebViewWidget(
@@ -355,17 +381,17 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: model.tags.contains('pathology')
+                          color: isPathology
                               ? Colors.red.withOpacity(0.3)
                               : Colors.green.withOpacity(0.3),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          model.tags.contains('pathology') ? 'PATHOLOGY' : 'NORMAL',
+                          isPathology ? 'PATHOLOGY' : 'NORMAL',
                           style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.bold,
-                            color: model.tags.contains('pathology')
+                            color: isPathology
                                 ? Colors.red.shade300
                                 : Colors.green.shade300,
                           ),
