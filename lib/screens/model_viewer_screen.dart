@@ -11,7 +11,9 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import '../config/model_3d_config.dart';
 import '../services/model_3d_service.dart';
+import 'models_3d/model_compare_screen.dart';
 
 class ModelViewerScreen extends StatefulWidget {
   final String modelName;
@@ -326,6 +328,58 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     );
   }
 
+  void _showCompareModelPicker() {
+    // Get current model as Model3DItem
+    Model3DItem? currentModel;
+    String currentSystemId = widget.systemId;
+
+    // Find the current model in config
+    for (final category in Model3DConfig.categories) {
+      for (final model in category.models) {
+        if (model.modelFileName == widget.modelName) {
+          currentModel = model;
+          currentSystemId = category.id;
+          break;
+        }
+      }
+      if (currentModel != null) break;
+    }
+
+    if (currentModel == null) {
+      // Create a temporary model item if not found in config
+      currentModel = Model3DItem(
+        id: widget.modelName,
+        name: widget.title,
+        description: '',
+        modelFileName: widget.modelName,
+      );
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _ModelPickerSheet(
+        currentModel: currentModel!,
+        currentSystemId: currentSystemId,
+        onModelSelected: (selectedModel, selectedSystemId) {
+          Navigator.pop(ctx);
+          // Navigate to compare screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ModelCompareScreen(
+                leftModel: currentModel!,
+                rightModel: selectedModel,
+                systemId: selectedSystemId,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   void _showFullImage(BuildContext parentCtx, File file) {
     showDialog(
       context: parentCtx,
@@ -474,6 +528,12 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
               ),
             ],
             if (!_drawMode) ...[
+              // Compare with another model
+              IconButton(
+                icon: const Icon(Icons.compare_arrows),
+                tooltip: 'Compare with...',
+                onPressed: _showCompareModelPicker,
+              ),
               // Show/hide drawings toggle (only if there are drawings)
               if (_strokes.isNotEmpty)
                 IconButton(
@@ -1139,6 +1199,297 @@ class _SavedImagesDialogState extends State<_SavedImagesDialog> {
                   : 'Tap to view  |  Long press to select',
               style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Model picker bottom sheet for comparison
+class _ModelPickerSheet extends StatefulWidget {
+  final Model3DItem currentModel;
+  final String currentSystemId;
+  final Function(Model3DItem, String) onModelSelected;
+
+  const _ModelPickerSheet({
+    required this.currentModel,
+    required this.currentSystemId,
+    required this.onModelSelected,
+  });
+
+  @override
+  State<_ModelPickerSheet> createState() => _ModelPickerSheetState();
+}
+
+class _ModelPickerSheetState extends State<_ModelPickerSheet> {
+  String? _expandedCategoryId;
+  String _searchQuery = '';
+  final _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Expand current system by default
+    _expandedCategoryId = widget.currentSystemId;
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Model3DCategory> get _filteredCategories {
+    if (_searchQuery.isEmpty) {
+      return Model3DConfig.categories;
+    }
+
+    final query = _searchQuery.toLowerCase();
+    return Model3DConfig.categories
+        .map((category) {
+          final filteredModels = category.models.where((model) {
+            return model.name.toLowerCase().contains(query) ||
+                model.description.toLowerCase().contains(query) ||
+                model.tags.any((tag) => tag.toLowerCase().contains(query));
+          }).toList();
+
+          if (filteredModels.isEmpty) return null;
+
+          return Model3DCategory(
+            id: category.id,
+            name: category.name,
+            description: category.description,
+            icon: category.icon,
+            color: category.color,
+            models: filteredModels,
+          );
+        })
+        .whereType<Model3DCategory>()
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final categories = _filteredCategories;
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          // Handle bar
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.compare_arrows, size: 24),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'Compare with...',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Current: ${widget.currentModel.name}',
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+          ),
+          // Search bar
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search models...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+              onChanged: (value) => setState(() => _searchQuery = value),
+            ),
+          ),
+          const Divider(height: 1),
+          // Categories and models list
+          Expanded(
+            child: categories.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.search_off, size: 48, color: Colors.grey.shade400),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No models found',
+                          style: TextStyle(color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    itemCount: categories.length,
+                    itemBuilder: (context, index) {
+                      final category = categories[index];
+                      final isExpanded = _expandedCategoryId == category.id ||
+                          _searchQuery.isNotEmpty;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Category header
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                _expandedCategoryId =
+                                    _expandedCategoryId == category.id
+                                        ? null
+                                        : category.id;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 12),
+                              color: category.color.withOpacity(0.1),
+                              child: Row(
+                                children: [
+                                  Text(category.icon, style: const TextStyle(fontSize: 20)),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          category.name,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            color: category.color.withOpacity(0.9),
+                                          ),
+                                        ),
+                                        Text(
+                                          '${category.models.length} models',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(
+                                    isExpanded
+                                        ? Icons.expand_less
+                                        : Icons.expand_more,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          // Models in category
+                          if (isExpanded)
+                            ...category.models.map((model) {
+                              final isCurrent =
+                                  model.id == widget.currentModel.id;
+                              return ListTile(
+                                leading: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: isCurrent
+                                        ? Colors.blue.shade100
+                                        : Colors.grey.shade200,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    isCurrent
+                                        ? Icons.check
+                                        : Icons.view_in_ar,
+                                    size: 20,
+                                    color: isCurrent
+                                        ? Colors.blue
+                                        : Colors.grey.shade600,
+                                  ),
+                                ),
+                                title: Text(
+                                  model.name,
+                                  style: TextStyle(
+                                    fontWeight:
+                                        isCurrent ? FontWeight.bold : null,
+                                    color: isCurrent ? Colors.blue : null,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  model.description,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                trailing: isCurrent
+                                    ? Chip(
+                                        label: const Text(
+                                          'Current',
+                                          style: TextStyle(fontSize: 11),
+                                        ),
+                                        backgroundColor: Colors.blue.shade50,
+                                        padding: EdgeInsets.zero,
+                                        visualDensity: VisualDensity.compact,
+                                      )
+                                    : const Icon(Icons.chevron_right),
+                                enabled: !isCurrent,
+                                onTap: isCurrent
+                                    ? null
+                                    : () => widget.onModelSelected(
+                                        model, category.id),
+                              );
+                            }),
+                        ],
+                      );
+                    },
+                  ),
           ),
         ],
       ),
