@@ -584,8 +584,11 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
         currentSystemId: currentSystemId,
         onModelSelected: (selectedModel, selectedSystemId) {
           Navigator.pop(ctx);
-          // Navigate to compare screen
-          Navigator.push(
+          // Close current server before opening compare (to free resources)
+          _server?.close(force: true);
+          _server = null;
+          // Navigate to compare screen (use pushReplacement to fully release this screen)
+          Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder: (_) => ModelCompareScreen(
