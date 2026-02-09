@@ -59,10 +59,10 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
   }
 
   Future<void> _loadBothModels() async {
-    await Future.wait([
-      _loadModel(isLeft: true),
-      _loadModel(isLeft: false),
-    ]);
+    // Load sequentially to prevent GPU resource conflicts
+    await _loadModel(isLeft: true);
+    await Future.delayed(const Duration(milliseconds: 500));
+    await _loadModel(isLeft: false);
   }
 
   Future<void> _loadModel({required bool isLeft}) async {
@@ -228,11 +228,12 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
     auto-rotate
     camera-controls
     disable-zoom="false"
-    shadow-intensity="1"
+    shadow-intensity="0.5"
+    exposure="1"
     touch-action="none"
     interaction-prompt="none"
     style="width:100%;height:100%;"
-    loading="eager">
+    loading="lazy">
   </model-viewer>
   <script>
     document.querySelector('model-viewer').addEventListener('load', function() {
@@ -242,25 +243,6 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
 </body>
 </html>
 ''';
-  }
-
-  void _swapModels() {
-    // Close servers before swapping to free resources
-    _leftServer?.close(force: true);
-    _rightServer?.close(force: true);
-    _leftServer = null;
-    _rightServer = null;
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ModelCompareScreen(
-          leftModel: widget.rightModel,
-          rightModel: widget.leftModel,
-          systemId: widget.systemId,
-        ),
-      ),
-    );
   }
 
   @override
@@ -278,12 +260,6 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         actions: [
-          // Swap button
-          IconButton(
-            icon: const Icon(Icons.swap_horiz),
-            tooltip: 'Swap models',
-            onPressed: _swapModels,
-          ),
           // Toggle labels
           IconButton(
             icon: Icon(_showLabels ? Icons.label : Icons.label_off_outlined),
