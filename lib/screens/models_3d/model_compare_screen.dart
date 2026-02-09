@@ -245,6 +245,12 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
   }
 
   void _swapModels() {
+    // Close servers before swapping to free resources
+    _leftServer?.close(force: true);
+    _rightServer?.close(force: true);
+    _leftServer = null;
+    _rightServer = null;
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
