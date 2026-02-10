@@ -145,7 +145,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -216,7 +216,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
 
                   // Compare mode banner
                   if (_compareMode) ...[
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -261,7 +261,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                     ),
                   ],
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
 
                   // Search Bar
                   Container(
@@ -300,7 +300,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
 
                   // Filter Chips
                   SingleChildScrollView(
@@ -329,13 +329,13 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
               child: _filteredModels.isEmpty
                   ? _buildEmptyState()
                   : Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: GridView.builder(
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          childAspectRatio: 0.85,
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 8,
+                          childAspectRatio: 1.0,
                         ),
                         itemCount: _filteredModels.length,
                         itemBuilder: (context, index) {
@@ -526,29 +526,29 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                 ),
               // Content
               Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Type Badge
+                    // Type Badge Row
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                            horizontal: 6,
+                            vertical: 2,
                           ),
                           decoration: BoxDecoration(
                             color: isPathology
                                 ? Colors.red.withOpacity(0.15)
                                 : Colors.green.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             isPathology ? 'Pathology' : 'Anatomy',
                             style: TextStyle(
-                              fontSize: 9,
+                              fontSize: 8,
                               fontWeight: FontWeight.w600,
                               color: isPathology
                                   ? Colors.red.shade400
@@ -558,20 +558,19 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                         ),
                         Icon(
                           Icons.view_in_ar_rounded,
-                          size: 16,
+                          size: 14,
                           color: Colors.grey.shade600,
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
 
                     // 3D Preview Thumbnail - expanded to fill card
                     Expanded(
                       child: Center(
                         child: LayoutBuilder(
                           builder: (context, constraints) {
-                            // Use the smaller dimension to keep it square
                             final size = constraints.maxWidth < constraints.maxHeight
                                 ? constraints.maxWidth
                                 : constraints.maxHeight;
@@ -585,7 +584,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
 
                     // Model Name
                     Text(
@@ -593,44 +592,33 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    // Description
-                    Text(
-                      model.description,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.grey.shade500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
                     // View Button
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      padding: const EdgeInsets.symmetric(vertical: 6),
                       decoration: BoxDecoration(
                         color: widget.category.color.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
                             Icons.play_arrow_rounded,
-                            size: 16,
+                            size: 14,
                             color: widget.category.color,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             'View 3D',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: 10,
                               fontWeight: FontWeight.w600,
                               color: widget.category.color,
                             ),

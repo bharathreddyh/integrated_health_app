@@ -39,7 +39,7 @@ class _Models3DScreenState extends State<Models3DScreen> {
             // App Bar
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -95,7 +95,7 @@ class _Models3DScreenState extends State<Models3DScreen> {
                       ],
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
 
                     // Search Bar
                     Container(
@@ -325,13 +325,13 @@ class _Models3DScreenState extends State<Models3DScreen> {
 
   Widget _buildCategoryGrid(List<Model3DCategory> categories) {
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       sliver: SliverGrid(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 1.0,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 1.15,
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
@@ -378,7 +378,7 @@ class _Models3DScreenState extends State<Models3DScreen> {
               ),
               // Content
               Padding(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -387,29 +387,29 @@ class _Models3DScreenState extends State<Models3DScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(10),
+                          padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: category.color.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
                             category.icon,
-                            style: const TextStyle(fontSize: 22),
+                            style: const TextStyle(fontSize: 18),
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                            horizontal: 6,
+                            vertical: 3,
                           ),
                           decoration: BoxDecoration(
                             color: category.color.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
                             '${category.modelCount}',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: FontWeight.bold,
                               color: category.color,
                             ),
@@ -422,30 +422,19 @@ class _Models3DScreenState extends State<Models3DScreen> {
                     Text(
                       category.name,
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    // Description
-                    Text(
-                      category.description,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 2),
                     // View Models Button
                     Row(
                       children: [
                         Text(
                           'View models',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 11,
                             fontWeight: FontWeight.w600,
                             color: category.color,
                           ),
@@ -453,7 +442,7 @@ class _Models3DScreenState extends State<Models3DScreen> {
                         const SizedBox(width: 4),
                         Icon(
                           Icons.arrow_forward,
-                          size: 14,
+                          size: 12,
                           color: category.color,
                         ),
                       ],
