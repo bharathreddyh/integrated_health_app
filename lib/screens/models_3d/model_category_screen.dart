@@ -331,10 +331,10 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: GridView.builder(
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 6,
-                          crossAxisSpacing: 6,
-                          childAspectRatio: 1.4,
+                          crossAxisCount: 4,
+                          mainAxisSpacing: 4,
+                          crossAxisSpacing: 4,
+                          childAspectRatio: 4 / 3,
                         ),
                         itemCount: _filteredModels.length,
                         itemBuilder: (context, index) {
@@ -465,11 +465,11 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
             });
           }
         },
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(6),
         child: Container(
           decoration: BoxDecoration(
             color: const Color(0xFF1E293B),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(6),
             border: Border.all(
               color: isSelected
                   ? Colors.orange
@@ -477,103 +477,88 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
               width: isSelected ? 2 : 1,
             ),
           ),
-          padding: const EdgeInsets.all(10),
-          child: Row(
+          padding: const EdgeInsets.all(6),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Small 3D icon/thumbnail
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: widget.category.color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Stack(
-                  children: [
-                    Center(
-                      child: Icon(
-                        Icons.view_in_ar_rounded,
-                        size: 24,
-                        color: widget.category.color,
-                      ),
+              // 3D icon with selection indicator
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: widget.category.color.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(6),
                     ),
-                    // Selection indicator
-                    if (isSelected)
-                      Positioned(
-                        top: -2,
-                        right: -2,
-                        child: Container(
-                          width: 18,
-                          height: 18,
-                          decoration: const BoxDecoration(
-                            color: Colors.orange,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Text(
-                              '$selectionIndex',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 10,
-                              ),
+                    child: Icon(
+                      Icons.view_in_ar_rounded,
+                      size: 16,
+                      color: widget.category.color,
+                    ),
+                  ),
+                  if (isSelected)
+                    Positioned(
+                      top: -4,
+                      right: -4,
+                      child: Container(
+                        width: 14,
+                        height: 14,
+                        decoration: const BoxDecoration(
+                          color: Colors.orange,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '$selectionIndex',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 8,
                             ),
                           ),
                         ),
                       ),
-                  ],
+                    ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              // Model Name
+              Text(
+                model.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
                 ),
               ),
-              const SizedBox(width: 10),
-              // Model info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Model Name
-                    Text(
-                      model.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    // Type Badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isPathology
-                            ? Colors.red.withOpacity(0.15)
-                            : Colors.green.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        isPathology ? 'Pathology' : 'Anatomy',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: isPathology
-                              ? Colors.red.shade400
-                              : Colors.green.shade400,
-                        ),
-                      ),
-                    ),
-                  ],
+              const SizedBox(height: 2),
+              // Type Badge
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 4,
+                  vertical: 1,
                 ),
-              ),
-              // Arrow
-              Icon(
-                Icons.play_arrow_rounded,
-                size: 20,
-                color: widget.category.color,
+                decoration: BoxDecoration(
+                  color: isPathology
+                      ? Colors.red.withOpacity(0.15)
+                      : Colors.green.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: Text(
+                  isPathology ? 'Path' : 'Anat',
+                  style: TextStyle(
+                    fontSize: 7,
+                    fontWeight: FontWeight.w600,
+                    color: isPathology
+                        ? Colors.red.shade400
+                        : Colors.green.shade400,
+                  ),
+                ),
               ),
             ],
           ),
