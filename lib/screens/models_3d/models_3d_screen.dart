@@ -328,10 +328,10 @@ class _Models3DScreenState extends State<Models3DScreen> {
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       sliver: SliverGrid(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 6,
-          crossAxisSpacing: 6,
-          childAspectRatio: 2.0,
+          crossAxisCount: 4,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 0.85,
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
@@ -356,51 +356,43 @@ class _Models3DScreenState extends State<Models3DScreen> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: const Color(0xFF334155)),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Icon
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: category.color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   category.icon,
-                  style: const TextStyle(fontSize: 20),
+                  style: const TextStyle(fontSize: 28),
                 ),
               ),
-              const SizedBox(width: 12),
-              // Title & Count
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      category.name,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      '${category.modelCount} models',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: category.color,
-                      ),
-                    ),
-                  ],
+              const SizedBox(height: 10),
+              // Title
+              Text(
+                category.name,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
-              // Arrow
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 14,
-                color: Colors.grey.shade600,
+              const SizedBox(height: 4),
+              // Count
+              Text(
+                '${category.modelCount} models',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: category.color,
+                ),
               ),
             ],
           ),
