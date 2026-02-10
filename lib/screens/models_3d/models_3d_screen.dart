@@ -329,9 +329,9 @@ class _Models3DScreenState extends State<Models3DScreen> {
       sliver: SliverGrid(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          childAspectRatio: 1.15,
+          mainAxisSpacing: 6,
+          crossAxisSpacing: 6,
+          childAspectRatio: 2.0,
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
@@ -349,106 +349,58 @@ class _Models3DScreenState extends State<Models3DScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => _openCategoryScreen(category),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
           decoration: BoxDecoration(
             color: const Color(0xFF1E293B),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: const Color(0xFF334155)),
           ),
-          child: Stack(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
             children: [
-              // Background Gradient
-              Positioned(
-                top: -20,
-                right: -20,
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        category.color.withOpacity(0.3),
-                        category.color.withOpacity(0.0),
-                      ],
-                    ),
-                  ),
+              // Icon
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: category.color.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  category.icon,
+                  style: const TextStyle(fontSize: 20),
                 ),
               ),
-              // Content
-              Padding(
-                padding: const EdgeInsets.all(10),
+              const SizedBox(width: 12),
+              // Title & Count
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Icon & Count Row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: category.color.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            category.icon,
-                            style: const TextStyle(fontSize: 18),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: category.color.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            '${category.modelCount}',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: category.color,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    // Title
                     Text(
                       category.name,
                       style: const TextStyle(
-                        fontSize: 13,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    // View Models Button
-                    Row(
-                      children: [
-                        Text(
-                          'View models',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: category.color,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.arrow_forward,
-                          size: 12,
-                          color: category.color,
-                        ),
-                      ],
+                    Text(
+                      '${category.modelCount} models',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: category.color,
+                      ),
                     ),
                   ],
                 ),
+              ),
+              // Arrow
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 14,
+                color: Colors.grey.shade600,
               ),
             ],
           ),
