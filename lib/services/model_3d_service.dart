@@ -103,6 +103,22 @@ class Model3DService {
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_serosal_fibroid_3d.glb?alt=media&token=cf637b60-5825-42ef-aea7-3e62fec7b81c',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
+        AssetInfo(
+          id: 'fibroid_submucosal',
+          name: '3D Submucosal Fibroid',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_submucosal_fibroid_3d.glb?alt=media&token=906ef034-3a6f-4805-a402-cbac9b550fee',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
+          id: 'fibroid_intramural',
+          name: '3D Intramural Fibroid',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_intramural_fibroid_3d.glb?alt=media&token=1b3bf313-0ded-41fd-a1ac-c28a282fb654',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
       ],
     ),
     SystemAssetGroup(
