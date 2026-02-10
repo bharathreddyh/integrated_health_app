@@ -39,7 +39,7 @@ class _Models3DScreenState extends State<Models3DScreen> {
             // App Bar
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -95,7 +95,7 @@ class _Models3DScreenState extends State<Models3DScreen> {
                       ],
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
 
                     // Search Bar
                     Container(
@@ -325,13 +325,13 @@ class _Models3DScreenState extends State<Models3DScreen> {
 
   Widget _buildCategoryGrid(List<Model3DCategory> categories) {
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       sliver: SliverGrid(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 0.85,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 1.0,
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
@@ -349,22 +349,22 @@ class _Models3DScreenState extends State<Models3DScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => _openCategoryScreen(category),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
           decoration: BoxDecoration(
             color: const Color(0xFF1E293B),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: const Color(0xFF334155)),
           ),
           child: Stack(
             children: [
               // Background Gradient
               Positioned(
-                top: -30,
-                right: -30,
+                top: -20,
+                right: -20,
                 child: Container(
-                  width: 120,
-                  height: 120,
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
@@ -378,7 +378,7 @@ class _Models3DScreenState extends State<Models3DScreen> {
               ),
               // Content
               Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -387,29 +387,29 @@ class _Models3DScreenState extends State<Models3DScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(14),
+                          padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: category.color.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             category.icon,
-                            style: const TextStyle(fontSize: 28),
+                            style: const TextStyle(fontSize: 22),
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
+                            horizontal: 8,
+                            vertical: 4,
                           ),
                           decoration: BoxDecoration(
                             color: category.color.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             '${category.modelCount}',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
                               color: category.color,
                             ),
@@ -422,31 +422,30 @@ class _Models3DScreenState extends State<Models3DScreen> {
                     Text(
                       category.name,
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     // Description
                     Text(
                       category.description,
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         color: Colors.grey.shade500,
-                        height: 1.3,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     // View Models Button
                     Row(
                       children: [
                         Text(
                           'View models',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: category.color,
                           ),
@@ -454,7 +453,7 @@ class _Models3DScreenState extends State<Models3DScreen> {
                         const SizedBox(width: 4),
                         Icon(
                           Icons.arrow_forward,
-                          size: 16,
+                          size: 14,
                           color: category.color,
                         ),
                       ],
