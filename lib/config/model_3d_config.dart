@@ -112,7 +112,7 @@ class Model3DConfig {
           id: 'fibroid_subserosal',
           name: 'Subserosal Fibroid',
           description: 'Fibroid projecting outward from the uterine surface',
-          modelFileName: 'uterus', // TODO: Replace with 'fibroid_subserosal' when uploaded
+          modelFileName: 'fibroid_subserosal',
           tags: ['pathology', 'fibroid', 'uterus'],
         ),
         Model3DItem(

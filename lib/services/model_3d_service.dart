@@ -95,6 +95,14 @@ class Model3DService {
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_cervical_fibroid_3d.glb?alt=media&token=81508b33-7db4-438a-8438-0843d7314235',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
+        AssetInfo(
+          id: 'fibroid_subserosal',
+          name: '3D Subserosal Fibroid',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_serosal_fibroid_3d.glb?alt=media&token=cf637b60-5825-42ef-aea7-3e62fec7b81c',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
       ],
     ),
     SystemAssetGroup(
