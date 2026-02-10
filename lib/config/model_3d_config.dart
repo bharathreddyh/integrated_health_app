@@ -98,21 +98,21 @@ class Model3DConfig {
           id: 'fibroid_intramural',
           name: 'Intramural Fibroid',
           description: 'Fibroid within the muscular wall of the uterus',
-          modelFileName: 'uterus', // TODO: Replace with 'fibroid_intramural' when uploaded
+          modelFileName: 'fibroid_intramural',
           tags: ['pathology', 'fibroid', 'uterus'],
         ),
         Model3DItem(
           id: 'fibroid_submucosal',
           name: 'Submucosal Fibroid',
           description: 'Fibroid projecting into the uterine cavity',
-          modelFileName: 'uterus', // TODO: Replace with 'fibroid_submucosal' when uploaded
+          modelFileName: 'fibroid_submucosal',
           tags: ['pathology', 'fibroid', 'uterus'],
         ),
         Model3DItem(
           id: 'fibroid_subserosal',
           name: 'Subserosal Fibroid',
           description: 'Fibroid projecting outward from the uterine surface',
-          modelFileName: 'uterus', // TODO: Replace with 'fibroid_subserosal' when uploaded
+          modelFileName: 'fibroid_subserosal',
           tags: ['pathology', 'fibroid', 'uterus'],
         ),
         Model3DItem(
