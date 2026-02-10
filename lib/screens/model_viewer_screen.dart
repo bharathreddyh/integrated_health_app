@@ -846,21 +846,25 @@ $hotspotsHtml
 
     modelViewer.addEventListener('load', function() {
       document.getElementById('loading').style.display = 'none';
-      // Position labels based on normal direction
-      positionLabels();
+      // Position labels after a delay to ensure hotspots are rendered
+      setTimeout(positionLabels, 100);
+      setTimeout(positionLabels, 500);
     });
 
     // Determine label position based on surface normal
     function positionLabels() {
       var hotspots = document.querySelectorAll('.hotspot');
+      console.log('positionLabels called, found ' + hotspots.length + ' hotspots');
       hotspots.forEach(function(h) {
         var normalStr = h.getAttribute('data-normal');
+        console.log('Hotspot normal:', normalStr);
         if (!normalStr) return;
 
         var parts = normalStr.split(' ').map(parseFloat);
         if (parts.length < 3) return;
 
         var nx = parts[0], ny = parts[1], nz = parts[2];
+        console.log('Parsed normal: nx=' + nx + ', ny=' + ny + ', nz=' + nz);
 
         // Remove existing position classes
         h.classList.remove('label-top', 'label-bottom', 'label-left', 'label-right');
@@ -870,42 +874,45 @@ $hotspotsHtml
         var absY = Math.abs(ny);
         var absZ = Math.abs(nz);
 
+        var labelClass = '';
         // If pointing mostly up/down (Y axis dominant)
         if (absY > absX && absY > absZ) {
           if (ny > 0) {
-            h.classList.add('label-top');  // Surface faces up, label goes up
+            labelClass = 'label-top';
           } else {
-            h.classList.add('label-bottom');  // Surface faces down, label goes down
+            labelClass = 'label-bottom';
           }
         }
         // If pointing mostly left/right (X axis dominant)
         else if (absX > absY && absX > absZ) {
           if (nx > 0) {
-            h.classList.add('label-right');  // Surface faces right, label goes right
+            labelClass = 'label-right';
           } else {
-            h.classList.add('label-left');  // Surface faces left, label goes left
+            labelClass = 'label-left';
           }
         }
         // If pointing mostly forward/back (Z axis dominant) or default
         else {
-          // For forward-facing surfaces, use position-based logic
           var posStr = h.getAttribute('data-position');
           if (posStr) {
             var posParts = posStr.split(' ').map(parseFloat);
             if (posParts.length >= 3) {
               var px = posParts[0], py = posParts[1];
-              // Use position to decide: if on left side of model, label left; if right, label right
               if (px < -0.02) {
-                h.classList.add('label-left');
+                labelClass = 'label-left';
               } else if (px > 0.02) {
-                h.classList.add('label-right');
+                labelClass = 'label-right';
               } else if (py > 0) {
-                h.classList.add('label-top');
+                labelClass = 'label-top';
               } else {
-                h.classList.add('label-bottom');
+                labelClass = 'label-bottom';
               }
             }
           }
+        }
+        console.log('Adding class: ' + labelClass);
+        if (labelClass) {
+          h.classList.add(labelClass);
         }
       });
     }
