@@ -329,13 +329,13 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
               child: _filteredModels.isEmpty
                   ? _buildEmptyState()
                   : Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: GridView.builder(
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          mainAxisSpacing: 16,
-                          crossAxisSpacing: 16,
-                          childAspectRatio: 0.75,
+                          mainAxisSpacing: 12,
+                          crossAxisSpacing: 12,
+                          childAspectRatio: 0.85,
                         ),
                         itemCount: _filteredModels.length,
                         itemBuilder: (context, index) {
@@ -466,11 +466,11 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
             });
           }
         },
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
           decoration: BoxDecoration(
             color: const Color(0xFF1E293B),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected
                   ? Colors.orange
@@ -482,11 +482,11 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
             children: [
               // Background gradient
               Positioned(
-                bottom: -40,
-                left: -40,
+                bottom: -30,
+                left: -30,
                 child: Container(
-                  width: 120,
-                  height: 120,
+                  width: 80,
+                  height: 80,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
@@ -503,11 +503,11 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
               // Selection indicator
               if (isSelected)
                 Positioned(
-                  top: 12,
-                  right: 12,
+                  top: 8,
+                  right: 8,
                   child: Container(
-                    width: 28,
-                    height: 28,
+                    width: 24,
+                    height: 24,
                     decoration: const BoxDecoration(
                       color: Colors.orange,
                       shape: BoxShape.circle,
@@ -518,7 +518,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontSize: 12,
                         ),
                       ),
                     ),
@@ -526,7 +526,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                 ),
               // Content
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -536,19 +536,19 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
+                            horizontal: 8,
+                            vertical: 4,
                           ),
                           decoration: BoxDecoration(
                             color: isPathology
                                 ? Colors.red.withOpacity(0.15)
                                 : Colors.green.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             isPathology ? 'Pathology' : 'Anatomy',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 9,
                               fontWeight: FontWeight.w600,
                               color: isPathology
                                   ? Colors.red.shade400
@@ -558,13 +558,13 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                         ),
                         Icon(
                           Icons.view_in_ar_rounded,
-                          size: 20,
+                          size: 16,
                           color: Colors.grey.shade600,
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
 
                     // 3D Preview Thumbnail - expanded to fill card
                     Expanded(
@@ -585,54 +585,52 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
 
                     // Model Name
                     Text(
                       model.name,
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
-                        height: 1.2,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     // Description
                     Text(
                       model.description,
-                      maxLines: 2,
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 10,
                         color: Colors.grey.shade500,
-                        height: 1.3,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     // View Button
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                       decoration: BoxDecoration(
                         color: widget.category.color.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
                             Icons.play_arrow_rounded,
-                            size: 18,
+                            size: 16,
                             color: widget.category.color,
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 4),
                           Text(
                             'View 3D',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: FontWeight.w600,
                               color: widget.category.color,
                             ),
