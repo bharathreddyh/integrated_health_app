@@ -331,10 +331,10 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: GridView.builder(
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
+                          crossAxisCount: 4,
                           mainAxisSpacing: 8,
                           crossAxisSpacing: 8,
-                          childAspectRatio: 1.0,
+                          childAspectRatio: 0.9,
                         ),
                         itemCount: _filteredModels.length,
                         itemBuilder: (context, index) {
@@ -486,15 +486,15 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                 clipBehavior: Clip.none,
                 children: [
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 56,
+                    height: 56,
                     decoration: BoxDecoration(
                       color: widget.category.color.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
                       Icons.view_in_ar_rounded,
-                      size: 28,
+                      size: 32,
                       color: widget.category.color,
                     ),
                   ),
@@ -531,7 +531,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
@@ -550,9 +550,9 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  isPathology ? 'Path' : 'Anat',
+                  isPathology ? 'Pathology' : 'Anatomy',
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: isPathology
                         ? Colors.red.shade400
