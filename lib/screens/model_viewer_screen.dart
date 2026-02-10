@@ -1180,8 +1180,8 @@ $hotspotsHtml
     _webController?.runJavaScript('''
       var mv = document.querySelector('model-viewer');
       var orbit = mv.getCameraOrbit();
-      orbit.radius = Math.max(orbit.radius * 0.8, 0.5);
-      mv.cameraOrbit = orbit.toString();
+      var newRadius = Math.max(orbit.radius * 0.8, 0.5);
+      mv.cameraOrbit = orbit.theta + 'rad ' + orbit.phi + 'rad ' + newRadius + 'm';
     ''');
   }
 
@@ -1189,8 +1189,8 @@ $hotspotsHtml
     _webController?.runJavaScript('''
       var mv = document.querySelector('model-viewer');
       var orbit = mv.getCameraOrbit();
-      orbit.radius = Math.min(orbit.radius * 1.25, 20);
-      mv.cameraOrbit = orbit.toString();
+      var newRadius = Math.min(orbit.radius * 1.25, 20);
+      mv.cameraOrbit = orbit.theta + 'rad ' + orbit.phi + 'rad ' + newRadius + 'm';
     ''');
   }
 
