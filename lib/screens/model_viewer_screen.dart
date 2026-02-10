@@ -1032,7 +1032,7 @@ $hotspotsHtml
                 onPressed: _showCompareModelPicker,
               ),
               // Show/hide drawings toggle (only if there are drawings)
-              if (_strokes.isNotEmpty)
+              if (_strokes.isNotEmpty) ...[
                 IconButton(
                   icon: Icon(
                     _showDrawings ? Icons.visibility : Icons.visibility_off,
@@ -1041,6 +1041,13 @@ $hotspotsHtml
                   tooltip: _showDrawings ? 'Hide drawings' : 'Show drawings',
                   onPressed: () => setState(() => _showDrawings = !_showDrawings),
                 ),
+                // Clear drawings button (visible when drawings exist, even outside draw mode)
+                IconButton(
+                  icon: const Icon(Icons.delete_sweep_outlined),
+                  tooltip: 'Clear drawings',
+                  onPressed: _clearDrawings,
+                ),
+              ],
               IconButton(
                 icon: const Icon(Icons.photo_library_outlined),
                 tooltip: 'Saved images',
@@ -1173,8 +1180,8 @@ $hotspotsHtml
     _webController?.runJavaScript('''
       var mv = document.querySelector('model-viewer');
       var orbit = mv.getCameraOrbit();
-      orbit.radius = Math.max(orbit.radius * 0.8, 0.5);
-      mv.cameraOrbit = orbit.toString();
+      var newRadius = Math.max(orbit.radius * 0.8, 0.5);
+      mv.cameraOrbit = orbit.theta + 'rad ' + orbit.phi + 'rad ' + newRadius + 'm';
     ''');
   }
 
@@ -1182,8 +1189,8 @@ $hotspotsHtml
     _webController?.runJavaScript('''
       var mv = document.querySelector('model-viewer');
       var orbit = mv.getCameraOrbit();
-      orbit.radius = Math.min(orbit.radius * 1.25, 20);
-      mv.cameraOrbit = orbit.toString();
+      var newRadius = Math.min(orbit.radius * 1.25, 20);
+      mv.cameraOrbit = orbit.theta + 'rad ' + orbit.phi + 'rad ' + newRadius + 'm';
     ''');
   }
 
