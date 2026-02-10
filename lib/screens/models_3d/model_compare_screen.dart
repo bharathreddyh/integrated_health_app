@@ -201,12 +201,11 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
-    * { margin: 0; padding: 0; touch-action: none; }
+    * { margin: 0; padding: 0; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #1E293B; }
     model-viewer {
       width: 100%;
       height: 100%;
-      touch-action: none;
       --poster-color: transparent;
     }
     #loading {
@@ -227,10 +226,8 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
     alt="$title"
     auto-rotate
     camera-controls
-    disable-zoom="false"
     shadow-intensity="0.5"
     exposure="1"
-    touch-action="none"
     interaction-prompt="none"
     style="width:100%;height:100%;"
     loading="lazy">
