@@ -851,73 +851,56 @@ $hotspotsHtml
       setTimeout(positionLabels, 500);
     });
 
-    // Determine label position based on surface normal
+    // Determine label position based on marker's SCREEN position (not model normals)
     function positionLabels() {
       var hotspots = document.querySelectorAll('.hotspot');
-      console.log('positionLabels called, found ' + hotspots.length + ' hotspots');
+      var viewerRect = modelViewer.getBoundingClientRect();
+      var centerX = viewerRect.width / 2;
+      var centerY = viewerRect.height / 2;
+
       hotspots.forEach(function(h) {
-        var normalStr = h.getAttribute('data-normal');
-        console.log('Hotspot normal:', normalStr);
-        if (!normalStr) return;
-
-        var parts = normalStr.split(' ').map(parseFloat);
-        if (parts.length < 3) return;
-
-        var nx = parts[0], ny = parts[1], nz = parts[2];
-        console.log('Parsed normal: nx=' + nx + ', ny=' + ny + ', nz=' + nz);
-
         // Remove existing position classes
         h.classList.remove('label-top', 'label-bottom', 'label-left', 'label-right');
 
-        // Determine dominant direction
-        var absX = Math.abs(nx);
-        var absY = Math.abs(ny);
-        var absZ = Math.abs(nz);
+        // Get the hotspot's position on screen
+        var rect = h.getBoundingClientRect();
+        var hx = rect.left - viewerRect.left + rect.width / 2;
+        var hy = rect.top - viewerRect.top + rect.height / 2;
+
+        // Calculate distance from center
+        var dx = hx - centerX;
+        var dy = hy - centerY;
 
         var labelClass = '';
-        // If pointing mostly up/down (Y axis dominant)
-        if (absY > absX && absY > absZ) {
-          if (ny > 0) {
-            labelClass = 'label-top';
+
+        // Determine which edge the marker is closest to
+        var absX = Math.abs(dx);
+        var absY = Math.abs(dy);
+
+        if (absX > absY) {
+          // Marker is more to the left or right
+          if (dx < 0) {
+            labelClass = 'label-left';  // Marker on left side, label goes left
           } else {
-            labelClass = 'label-bottom';
+            labelClass = 'label-right'; // Marker on right side, label goes right
           }
-        }
-        // If pointing mostly left/right (X axis dominant)
-        else if (absX > absY && absX > absZ) {
-          if (nx > 0) {
-            labelClass = 'label-right';
+        } else {
+          // Marker is more to the top or bottom
+          if (dy < 0) {
+            labelClass = 'label-top';    // Marker in upper half, label goes up
           } else {
-            labelClass = 'label-left';
+            labelClass = 'label-bottom'; // Marker in lower half, label goes down
           }
         }
-        // If pointing mostly forward/back (Z axis dominant) or default
-        else {
-          var posStr = h.getAttribute('data-position');
-          if (posStr) {
-            var posParts = posStr.split(' ').map(parseFloat);
-            if (posParts.length >= 3) {
-              var px = posParts[0], py = posParts[1];
-              if (px < -0.02) {
-                labelClass = 'label-left';
-              } else if (px > 0.02) {
-                labelClass = 'label-right';
-              } else if (py > 0) {
-                labelClass = 'label-top';
-              } else {
-                labelClass = 'label-bottom';
-              }
-            }
-          }
-        }
-        // Default to label-bottom if nothing was determined
-        if (!labelClass) {
-          labelClass = 'label-bottom';
-        }
-        console.log('Adding class: ' + labelClass);
+
         h.classList.add(labelClass);
       });
     }
+
+    // Reposition labels when camera moves
+    modelViewer.addEventListener('camera-change', function() {
+      positionLabels();
+    });
 
     // Handle click on model to get 3D position
     modelViewer.addEventListener('click', function(event) {
