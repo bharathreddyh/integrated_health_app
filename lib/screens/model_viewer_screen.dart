@@ -745,7 +745,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
 
     /* Default: label on top */
     .hotspot .annotation-label {
-      bottom: 180px;
+      bottom: 55px;
       left: 50%;
       transform: translateX(-50%);
     }
@@ -759,20 +759,20 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
       transition: opacity 0.2s;
       background: rgba(255,255,255,0.7);
       bottom: 100%;
-      height: 170px;
+      height: 45px;
     }
 
     /* Label on bottom */
     .hotspot.label-bottom .annotation-label {
       bottom: auto;
-      top: 180px;
+      top: 55px;
       left: 50%;
       transform: translateX(-50%);
     }
     .hotspot.label-bottom::before {
       bottom: auto;
       top: 100%;
-      height: 170px;
+      height: 45px;
     }
 
     /* Label on left */
@@ -780,7 +780,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
       bottom: auto;
       top: 50%;
       left: auto;
-      right: 200px;
+      right: 60px;
       transform: translateY(-50%);
     }
     .hotspot.label-left::before {
@@ -789,7 +789,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
       left: auto;
       right: 100%;
       transform: translateY(-50%);
-      width: 190px;
+      width: 50px;
       height: 1px;
     }
 
@@ -797,7 +797,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     .hotspot.label-right .annotation-label {
       bottom: auto;
       top: 50%;
-      left: 200px;
+      left: 60px;
       right: auto;
       transform: translateY(-50%);
     }
@@ -807,7 +807,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
       left: 100%;
       right: auto;
       transform: translateY(-50%);
-      width: 190px;
+      width: 50px;
       height: 1px;
     }
 
