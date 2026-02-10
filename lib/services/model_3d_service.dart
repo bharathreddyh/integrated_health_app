@@ -84,7 +84,7 @@ class Model3DService {
           name: '3D Uterus (Normal)',
           systemId: 'gynaecology',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_models_1.glb?alt=media&token=fcf140dd-c35d-4bde-9ade-4cf743b10653',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fnormal_uterus_3d.glb?alt=media&token=e709f444-f0ff-461e-bf93-bd5db2685410',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         // More models will be added here as they become available:
