@@ -87,8 +87,14 @@ class Model3DService {
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fnormal_uterus_3d.glb?alt=media&token=e709f444-f0ff-461e-bf93-bd5db2685410',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
-        // More models will be added here as they become available:
-        // fibroid_intramural, fibroid_submucosal, fibroid_subserosal, etc.
+        AssetInfo(
+          id: 'fibroid_cervical',
+          name: '3D Cervical Fibroid',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_cervical_fibroid_3d.glb?alt=media&token=81508b33-7db4-438a-8438-0843d7314235',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
       ],
     ),
     SystemAssetGroup(

@@ -126,7 +126,7 @@ class Model3DConfig {
           id: 'fibroid_cervical',
           name: 'Cervical Fibroid',
           description: 'Fibroid located in the cervical region',
-          modelFileName: 'uterus', // TODO: Replace with 'fibroid_cervical' when uploaded
+          modelFileName: 'fibroid_cervical',
           tags: ['pathology', 'fibroid', 'cervix'],
         ),
         Model3DItem(
