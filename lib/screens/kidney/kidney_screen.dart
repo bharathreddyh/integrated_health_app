@@ -953,7 +953,10 @@ class _CanvasScreenState extends State<CanvasScreen> {
                                       setState(() {
                                         markers.add(marker);
                                         selectedMarkerIndex = markers.length - 1;
+                                        // Auto-exit edit mode after adding annotation
                                         selectedTool = 'pan';
+                                        _selectedDrawingTool = 'none';
+                                        _showDrawingPanel = false;
                                         _waitingForClick = false;
                                         _pendingToolType = null;
                                         _pendingToolSize = null;
@@ -997,6 +1000,9 @@ class _CanvasScreenState extends State<CanvasScreen> {
                                       setState(() {
                                         drawingPaths.add(path);
                                         selectedPathIndex = null;
+                                        // Auto-exit drawing mode after adding annotation
+                                        _selectedDrawingTool = 'none';
+                                        _showDrawingPanel = false;
                                       });
                                     },
                                     onDrawingPathSelected: (index) {
