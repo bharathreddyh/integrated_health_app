@@ -249,7 +249,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
 
     final controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0xFFF0F0F0))
+      ..setBackgroundColor(const Color(0xFF0A1628))
       ..addJavaScriptChannel(
         'AnnotationBridge',
         onMessageReceived: (message) {
@@ -688,7 +688,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
     * { margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #f0f0f0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #0A1628; }
     model-viewer {
       width: 100%;
       height: 100%;
@@ -699,7 +699,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       font-family: sans-serif;
-      color: #666;
+      color: #94A3B8;
       font-size: 16px;
       z-index: 10;
     }
