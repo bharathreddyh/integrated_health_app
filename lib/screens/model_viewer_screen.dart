@@ -910,10 +910,12 @@ $hotspotsHtml
             }
           }
         }
-        console.log('Adding class: ' + labelClass);
-        if (labelClass) {
-          h.classList.add(labelClass);
+        // Default to label-bottom if nothing was determined
+        if (!labelClass) {
+          labelClass = 'label-bottom';
         }
+        console.log('Adding class: ' + labelClass);
+        h.classList.add(labelClass);
       });
     }
 
