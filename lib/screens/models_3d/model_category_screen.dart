@@ -4,7 +4,6 @@
 
 import 'package:flutter/material.dart';
 import '../../config/model_3d_config.dart';
-import '../../widgets/model_thumbnail_widget.dart';
 import '../model_viewer_screen.dart';
 import 'model_compare_screen.dart';
 
@@ -333,9 +332,9 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                       child: GridView.builder(
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          mainAxisSpacing: 8,
-                          crossAxisSpacing: 8,
-                          childAspectRatio: 1.0,
+                          mainAxisSpacing: 6,
+                          crossAxisSpacing: 6,
+                          childAspectRatio: 1.4,
                         ),
                         itemCount: _filteredModels.length,
                         itemBuilder: (context, index) {
@@ -466,11 +465,11 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
             });
           }
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(10),
         child: Container(
           decoration: BoxDecoration(
             color: const Color(0xFF1E293B),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isSelected
                   ? Colors.orange
@@ -478,156 +477,103 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
               width: isSelected ? 2 : 1,
             ),
           ),
-          child: Stack(
+          padding: const EdgeInsets.all(10),
+          child: Row(
             children: [
-              // Background gradient
-              Positioned(
-                bottom: -30,
-                left: -30,
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        isSelected
-                            ? Colors.orange.withOpacity(0.3)
-                            : widget.category.color.withOpacity(0.2),
-                        widget.category.color.withOpacity(0.0),
-                      ],
-                    ),
-                  ),
+              // Small 3D icon/thumbnail
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: widget.category.color.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              ),
-              // Selection indicator
-              if (isSelected)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    width: 24,
-                    height: 24,
-                    decoration: const BoxDecoration(
-                      color: Colors.orange,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        '$selectionIndex',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
+                child: Stack(
+                  children: [
+                    Center(
+                      child: Icon(
+                        Icons.view_in_ar_rounded,
+                        size: 24,
+                        color: widget.category.color,
                       ),
                     ),
-                  ),
-                ),
-              // Content
-              Padding(
-                padding: const EdgeInsets.all(8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Type Badge Row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
+                    // Selection indicator
+                    if (isSelected)
+                      Positioned(
+                        top: -2,
+                        right: -2,
+                        child: Container(
+                          width: 18,
+                          height: 18,
+                          decoration: const BoxDecoration(
+                            color: Colors.orange,
+                            shape: BoxShape.circle,
                           ),
-                          decoration: BoxDecoration(
-                            color: isPathology
-                                ? Colors.red.withOpacity(0.15)
-                                : Colors.green.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            isPathology ? 'Pathology' : 'Anatomy',
-                            style: TextStyle(
-                              fontSize: 8,
-                              fontWeight: FontWeight.w600,
-                              color: isPathology
-                                  ? Colors.red.shade400
-                                  : Colors.green.shade400,
+                          child: Center(
+                            child: Text(
+                              '$selectionIndex',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 10,
+                              ),
                             ),
                           ),
                         ),
-                        Icon(
-                          Icons.view_in_ar_rounded,
-                          size: 14,
-                          color: Colors.grey.shade600,
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 4),
-
-                    // 3D Preview Thumbnail - expanded to fill card
-                    Expanded(
-                      child: Center(
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            final size = constraints.maxWidth < constraints.maxHeight
-                                ? constraints.maxWidth
-                                : constraints.maxHeight;
-                            return ModelThumbnailWidget(
-                              modelId: model.modelFileName,
-                              accentColor: widget.category.color,
-                              size: size,
-                            );
-                          },
-                        ),
                       ),
-                    ),
-
-                    const SizedBox(height: 4),
-
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              // Model info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
                     // Model Name
                     Text(
                       model.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    // View Button
+                    const SizedBox(height: 3),
+                    // Type Badge
                     Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      decoration: BoxDecoration(
-                        color: widget.category.color.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.play_arrow_rounded,
-                            size: 14,
-                            color: widget.category.color,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'View 3D',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: widget.category.color,
-                            ),
-                          ),
-                        ],
+                      decoration: BoxDecoration(
+                        color: isPathology
+                            ? Colors.red.withOpacity(0.15)
+                            : Colors.green.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        isPathology ? 'Pathology' : 'Anatomy',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600,
+                          color: isPathology
+                              ? Colors.red.shade400
+                              : Colors.green.shade400,
+                        ),
                       ),
                     ),
                   ],
                 ),
+              ),
+              // Arrow
+              Icon(
+                Icons.play_arrow_rounded,
+                size: 20,
+                color: widget.category.color,
               ),
             ],
           ),
