@@ -119,6 +119,22 @@ class Model3DService {
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_intramural_fibroid_3d.glb?alt=media&token=1b3bf313-0ded-41fd-a1ac-c28a282fb654',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
+        AssetInfo(
+          id: 'uterus_fibroid_compression_before',
+          name: '3D Fibroid Compression (Before)',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_fibroid_compression_before.glb?alt=media&token=9ad5e56d-6a54-4161-875a-021920435c03',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
+          id: 'uterus_fibroid_compression_after',
+          name: '3D Fibroid Compression (After)',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_fibroid_compression_after.glb?alt=media&token=92d89ce0-6373-42dd-829d-3b2854ac6837',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
       ],
     ),
     SystemAssetGroup(
