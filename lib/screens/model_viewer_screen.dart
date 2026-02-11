@@ -1178,28 +1178,40 @@ $hotspotsHtml
 
   void _zoomIn() {
     _webController?.runJavaScript('''
-      var mv = document.querySelector('model-viewer');
-      var orbit = mv.getCameraOrbit();
-      var newRadius = Math.max(orbit.radius * 0.8, 0.5);
-      mv.cameraOrbit = orbit.theta + 'rad ' + orbit.phi + 'rad ' + newRadius + 'm';
+      (function() {
+        var mv = document.querySelector('model-viewer');
+        if (!mv) return;
+        var fov = mv.getFieldOfView();
+        var minFov = mv.getMinimumFieldOfView();
+        var newFov = Math.max(fov * 0.85, minFov, 10);
+        mv.fieldOfView = newFov + 'deg';
+      })();
     ''');
   }
 
   void _zoomOut() {
     _webController?.runJavaScript('''
-      var mv = document.querySelector('model-viewer');
-      var orbit = mv.getCameraOrbit();
-      var newRadius = Math.min(orbit.radius * 1.25, 20);
-      mv.cameraOrbit = orbit.theta + 'rad ' + orbit.phi + 'rad ' + newRadius + 'm';
+      (function() {
+        var mv = document.querySelector('model-viewer');
+        if (!mv) return;
+        var fov = mv.getFieldOfView();
+        var maxFov = mv.getMaximumFieldOfView();
+        var newFov = Math.min(fov * 1.15, maxFov, 120);
+        mv.fieldOfView = newFov + 'deg';
+      })();
     ''');
   }
 
   void _resetView() {
     _webController?.runJavaScript('''
-      var mv = document.querySelector('model-viewer');
-      mv.cameraOrbit = 'auto auto auto';
-      mv.cameraTarget = 'auto auto auto';
-      mv.fieldOfView = 'auto';
+      (function() {
+        var mv = document.querySelector('model-viewer');
+        if (!mv) return;
+        mv.cameraOrbit = 'auto auto auto';
+        mv.cameraTarget = 'auto auto auto';
+        mv.fieldOfView = 'auto';
+        mv.jumpCameraToGoal();
+      })();
     ''');
   }
 
