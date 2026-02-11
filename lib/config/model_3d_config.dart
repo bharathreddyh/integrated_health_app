@@ -31,6 +31,7 @@ class Model3DItem {
   final List<String> tags;
   final bool isPremium;
   final List<ModelAnnotation> annotations; // Hotspots/labels on the model
+  final String? subcategory; // Subcategory for grouping (e.g., "Fibroids", "Ovary")
 
   // Comparison model support (for before/after views)
   final bool isComparisonModel;
@@ -47,6 +48,7 @@ class Model3DItem {
     this.tags = const [],
     this.isPremium = false,
     this.annotations = const [],
+    this.subcategory,
     this.isComparisonModel = false,
     this.beforeModelFileName,
     this.afterModelFileName,
@@ -112,6 +114,7 @@ class Model3DConfig {
           description: 'Fibroid within the muscular wall of the uterus',
           modelFileName: 'fibroid_intramural',
           tags: ['pathology', 'fibroid', 'uterus'],
+          subcategory: 'Fibroids',
         ),
         Model3DItem(
           id: 'fibroid_submucosal',
@@ -119,6 +122,7 @@ class Model3DConfig {
           description: 'Fibroid projecting into the uterine cavity',
           modelFileName: 'fibroid_submucosal',
           tags: ['pathology', 'fibroid', 'uterus'],
+          subcategory: 'Fibroids',
         ),
         Model3DItem(
           id: 'fibroid_subserosal',
@@ -126,6 +130,7 @@ class Model3DConfig {
           description: 'Fibroid projecting outward from the uterine surface',
           modelFileName: 'fibroid_subserosal',
           tags: ['pathology', 'fibroid', 'uterus'],
+          subcategory: 'Fibroids',
         ),
         Model3DItem(
           id: 'fibroid_pedunculated',
@@ -133,6 +138,7 @@ class Model3DConfig {
           description: 'Fibroid attached by a stalk to the uterus',
           modelFileName: 'uterus', // TODO: Replace with 'fibroid_pedunculated' when uploaded
           tags: ['pathology', 'fibroid', 'uterus'],
+          subcategory: 'Fibroids',
         ),
         Model3DItem(
           id: 'fibroid_cervical',
@@ -140,6 +146,7 @@ class Model3DConfig {
           description: 'Fibroid located in the cervical region',
           modelFileName: 'fibroid_cervical',
           tags: ['pathology', 'fibroid', 'cervix'],
+          subcategory: 'Fibroids',
         ),
         Model3DItem(
           id: 'fibroid_multiple',
@@ -147,6 +154,7 @@ class Model3DConfig {
           description: 'Uterus with multiple fibroids of different types',
           modelFileName: 'uterus', // TODO: Replace with 'fibroid_multiple' when uploaded
           tags: ['pathology', 'fibroid', 'uterus'],
+          subcategory: 'Fibroids',
         ),
         Model3DItem(
           id: 'fibroid_compression',
@@ -154,6 +162,7 @@ class Model3DConfig {
           description: 'Fibroid growth causing pressure effects on bladder and rectum - before and after comparison',
           modelFileName: 'uterus_fibroid_compression_before', // Default model for single view
           tags: ['pathology', 'fibroid', 'uterus', 'compression'],
+          subcategory: 'Fibroids',
           isComparisonModel: true,
           beforeModelFileName: 'uterus_fibroid_compression_before',
           afterModelFileName: 'uterus_fibroid_compression_after',
@@ -161,13 +170,24 @@ class Model3DConfig {
           afterLabel: 'After',
         ),
 
-        // Ovarian Cysts
+        // Mullerian Anomaly
+        Model3DItem(
+          id: 'uterine_anomalies',
+          name: 'Uterine Anomalies',
+          description: 'Congenital uterine malformations',
+          modelFileName: 'uterus', // TODO: Replace with 'uterine_anomalies' when uploaded
+          tags: ['anatomy', 'anomaly', 'uterus'],
+          subcategory: 'Mullerian Anomaly',
+        ),
+
+        // Ovary
         Model3DItem(
           id: 'simple_cyst',
           name: 'Simple Ovarian Cyst',
           description: 'Fluid-filled simple cyst on the ovary',
           modelFileName: 'uterus', // TODO: Replace with 'simple_cyst' when uploaded
           tags: ['pathology', 'cyst', 'ovary'],
+          subcategory: 'Ovary',
         ),
         Model3DItem(
           id: 'hemorrhagic_cyst',
@@ -175,6 +195,7 @@ class Model3DConfig {
           description: 'Ovarian cyst with internal bleeding',
           modelFileName: 'uterus', // TODO: Replace with 'hemorrhagic_cyst' when uploaded
           tags: ['pathology', 'cyst', 'ovary'],
+          subcategory: 'Ovary',
         ),
         Model3DItem(
           id: 'endometrioid_cyst',
@@ -182,6 +203,7 @@ class Model3DConfig {
           description: 'Chocolate cyst from endometriosis',
           modelFileName: 'uterus', // TODO: Replace with 'endometrioid_cyst' when uploaded
           tags: ['pathology', 'cyst', 'ovary', 'endometriosis'],
+          subcategory: 'Ovary',
         ),
         Model3DItem(
           id: 'dermoid_cyst',
@@ -189,36 +211,7 @@ class Model3DConfig {
           description: 'Mature cystic teratoma containing various tissues',
           modelFileName: 'uterus', // TODO: Replace with 'dermoid_cyst' when uploaded
           tags: ['pathology', 'cyst', 'ovary', 'teratoma'],
-        ),
-
-        // Other Pathologies
-        Model3DItem(
-          id: 'adenomyosis',
-          name: 'Adenomyosis',
-          description: 'Endometrial tissue within the myometrium',
-          modelFileName: 'uterus', // TODO: Replace with 'adenomyosis' when uploaded
-          tags: ['pathology', 'uterus', 'endometriosis'],
-        ),
-        Model3DItem(
-          id: 'endometrial_polyp',
-          name: 'Endometrial Polyp',
-          description: 'Polypoid growth from the endometrium',
-          modelFileName: 'uterus', // TODO: Replace with 'endometrial_polyp' when uploaded
-          tags: ['pathology', 'polyp', 'endometrium'],
-        ),
-        Model3DItem(
-          id: 'endometrial_hyperplasia',
-          name: 'Endometrial Hyperplasia',
-          description: 'Thickened endometrial lining',
-          modelFileName: 'uterus', // TODO: Replace with 'endometrial_hyperplasia' when uploaded
-          tags: ['pathology', 'endometrium', 'hyperplasia'],
-        ),
-        Model3DItem(
-          id: 'endometrial_carcinoma',
-          name: 'Endometrial Carcinoma',
-          description: 'Malignant tumor of the endometrium',
-          modelFileName: 'uterus', // TODO: Replace with 'endometrial_carcinoma' when uploaded
-          tags: ['pathology', 'cancer', 'endometrium'],
+          subcategory: 'Ovary',
         ),
         Model3DItem(
           id: 'endometrioma',
@@ -226,6 +219,7 @@ class Model3DConfig {
           description: 'Endometriotic cyst (chocolate cyst)',
           modelFileName: 'uterus', // TODO: Replace with 'endometrioma' when uploaded
           tags: ['pathology', 'endometriosis', 'ovary'],
+          subcategory: 'Ovary',
         ),
         Model3DItem(
           id: 'pcos_ovary',
@@ -233,13 +227,41 @@ class Model3DConfig {
           description: 'Polycystic ovary with multiple small follicles',
           modelFileName: 'uterus', // TODO: Replace with 'pcos_ovary' when uploaded
           tags: ['pathology', 'pcos', 'ovary'],
+          subcategory: 'Ovary',
+        ),
+
+        // Endometrium
+        Model3DItem(
+          id: 'adenomyosis',
+          name: 'Adenomyosis',
+          description: 'Endometrial tissue within the myometrium',
+          modelFileName: 'uterus', // TODO: Replace with 'adenomyosis' when uploaded
+          tags: ['pathology', 'uterus', 'endometriosis'],
+          subcategory: 'Endometrium',
         ),
         Model3DItem(
-          id: 'uterine_anomalies',
-          name: 'Uterine Anomalies',
-          description: 'Congenital uterine malformations',
-          modelFileName: 'uterus', // TODO: Replace with 'uterine_anomalies' when uploaded
-          tags: ['anatomy', 'anomaly', 'uterus'],
+          id: 'endometrial_polyp',
+          name: 'Endometrial Polyp',
+          description: 'Polypoid growth from the endometrium',
+          modelFileName: 'uterus', // TODO: Replace with 'endometrial_polyp' when uploaded
+          tags: ['pathology', 'polyp', 'endometrium'],
+          subcategory: 'Endometrium',
+        ),
+        Model3DItem(
+          id: 'endometrial_hyperplasia',
+          name: 'Endometrial Hyperplasia',
+          description: 'Thickened endometrial lining',
+          modelFileName: 'uterus', // TODO: Replace with 'endometrial_hyperplasia' when uploaded
+          tags: ['pathology', 'endometrium', 'hyperplasia'],
+          subcategory: 'Endometrium',
+        ),
+        Model3DItem(
+          id: 'endometrial_carcinoma',
+          name: 'Endometrial Carcinoma',
+          description: 'Malignant tumor of the endometrium',
+          modelFileName: 'uterus', // TODO: Replace with 'endometrial_carcinoma' when uploaded
+          tags: ['pathology', 'cancer', 'endometrium'],
+          subcategory: 'Endometrium',
         ),
       ],
     ),
