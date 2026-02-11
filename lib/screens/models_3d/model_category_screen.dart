@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../config/model_3d_config.dart';
 import '../model_viewer_screen.dart';
 import 'model_compare_screen.dart';
+import 'model_before_after_screen.dart';
 
 class ModelCategoryScreen extends StatefulWidget {
   final Model3DCategory category;
@@ -446,6 +447,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
     final isPathology = model.tags.contains('pathology');
     final isSelected = _selectedForCompare.contains(model);
     final selectionIndex = _selectedForCompare.indexOf(model) + 1;
+    final isComparison = model.isComparisonModel;
 
     return Material(
       color: Colors.transparent,
@@ -473,7 +475,9 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
             border: Border.all(
               color: isSelected
                   ? Colors.orange
-                  : const Color(0xFF334155),
+                  : isComparison
+                      ? Colors.cyan.withOpacity(0.5)
+                      : const Color(0xFF334155),
               width: isSelected ? 2 : 1,
             ),
           ),
@@ -481,7 +485,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // 3D icon with selection indicator
+              // 3D icon with selection/comparison indicator
               Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -492,11 +496,27 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                       color: widget.category.color.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(
-                      Icons.view_in_ar_rounded,
-                      size: 32,
-                      color: widget.category.color,
-                    ),
+                    child: isComparison
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.view_in_ar_rounded,
+                                size: 22,
+                                color: widget.category.color.withOpacity(0.7),
+                              ),
+                              Icon(
+                                Icons.view_in_ar_rounded,
+                                size: 22,
+                                color: widget.category.color,
+                              ),
+                            ],
+                          )
+                        : Icon(
+                            Icons.view_in_ar_rounded,
+                            size: 32,
+                            color: widget.category.color,
+                          ),
                   ),
                   if (isSelected)
                     Positioned(
@@ -521,6 +541,30 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                         ),
                       ),
                     ),
+                  // Before/After badge for comparison models
+                  if (isComparison && !isSelected)
+                    Positioned(
+                      top: -6,
+                      right: -6,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.cyan,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'B/A',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 8,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -537,26 +581,34 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                 ),
               ),
               const SizedBox(height: 4),
-              // Type Badge
+              // Type Badge - show "Before/After" for comparison models
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8,
                   vertical: 2,
                 ),
                 decoration: BoxDecoration(
-                  color: isPathology
-                      ? Colors.red.withOpacity(0.15)
-                      : Colors.green.withOpacity(0.15),
+                  color: isComparison
+                      ? Colors.cyan.withOpacity(0.15)
+                      : isPathology
+                          ? Colors.red.withOpacity(0.15)
+                          : Colors.green.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  isPathology ? 'Pathology' : 'Anatomy',
+                  isComparison
+                      ? 'Before/After'
+                      : isPathology
+                          ? 'Pathology'
+                          : 'Anatomy',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: isPathology
-                        ? Colors.red.shade400
-                        : Colors.green.shade400,
+                    color: isComparison
+                        ? Colors.cyan.shade400
+                        : isPathology
+                            ? Colors.red.shade400
+                            : Colors.green.shade400,
                   ),
                 ),
               ),
@@ -568,16 +620,31 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
   }
 
   void _openModelViewer(Model3DItem model) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ModelViewerScreen(
-          modelName: model.modelFileName,
-          title: model.name,
-          systemId: widget.category.id,
+    // Check if this is a comparison model (before/after)
+    if (model.isComparisonModel &&
+        model.beforeModelFileName != null &&
+        model.afterModelFileName != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ModelBeforeAfterScreen(
+            model: model,
+            systemId: widget.category.id,
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ModelViewerScreen(
+            modelName: model.modelFileName,
+            title: model.name,
+            systemId: widget.category.id,
+          ),
+        ),
+      );
+    }
   }
 
   void _launchComparison() {

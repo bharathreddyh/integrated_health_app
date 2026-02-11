@@ -32,6 +32,13 @@ class Model3DItem {
   final bool isPremium;
   final List<ModelAnnotation> annotations; // Hotspots/labels on the model
 
+  // Comparison model support (for before/after views)
+  final bool isComparisonModel;
+  final String? beforeModelFileName; // "Before" state model
+  final String? afterModelFileName;  // "After" state model
+  final String? beforeLabel;         // Label for before model (e.g., "Early Stage")
+  final String? afterLabel;          // Label for after model (e.g., "Advanced")
+
   const Model3DItem({
     required this.id,
     required this.name,
@@ -40,6 +47,11 @@ class Model3DItem {
     this.tags = const [],
     this.isPremium = false,
     this.annotations = const [],
+    this.isComparisonModel = false,
+    this.beforeModelFileName,
+    this.afterModelFileName,
+    this.beforeLabel,
+    this.afterLabel,
   });
 
   /// Get the thumbnail asset path for this model
@@ -137,11 +149,16 @@ class Model3DConfig {
           tags: ['pathology', 'fibroid', 'uterus'],
         ),
         Model3DItem(
-          id: 'fibroid_degenerating',
-          name: 'Degenerating Fibroid',
-          description: 'Fibroid undergoing degeneration',
-          modelFileName: 'uterus', // TODO: Replace with 'fibroid_degenerating' when uploaded
-          tags: ['pathology', 'fibroid', 'uterus'],
+          id: 'fibroid_compression',
+          name: 'Fibroid Compression',
+          description: 'Fibroid growth causing pressure effects on bladder and rectum - before and after comparison',
+          modelFileName: 'uterus_fibroid_compression_before', // Default model for single view
+          tags: ['pathology', 'fibroid', 'uterus', 'compression'],
+          isComparisonModel: true,
+          beforeModelFileName: 'uterus_fibroid_compression_before',
+          afterModelFileName: 'uterus_fibroid_compression_after',
+          beforeLabel: 'Before',
+          afterLabel: 'After',
         ),
 
         // Ovarian Cysts
