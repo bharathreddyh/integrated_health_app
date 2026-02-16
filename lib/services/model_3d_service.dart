@@ -135,6 +135,30 @@ class Model3DService {
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_fibroid_compression_after.glb?alt=media&token=92d89ce0-6373-42dd-829d-3b2854ac6837',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
+        AssetInfo(
+          id: 'uterus_endo_polyp',
+          name: '3D Endometrial Polyp',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fendometrium%2Futerus_endo_polyp.glb?alt=media&token=fcd7a18e-c243-4a9a-b9a1-b83f5849dfce',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
+          id: 'uterus_endo_hyperplasia',
+          name: '3D Endometrial Hyperplasia',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fendometrium%2Futerus_endo_hyperplasia.glb?alt=media&token=fefb97c5-5da0-4731-aee9-3e1c4ce56136',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
+          id: 'uterus_endo_ca',
+          name: '3D Endometrial Carcinoma',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fendometrium%2Futerus_endo_ca.glb?alt=media&token=1603bb4e-dffa-44b6-a004-edb22b488af9',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
       ],
     ),
     SystemAssetGroup(
