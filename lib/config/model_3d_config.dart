@@ -243,7 +243,7 @@ class Model3DConfig {
           id: 'endometrial_polyp',
           name: 'Endometrial Polyp',
           description: 'Polypoid growth from the endometrium',
-          modelFileName: 'uterus', // TODO: Replace with 'endometrial_polyp' when uploaded
+          modelFileName: 'uterus_endo_polyp',
           tags: ['pathology', 'polyp', 'endometrium'],
           subcategory: 'Endometrium',
         ),
@@ -251,7 +251,7 @@ class Model3DConfig {
           id: 'endometrial_hyperplasia',
           name: 'Endometrial Hyperplasia',
           description: 'Thickened endometrial lining',
-          modelFileName: 'uterus', // TODO: Replace with 'endometrial_hyperplasia' when uploaded
+          modelFileName: 'uterus_endo_hyperplasia',
           tags: ['pathology', 'endometrium', 'hyperplasia'],
           subcategory: 'Endometrium',
         ),
@@ -259,7 +259,7 @@ class Model3DConfig {
           id: 'endometrial_carcinoma',
           name: 'Endometrial Carcinoma',
           description: 'Malignant tumor of the endometrium',
-          modelFileName: 'uterus', // TODO: Replace with 'endometrial_carcinoma' when uploaded
+          modelFileName: 'uterus_endo_ca',
           tags: ['pathology', 'cancer', 'endometrium'],
           subcategory: 'Endometrium',
         ),
