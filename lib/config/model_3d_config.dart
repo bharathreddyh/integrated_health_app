@@ -232,6 +232,14 @@ class Model3DConfig {
 
         // Endometrium
         Model3DItem(
+          id: 'normal_endometrium',
+          name: 'Normal Endometrium',
+          description: 'Normal endometrial lining of the uterus',
+          modelFileName: 'uterus_normal_endo',
+          tags: ['anatomy', 'normal', 'endometrium'],
+          subcategory: 'Endometrium',
+        ),
+        Model3DItem(
           id: 'adenomyosis',
           name: 'Adenomyosis',
           description: 'Endometrial tissue within the myometrium',
@@ -253,6 +261,14 @@ class Model3DConfig {
           description: 'Thickened endometrial lining',
           modelFileName: 'uterus_endo_hyperplasia',
           tags: ['pathology', 'endometrium', 'hyperplasia'],
+          subcategory: 'Endometrium',
+        ),
+        Model3DItem(
+          id: 'cystic_endometrial_hyperplasia',
+          name: 'Cystic Endometrial Hyperplasia',
+          description: 'Cystic glandular changes in endometrial hyperplasia',
+          modelFileName: 'uterus_cystic_endo_hyperplasia',
+          tags: ['pathology', 'endometrium', 'hyperplasia', 'cystic'],
           subcategory: 'Endometrium',
         ),
         Model3DItem(
