@@ -324,25 +324,11 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
               ),
             ),
 
-            // Models Grid
+            // Models Grid with subheadings
             Expanded(
               child: _filteredModels.isEmpty
                   ? _buildEmptyState()
-                  : Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: GridView.builder(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 4,
-                          mainAxisSpacing: 8,
-                          crossAxisSpacing: 8,
-                          childAspectRatio: 0.9,
-                        ),
-                        itemCount: _filteredModels.length,
-                        itemBuilder: (context, index) {
-                          return _buildModelCard(_filteredModels[index]);
-                        },
-                      ),
-                    ),
+                  : _buildGroupedModelsList(),
             ),
           ],
         ),
@@ -440,6 +426,111 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildGroupedModelsList() {
+    // Group models by subcategory
+    final Map<String?, List<Model3DItem>> groupedModels = {};
+
+    // Define the order of subcategories
+    const subcategoryOrder = ['Fibroids', 'Mullerian Anomaly', 'Ovary', 'Endometrium'];
+
+    for (final model in _filteredModels) {
+      final key = model.subcategory;
+      if (!groupedModels.containsKey(key)) {
+        groupedModels[key] = [];
+      }
+      groupedModels[key]!.add(model);
+    }
+
+    // Build ordered list of subcategories
+    final orderedSubcategories = <String?>[];
+
+    // First add models without subcategory (general/anatomy)
+    if (groupedModels.containsKey(null)) {
+      orderedSubcategories.add(null);
+    }
+
+    // Then add subcategories in specified order
+    for (final subcategory in subcategoryOrder) {
+      if (groupedModels.containsKey(subcategory)) {
+        orderedSubcategories.add(subcategory);
+      }
+    }
+
+    // Add any remaining subcategories not in the order list
+    for (final key in groupedModels.keys) {
+      if (!orderedSubcategories.contains(key)) {
+        orderedSubcategories.add(key);
+      }
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      itemCount: orderedSubcategories.length,
+      itemBuilder: (context, index) {
+        final subcategory = orderedSubcategories[index];
+        final models = groupedModels[subcategory]!;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Subheading (only if subcategory is not null)
+            if (subcategory != null) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: widget.category.color,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      subcategory,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade300,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '(${models.length})',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ] else if (index == 0) ...[
+              const SizedBox(height: 8),
+            ],
+            // Grid of models in this subcategory
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                childAspectRatio: 0.9,
+              ),
+              itemCount: models.length,
+              itemBuilder: (context, modelIndex) {
+                return _buildModelCard(models[modelIndex]);
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
