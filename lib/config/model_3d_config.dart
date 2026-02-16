@@ -235,7 +235,7 @@ class Model3DConfig {
           id: 'normal_endometrium',
           name: 'Normal Endometrium',
           description: 'Normal endometrial lining of the uterus',
-          modelFileName: 'uterus_normal_endo',
+          modelFileName: 'uterus_endo_normal',
           tags: ['anatomy', 'normal', 'endometrium'],
           subcategory: 'Endometrium',
         ),
