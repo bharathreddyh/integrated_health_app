@@ -168,11 +168,11 @@ class Model3DService {
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
-          id: 'uterus_cystic_endo_hyperplasia',
+          id: 'uterus_endo_cystic',
           name: '3D Cystic Endometrial Hyperplasia',
           systemId: 'gynaecology',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fendometrium%2Futerus_cystic_endo_hyperplasia.glb?alt=media&token=TODO_REPLACE_WITH_ACTUAL_TOKEN',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fendometrium%2Futerus_endo_cystic.glb?alt=media&token=5e2d4868-e748-45be-9fa6-9e0e9b3b14bc',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
       ],
