@@ -267,7 +267,7 @@ class Model3DConfig {
           id: 'cystic_endometrial_hyperplasia',
           name: 'Cystic Endometrial Hyperplasia',
           description: 'Cystic glandular changes in endometrial hyperplasia',
-          modelFileName: 'uterus_cystic_endo_hyperplasia',
+          modelFileName: 'uterus', // TODO: Replace with 'uterus_cystic_endo_hyperplasia' when uploaded
           tags: ['pathology', 'endometrium', 'hyperplasia', 'cystic'],
           subcategory: 'Endometrium',
         ),
