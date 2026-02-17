@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'dart:typed_data';
 import '../../models/consultation_data.dart';
 import '../../models/disease_template.dart';
+import '../../models/disease_template_data.dart';
 import '../../models/visit.dart';
 import '../../models/patient.dart';
 import '../../services/database_helper.dart';

@@ -199,7 +199,7 @@ class MedicalSystemsConfig {
   static const genitourinarySystem = MedicalSystemConfig(
     id: 'genitourinary',
     name: 'Genitourinary System',
-    description: 'Bladder, Prostate, Reproductive',
+    description: 'Bladder, Prostate, Male Reproductive',
     icon: Icons.personal_injury,
     color: Color(0xFF8B5CF6), // Purple
     categories: [
@@ -238,16 +238,131 @@ class MedicalSystemsConfig {
           'Testicular Torsion',
         ],
       ),
+    ],
+  );
+
+  // 🩷 GYNAECOLOGY SYSTEM
+  static const gynaecologySystem = MedicalSystemConfig(
+    id: 'gynaecology',
+    name: 'Gynaecology',
+    description: 'Female Reproductive, Menstrual, Oncology',
+    icon: Icons.female,
+    color: Color(0xFFEC4899), // Pink
+    categories: [
       DiseaseCategory(
-        id: 'female_reproductive',
-        name: 'Female Reproductive',
+        id: 'gynaecology',
+        name: 'Gynaecology',
         icon: Icons.female,
         diseases: [
           'PCOS',
           'Endometriosis',
           'Uterine Fibroids',
           'Pelvic Inflammatory Disease',
+          'Ovarian Cysts',
+          'Cervical Dysplasia',
+          'Adenomyosis',
           'Menopause',
+        ],
+      ),
+      DiseaseCategory(
+        id: 'menstrual',
+        name: 'Menstrual Disorders',
+        icon: Icons.calendar_month,
+        diseases: [
+          'Dysmenorrhoea',
+          'Amenorrhoea',
+          'Menorrhagia',
+          'Oligomenorrhoea',
+          'Premenstrual Syndrome',
+        ],
+      ),
+      DiseaseCategory(
+        id: 'fertility',
+        name: 'Fertility & Contraception',
+        icon: Icons.favorite,
+        diseases: [
+          'Female Infertility',
+          'Recurrent Pregnancy Loss',
+          'Contraception Counselling',
+          'IVF Management',
+        ],
+      ),
+      DiseaseCategory(
+        id: 'gyn_oncology',
+        name: 'Gynaecological Oncology',
+        icon: Icons.warning,
+        diseases: [
+          'Cervical Cancer',
+          'Ovarian Cancer',
+          'Endometrial Cancer',
+          'Vulvar Cancer',
+          'Gestational Trophoblastic Disease',
+        ],
+      ),
+    ],
+  );
+
+  // 🤰 OBSTETRICS SYSTEM
+  static const obstetricsSystem = MedicalSystemConfig(
+    id: 'obstetrics',
+    name: 'Obstetrics',
+    description: 'Pregnancy, Labour, Antenatal Care',
+    icon: Icons.pregnant_woman,
+    color: Color(0xFFA855F7), // Purple
+    categories: [
+      DiseaseCategory(
+        id: 'antenatal',
+        name: 'Antenatal Conditions',
+        icon: Icons.child_friendly,
+        diseases: [
+          'Normal Pregnancy',
+          'Gestational Diabetes',
+          'Pre-eclampsia',
+          'Eclampsia',
+          'HELLP Syndrome',
+          'Hyperemesis Gravidarum',
+          'Gestational Hypertension',
+          'Rh Incompatibility',
+        ],
+      ),
+      DiseaseCategory(
+        id: 'complications',
+        name: 'Pregnancy Complications',
+        icon: Icons.warning,
+        diseases: [
+          'Ectopic Pregnancy',
+          'Placenta Previa',
+          'Placental Abruption',
+          'Miscarriage',
+          'Preterm Labour',
+          'Premature Rupture of Membranes',
+          'Intrauterine Growth Restriction',
+          'Molar Pregnancy',
+        ],
+      ),
+      DiseaseCategory(
+        id: 'labour',
+        name: 'Labour & Delivery',
+        icon: Icons.local_hospital,
+        diseases: [
+          'Normal Labour',
+          'Prolonged Labour',
+          'Obstructed Labour',
+          'Cord Prolapse',
+          'Shoulder Dystocia',
+          'Postpartum Haemorrhage',
+          'Caesarean Section',
+        ],
+      ),
+      DiseaseCategory(
+        id: 'postnatal',
+        name: 'Postnatal',
+        icon: Icons.healing,
+        diseases: [
+          'Postpartum Depression',
+          'Puerperal Sepsis',
+          'Lactation Disorders',
+          'Deep Vein Thrombosis',
         ],
       ),
     ],
@@ -498,6 +613,8 @@ class MedicalSystemsConfig {
     endocrineSystem,
     renalSystem,
     genitourinarySystem,
+    gynaecologySystem,
+    obstetricsSystem,
     hepatobiliarySystem,
     cardiovascularSystem,
     respiratorySystem,

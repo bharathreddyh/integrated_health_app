@@ -1277,6 +1277,22 @@ class DatabaseHelper {
     return null;
   }
 
+  /// Convert snake_case database column names to camelCase for fromJson
+  Map<String, dynamic> _convertDatabaseMapToJson(Map<String, dynamic> dbMap) {
+    final result = <String, dynamic>{};
+    for (final entry in dbMap.entries) {
+      final camelKey = entry.key.replaceAllMapped(
+        RegExp(r'_([a-z])'),
+        (m) => m.group(1)!.toUpperCase(),
+      );
+      result[camelKey] = entry.value;
+    }
+    // Also keep original keys so fromJson can match either format
+    result.addAll(dbMap);
+    return result;
+  }
+
+
   Future<int> updateEndocrineCondition(EndocrineCondition condition) async {
     final db = await this.database;
 

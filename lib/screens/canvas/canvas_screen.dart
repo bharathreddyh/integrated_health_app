@@ -1157,6 +1157,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
     final templates = diagrams['templates'] ?? {};
 
     return DropdownButtonFormField<String>(
+      key: ValueKey('diagram_$selectedPreset'),
       value: selectedPreset,
       decoration: const InputDecoration(
         labelText: 'Diagram Type',

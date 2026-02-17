@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/home/nurse_home_screen.dart';
@@ -17,6 +18,8 @@ import 'widgets/floating_voice_button.dart';
 import 'screens/medical_templates/medical_systems_screen.dart';
 import 'screens/patient/visit_history_screen.dart';
 import 'screens/endocrine/thyroid_disease_module_screen.dart';
+import 'screens/setup/asset_download_screen.dart';
+import 'services/model_3d_service.dart';
 
 
 
@@ -24,10 +27,19 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  print('🚀 App starting...');
+  print('App starting...');
+
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp();
+    print('Firebase initialized');
+  } catch (e) {
+    print('Firebase initialization failed: $e');
+    // App can still work offline without Firebase
+  }
 
   final initialized = await WhisperVoiceService.instance.initialize();
-  print('🎤 Voice service initialized: $initialized');
+  print('Voice service initialized: $initialized');
 
   runApp(const ClinicClarityApp());
 }
@@ -49,12 +61,7 @@ class ClinicClarityApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
 
         builder: (context, child) {
-          return Stack(
-            children: [
-              child!,
-              const FloatingVoiceButton(),
-            ],
-          );
+          return child!;
         },
 
         home: const AuthWrapper(),
@@ -135,42 +142,74 @@ class ClinicClarityApp extends StatelessWidget {
   }
 }
 
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
 
   @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  bool? _setupDone;
+  bool? _isLoggedIn;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkStatus();
+  }
+
+  Future<void> _checkStatus() async {
+    final setupDone = await Model3DService.isSetupDone();
+    final loggedIn = await UserService.isLoggedIn();
+    if (mounted) {
+      setState(() {
+        _setupDone = setupDone;
+        _isLoggedIn = loggedIn;
+      });
+    }
+  }
+
+  void _onSetupComplete() {
+    setState(() => _setupDone = true);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: UserService.isLoggedIn(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
+    // Still loading
+    if (_setupDone == null || _isLoggedIn == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
-        if (snapshot.data == true) {
-          final user = UserService.currentUser;
-          if (user == null) {
-            return const LoginScreen();
-          }
+    // Show download screen on first launch
+    if (!_setupDone!) {
+      return AssetDownloadScreen(
+        onComplete: _onSetupComplete,
+        isFirstLaunch: true,
+      );
+    }
 
-          switch (user.role) {
-            case 'doctor':
-              return const HomeScreen();
-            case 'nurse':
-              return const NurseHomeScreen();
-            case 'patient':
-              return const PatientHomeScreen();
-            default:
-              return const LoginScreen();
-          }
-        }
+    // Not logged in
+    if (_isLoggedIn != true) {
+      return const LoginScreen();
+    }
 
+    final user = UserService.currentUser;
+    if (user == null) {
+      return const LoginScreen();
+    }
+
+    switch (user.role) {
+      case 'doctor':
+        return const HomeScreen();
+      case 'nurse':
+        return const NurseHomeScreen();
+      case 'patient':
+        return const PatientHomeScreen();
+      default:
         return const LoginScreen();
-      },
-    );
+    }
   }
 }

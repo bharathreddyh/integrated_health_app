@@ -9,6 +9,7 @@ import '../../models/prescription.dart';
 import '../../services/database_helper.dart';
 import '../../widgets/prescription_dialog.dart';
 import '../../models/disease_template.dart';
+import '../../models/disease_template_data.dart';
 
 // Investigation model
 class Investigation {

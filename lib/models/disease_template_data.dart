@@ -1004,3 +1004,45 @@ class DiseaseTemplateData {
     }
   }
 }
+
+/// Simple system info used by the templates tab in page2_system_selector
+class _SystemInfo {
+  final String name;
+  final String icon;
+  _SystemInfo(this.name, this.icon);
+}
+
+/// Convenience wrapper so page2_system_selector can call DiseaseTemplates.*
+class DiseaseTemplates {
+  DiseaseTemplates._();
+
+  static Map<String, List<DiseaseTemplate>> get groupedBySystem {
+    final map = <String, List<DiseaseTemplate>>{};
+    for (final t in DiseaseTemplateData.templates) {
+      final sys = t.system ?? 'other';
+      map.putIfAbsent(sys, () => []).add(t);
+    }
+    return map;
+  }
+
+  static DiseaseTemplate? getById(String id) =>
+      DiseaseTemplateData.getTemplateById(id);
+}
+
+/// Convenience wrapper so page2_system_selector can call MedicalSystems.getById()
+class MedicalSystems {
+  MedicalSystems._();
+
+  static final _systems = <String, _SystemInfo>{
+    'endocrine': _SystemInfo('Endocrine System', '\u{1F9EC}'),
+    'renal': _SystemInfo('Renal System', '\u{1FAC0}'),
+    'cardiac': _SystemInfo('Cardiovascular System', '\u{2764}'),
+    'respiratory': _SystemInfo('Respiratory System', '\u{1FAC1}'),
+    'gastrointestinal': _SystemInfo('GI System', '\u{1F4A9}'),
+    'neurological': _SystemInfo('Neurological System', '\u{1F9E0}'),
+    'musculoskeletal': _SystemInfo('Musculoskeletal System', '\u{1F9B4}'),
+    'genitourinary': _SystemInfo('Genitourinary System', '\u{1F6BB}'),
+  };
+
+  static _SystemInfo? getById(String id) => _systems[id];
+}
