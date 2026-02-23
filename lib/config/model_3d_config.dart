@@ -212,7 +212,7 @@ class Model3DConfig {
           id: 'uterus_didelphys',
           name: 'Uterus Didelphys',
           description: 'Complete duplication resulting in double uterus',
-          modelFileName: 'uterus_mullerian/uterus_dideplhys',
+          modelFileName: 'uterus_didelphys',
           tags: ['anatomy', 'anomaly', 'uterus', 'mullerian'],
           subcategory: 'Mullerian Anomaly',
         ),
