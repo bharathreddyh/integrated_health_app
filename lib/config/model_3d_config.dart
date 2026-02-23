@@ -172,11 +172,48 @@ class Model3DConfig {
 
         // Mullerian Anomaly
         Model3DItem(
-          id: 'uterine_anomalies',
-          name: 'Uterine Anomalies',
-          description: 'Congenital uterine malformations',
-          modelFileName: 'uterus', // TODO: Replace with 'uterine_anomalies' when uploaded
-          tags: ['anatomy', 'anomaly', 'uterus'],
+          id: 'arcuate_uterus',
+          name: 'Arcuate Uterus',
+          description: 'Minor indentation of the uterine fundus',
+          modelFileName: 'uterus', // TODO: Replace with 'arcuate_uterus' when uploaded
+          tags: ['anatomy', 'anomaly', 'uterus', 'mullerian'],
+          subcategory: 'Mullerian Anomaly',
+        ),
+        Model3DItem(
+          id: 'septate_uterus',
+          name: 'Septate Uterus',
+          description: 'Uterus divided by a fibrous or muscular septum - partial and complete variants',
+          modelFileName: 'uterus_septate_partial', // Default model for single view
+          tags: ['anatomy', 'anomaly', 'uterus', 'mullerian', 'septum'],
+          subcategory: 'Mullerian Anomaly',
+          isComparisonModel: true,
+          beforeModelFileName: 'uterus_septate_partial',
+          afterModelFileName: 'uterus_septate_complete',
+          beforeLabel: 'Partial Septate',
+          afterLabel: 'Complete Septate',
+        ),
+        Model3DItem(
+          id: 'bicornuate_uterus',
+          name: 'Bicornuate Uterus',
+          description: 'Heart-shaped uterus with two horns',
+          modelFileName: 'uterus', // TODO: Replace with 'bicornuate_uterus' when uploaded
+          tags: ['anatomy', 'anomaly', 'uterus', 'mullerian'],
+          subcategory: 'Mullerian Anomaly',
+        ),
+        Model3DItem(
+          id: 'unicornuate_uterus',
+          name: 'Unicornuate Uterus',
+          description: 'One-sided uterine development with a single horn',
+          modelFileName: 'uterus', // TODO: Replace with 'unicornuate_uterus' when uploaded
+          tags: ['anatomy', 'anomaly', 'uterus', 'mullerian'],
+          subcategory: 'Mullerian Anomaly',
+        ),
+        Model3DItem(
+          id: 'uterus_didelphys',
+          name: 'Uterus Didelphys',
+          description: 'Complete duplication resulting in double uterus',
+          modelFileName: 'uterus_mullerian/uterus_dideplhys',
+          tags: ['anatomy', 'anomaly', 'uterus', 'mullerian'],
           subcategory: 'Mullerian Anomaly',
         ),
 
