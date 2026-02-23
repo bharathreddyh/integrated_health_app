@@ -175,6 +175,14 @@ class Model3DService {
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fendometrium%2Futerus_endo_cystic.glb?alt=media&token=5e2d4868-e748-45be-9fa6-9e0e9b3b14bc',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
+        AssetInfo(
+          id: 'uterus_didelphys',
+          name: '3D Uterus Didelphys',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2Futerus_dideplhys.glb?alt=media&token=e656fc30-f447-4b1f-a122-0fe5785564d9',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
       ],
     ),
     SystemAssetGroup(
