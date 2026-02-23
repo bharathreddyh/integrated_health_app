@@ -688,11 +688,17 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
   <style>
     * { margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #0A1628; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(ellipse at center, #1a3a6e 0%, #0d1f3c 40%, #050d1a 100%);
+    }
     model-viewer {
       width: 100%;
       height: 100%;
       --poster-color: transparent;
+      background: transparent;
     }
     #loading {
       position: absolute;
