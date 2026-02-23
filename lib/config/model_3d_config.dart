@@ -277,11 +277,11 @@ class Model3DConfig {
           subcategory: 'Endometrium',
         ),
         Model3DItem(
-          id: 'adenomyosis',
-          name: 'Adenomyosis',
-          description: 'Endometrial tissue within the myometrium',
-          modelFileName: 'uterus', // TODO: Replace with 'adenomyosis' when uploaded
-          tags: ['pathology', 'uterus', 'endometriosis'],
+          id: 'adenomyosis_endometriosis',
+          name: 'Adenomyosis & Endometriosis',
+          description: 'Adenomyosis with endometriosis showing ectopic endometrial tissue',
+          modelFileName: 'uterus', // TODO: Replace with 'adenomyosis_endometriosis' when uploaded
+          tags: ['pathology', 'uterus', 'endometriosis', 'adenomyosis'],
           subcategory: 'Endometrium',
         ),
         Model3DItem(
