@@ -280,7 +280,7 @@ class Model3DConfig {
           id: 'adenomyosis_endometriosis',
           name: 'Adenomyosis & Endometriosis',
           description: 'Adenomyosis with endometriosis showing ectopic endometrial tissue',
-          modelFileName: 'uterus', // TODO: Replace with 'adenomyosis_endometriosis' when uploaded
+          modelFileName: 'uterus_endo_adenoendo',
           tags: ['pathology', 'uterus', 'endometriosis', 'adenomyosis'],
           subcategory: 'Endometrium',
         ),

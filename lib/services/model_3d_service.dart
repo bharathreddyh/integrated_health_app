@@ -176,6 +176,14 @@ class Model3DService {
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
+          id: 'uterus_endo_adenoendo',
+          name: '3D Adenomyosis & Endometriosis',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fendometrium%2Futerus_endo_adenoendo.glb?alt=media&token=62781751-d574-457a-be4c-70e613c3258c',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
           id: 'uterus_didelphys',
           name: '3D Uterus Didelphys',
           systemId: 'gynaecology',
