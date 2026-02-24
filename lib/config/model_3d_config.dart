@@ -196,7 +196,7 @@ class Model3DConfig {
           id: 'bicornuate_uterus',
           name: 'Bicornuate Uterus',
           description: 'Heart-shaped uterus with two horns',
-          modelFileName: 'uterus', // TODO: Replace with 'bicornuate_uterus' when uploaded
+          modelFileName: 'bicornuate_uterus',
           tags: ['anatomy', 'anomaly', 'uterus', 'mullerian'],
           subcategory: 'Mullerian Anomaly',
         ),
