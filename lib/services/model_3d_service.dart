@@ -184,6 +184,14 @@ class Model3DService {
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
+          id: 'bicornuate_uterus',
+          name: '3D Bicornuate Uterus',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2FUterus_bicornis.glb?alt=media&token=46c3278d-8cd0-426e-92ff-2af72e0efdb4',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
           id: 'uterus_didelphys',
           name: '3D Uterus Didelphys',
           systemId: 'gynaecology',
