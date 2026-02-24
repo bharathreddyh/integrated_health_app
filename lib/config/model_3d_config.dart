@@ -195,10 +195,15 @@ class Model3DConfig {
         Model3DItem(
           id: 'bicornuate_uterus',
           name: 'Bicornuate Uterus',
-          description: 'Heart-shaped uterus with two horns',
-          modelFileName: 'bicornuate_uterus',
+          description: 'Heart-shaped uterus with two horns - bicollis and unicollis variants',
+          modelFileName: 'bicornuate_bicollis', // Default model for single view
           tags: ['anatomy', 'anomaly', 'uterus', 'mullerian'],
           subcategory: 'Mullerian Anomaly',
+          isComparisonModel: true,
+          beforeModelFileName: 'bicornuate_bicollis',
+          afterModelFileName: 'bicornuate_unicollis',
+          beforeLabel: 'Bicollis',
+          afterLabel: 'Unicollis',
         ),
         Model3DItem(
           id: 'unicornuate_uterus',
