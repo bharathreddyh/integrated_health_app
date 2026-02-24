@@ -646,9 +646,9 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                           color: Colors.cyan,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text(
-                          'B/A',
-                          style: TextStyle(
+                        child: Text(
+                          '${model.beforeLabel?.substring(0, 1) ?? 'B'}/${model.afterLabel?.substring(0, 1) ?? 'A'}',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 8,
@@ -688,7 +688,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                 ),
                 child: Text(
                   isComparison
-                      ? 'Before/After'
+                      ? '${model.beforeLabel ?? 'Before'}/${model.afterLabel ?? 'After'}'
                       : isPathology
                           ? 'Pathology'
                           : 'Anatomy',
