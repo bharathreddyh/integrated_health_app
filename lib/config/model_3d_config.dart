@@ -189,8 +189,8 @@ class Model3DConfig {
           isComparisonModel: true,
           beforeModelFileName: 'uterus_septate_partial',
           afterModelFileName: 'uterus_septate_complete',
-          beforeLabel: 'Partial Septate',
-          afterLabel: 'Complete Septate',
+          beforeLabel: 'Partial',
+          afterLabel: 'Complete',
         ),
         Model3DItem(
           id: 'bicornuate_uterus',
