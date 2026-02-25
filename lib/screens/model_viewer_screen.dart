@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../config/model_3d_config.dart';
 import '../services/model_3d_service.dart';
@@ -73,6 +74,12 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
   @override
   void initState() {
     super.initState();
+    // Enter immersive mode to hide status bar and force landscape
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     _findCurrentModelConfig();
     _loadCustomAnnotations();
     _loadModel();
@@ -184,6 +191,14 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
 
   @override
   void dispose() {
+    // Restore normal system UI mode and orientation
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     _server?.close(force: true);
     super.dispose();
   }
@@ -1002,7 +1017,11 @@ $hotspotsHtml
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF050d1a),
       appBar: AppBar(
+        backgroundColor: const Color(0xFF0d1f3c),
+        foregroundColor: Colors.white,
+        elevation: 0,
         title: Text(widget.title),
         actions: [
           if (_state == _LoadState.ready) ...[

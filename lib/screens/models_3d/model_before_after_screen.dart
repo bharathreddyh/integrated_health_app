@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../config/model_3d_config.dart';
 import '../../services/model_3d_service.dart';
@@ -64,11 +65,25 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
   @override
   void initState() {
     super.initState();
+    // Enter immersive mode to hide status bar and force landscape
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     _loadBothModels();
   }
 
   @override
   void dispose() {
+    // Restore normal system UI mode and orientation
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     _beforeServer?.close(force: true);
     _afterServer?.close(force: true);
     super.dispose();
@@ -533,10 +548,11 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
 
     // Show comparison view
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: const Color(0xFF050d1a),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: const Color(0xFF0d1f3c),
         foregroundColor: Colors.white,
+        elevation: 0,
         title: Text(
           widget.model.name,
           style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
@@ -606,10 +622,11 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
         : (widget.model.beforeLabel ?? 'Before');
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1628),
+      backgroundColor: const Color(0xFF050d1a),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: const Color(0xFF0d1f3c),
         foregroundColor: Colors.white,
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.fullscreen_exit),
           tooltip: 'Exit fullscreen',
