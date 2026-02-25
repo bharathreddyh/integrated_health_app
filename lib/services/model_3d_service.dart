@@ -322,6 +322,33 @@ class Model3DService {
 
   // ─── Cache queries ─────────────────────────────────────────────────
 
+  /// URL for the model-viewer web component JS library.
+  static const _modelViewerJsUrl =
+      'https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js';
+
+  /// Get the cached path for model-viewer.min.js, downloading if needed.
+  /// Returns the local file path for serving via local HTTP server.
+  Future<String> getModelViewerJsPath() async {
+    final dir = await _cacheDir;
+    final file = File('${dir.path}/model-viewer.min.js');
+    if (await file.exists()) return file.path;
+
+    // Download and cache
+    final response = await http.get(Uri.parse(_modelViewerJsUrl));
+    if (response.statusCode == 200) {
+      await file.writeAsBytes(response.bodyBytes);
+      return file.path;
+    }
+    throw Exception('Failed to download model-viewer.js: HTTP ${response.statusCode}');
+  }
+
+  /// Check if the model-viewer JS is already cached locally.
+  Future<bool> isModelViewerJsCached() async {
+    final dir = await _cacheDir;
+    final file = File('${dir.path}/model-viewer.min.js');
+    return file.exists();
+  }
+
   Future<bool> isCached(String assetId, {String ext = 'glb'}) async {
     final file = await _localFile(assetId, ext);
     return file.exists();

@@ -129,6 +129,14 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
         _rightServer?.close(force: true);
       }
 
+      // Ensure model-viewer JS is cached locally for offline use
+      String? modelViewerJsPath;
+      try {
+        modelViewerJsPath = await _service.getModelViewerJsPath();
+      } catch (e) {
+        debugPrint('Warning: Could not cache model-viewer.js: $e');
+      }
+
       final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       if (isLeft) {
         _leftServer = server;
@@ -151,6 +159,19 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
               request.response.statusCode = 404;
               await request.response.close();
             }
+          } else if (request.uri.path == '/model-viewer.min.js') {
+            if (modelViewerJsPath != null) {
+              final file = File(modelViewerJsPath);
+              if (await file.exists()) {
+                request.response.headers.set('Content-Type', 'application/javascript');
+                request.response.headers.set('Access-Control-Allow-Origin', '*');
+                await request.response.addStream(file.openRead());
+                await request.response.close();
+                return;
+              }
+            }
+            request.response.statusCode = 404;
+            await request.response.close();
           } else if (request.uri.path == '/') {
             request.response.headers.set('Content-Type', 'text/html');
             request.response.write(_buildHtml(port, model.name));
@@ -199,7 +220,7 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <script type="module" src="http://127.0.0.1:$port/model-viewer.min.js"></script>
   <style>
     * { margin: 0; padding: 0; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #1E293B; }
