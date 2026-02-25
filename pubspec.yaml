@@ -46,6 +46,9 @@ dependencies:
   # 3D Model Viewer
   webview_flutter: ^4.10.0
 
+  # Animations
+  lottie: ^3.1.0
+
   # Firebase
   firebase_core: ^2.24.2
   cloud_firestore: ^4.14.0
