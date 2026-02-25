@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../config/model_3d_config.dart';
 import '../../services/model_3d_service.dart';
@@ -48,11 +49,25 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
   @override
   void initState() {
     super.initState();
+    // Enter immersive mode to hide status bar and force landscape
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     _loadBothModels();
   }
 
   @override
   void dispose() {
+    // Restore normal system UI mode and orientation
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     _leftServer?.close(force: true);
     _rightServer?.close(force: true);
     super.dispose();
@@ -129,6 +144,14 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
         _rightServer?.close(force: true);
       }
 
+      // Ensure model-viewer JS is cached locally for offline use
+      String? modelViewerJsPath;
+      try {
+        modelViewerJsPath = await _service.getModelViewerJsPath();
+      } catch (e) {
+        debugPrint('Warning: Could not cache model-viewer.js: $e');
+      }
+
       final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       if (isLeft) {
         _leftServer = server;
@@ -151,6 +174,19 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
               request.response.statusCode = 404;
               await request.response.close();
             }
+          } else if (request.uri.path == '/model-viewer.min.js') {
+            if (modelViewerJsPath != null) {
+              final file = File(modelViewerJsPath);
+              if (await file.exists()) {
+                request.response.headers.set('Content-Type', 'application/javascript');
+                request.response.headers.set('Access-Control-Allow-Origin', '*');
+                await request.response.addStream(file.openRead());
+                await request.response.close();
+                return;
+              }
+            }
+            request.response.statusCode = 404;
+            await request.response.close();
           } else if (request.uri.path == '/') {
             request.response.headers.set('Content-Type', 'text/html');
             request.response.write(_buildHtml(port, model.name));
@@ -199,7 +235,7 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <script type="module" src="http://127.0.0.1:$port/model-viewer.min.js"></script>
   <style>
     * { margin: 0; padding: 0; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #1E293B; }
@@ -229,6 +265,9 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
     shadow-intensity="0.5"
     exposure="1"
     interaction-prompt="none"
+    min-field-of-view="10deg"
+    max-field-of-view="90deg"
+    touch-action="none"
     style="width:100%;height:100%;"
     loading="lazy">
   </model-viewer>
@@ -248,10 +287,11 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
     final color = category?.color ?? const Color(0xFF8B5CF6);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: const Color(0xFF050d1a),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: const Color(0xFF0d1f3c),
         foregroundColor: Colors.white,
+        elevation: 0,
         title: const Text(
           'Compare Models',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
