@@ -250,6 +250,9 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
     shadow-intensity="0.5"
     exposure="1"
     interaction-prompt="none"
+    min-field-of-view="10deg"
+    max-field-of-view="90deg"
+    touch-action="none"
     style="width:100%;height:100%;"
     loading="lazy">
   </model-viewer>

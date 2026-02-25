@@ -864,6 +864,9 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     camera-controls
     shadow-intensity="1"
     interaction-prompt="auto"
+    min-field-of-view="10deg"
+    max-field-of-view="90deg"
+    touch-action="none"
     style="width:100%;height:100%;"
     loading="eager">
 $hotspotsHtml
