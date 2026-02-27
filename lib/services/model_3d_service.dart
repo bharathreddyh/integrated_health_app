@@ -191,7 +191,14 @@ class Model3DService {
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2FUterus_bicornuate_bicollis.glb?alt=media&token=aff274b0-f478-4a9b-9841-162cc3f797ef',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
-        // TODO: Add bicornuate_unicollis when uploaded
+        AssetInfo(
+          id: 'bicornuate_unicollis',
+          name: '3D Bicornuate Unicollis',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2FUterus_bicornuate_unicollis.glb?alt=media&token=df73fd3f-2640-4c51-90fd-78d3cc015202',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
         AssetInfo(
           id: 'uterus_didelphys',
           name: '3D Uterus Didelphys',
