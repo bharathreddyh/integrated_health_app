@@ -217,11 +217,19 @@ class Model3DConfig {
           subcategory: 'Mullerian Anomaly',
         ),
         Model3DItem(
-          id: 'unicornuate_uterus',
-          name: 'Unicornuate Uterus',
+          id: 'unicornate_uterus',
+          name: 'Unicornate Uterus',
           description: 'One-sided uterine development with a single horn',
-          modelFileName: 'uterus', // TODO: Replace with 'unicornuate_uterus' when uploaded
+          modelFileName: 'unicornate_uterus',
           tags: ['anatomy', 'anomaly', 'uterus', 'mullerian'],
+          subcategory: 'Mullerian Anomaly',
+        ),
+        Model3DItem(
+          id: 'unicornuate_uterus_rudimentary_horn',
+          name: 'Unicornuate Uterus with Rudimentary Horn',
+          description: 'Unicornuate uterus with a non-communicating or communicating rudimentary horn',
+          modelFileName: 'unicornuate_uterus_rudimentary_horn',
+          tags: ['anatomy', 'anomaly', 'uterus', 'mullerian', 'rudimentary horn'],
           subcategory: 'Mullerian Anomaly',
         ),
         Model3DItem(
