@@ -193,6 +193,14 @@ class Model3DConfig {
           afterLabel: 'Complete',
         ),
         Model3DItem(
+          id: 'subseptate_uterus',
+          name: 'Subseptate Uterus',
+          description: 'Uterus with a small septum that extends less than halfway into the cavity',
+          modelFileName: 'uterus_subseptate',
+          tags: ['anatomy', 'anomaly', 'uterus', 'mullerian', 'septum'],
+          subcategory: 'Mullerian Anomaly',
+        ),
+        Model3DItem(
           id: 'bicornuate_uterus',
           name: 'Bicornuate Uterus',
           description: 'Heart-shaped uterus with two horns - bicollis and unicollis variants',

@@ -200,6 +200,14 @@ class Model3DService {
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2Futerus_dideplhys.glb?alt=media&token=e656fc30-f447-4b1f-a122-0fe5785564d9',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
+        AssetInfo(
+          id: 'uterus_subseptate',
+          name: '3D Subseptate Uterus',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2Futerus_subseptate.glb?alt=media&token=5bf94329-342d-4a9c-9329-1d25831fff24',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
       ],
     ),
     SystemAssetGroup(
