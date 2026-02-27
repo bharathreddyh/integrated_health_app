@@ -215,6 +215,22 @@ class Model3DService {
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2Futerus_subseptate.glb?alt=media&token=5bf94329-342d-4a9c-9329-1d25831fff24',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
+        AssetInfo(
+          id: 'uterus_septate',
+          name: '3D Septate Uterus',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2FUterus_septate.glb?alt=media&token=05ca4660-f6bd-4e50-a117-b58c4897619e',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
+          id: 'uterus_unicornuate',
+          name: '3D Unicornuate Uterus',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2FUterus_unicornuate.glb?alt=media&token=ce2298e1-8a3d-4bef-a9c5-022fafd6b25a',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
       ],
     ),
     SystemAssetGroup(

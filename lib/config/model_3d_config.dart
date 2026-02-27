@@ -182,15 +182,10 @@ class Model3DConfig {
         Model3DItem(
           id: 'septate_uterus',
           name: 'Septate Uterus',
-          description: 'Uterus divided by a fibrous or muscular septum - partial and complete variants',
-          modelFileName: 'uterus_septate_partial', // Default model for single view
+          description: 'Uterus divided by a fibrous or muscular septum',
+          modelFileName: 'uterus_septate',
           tags: ['anatomy', 'anomaly', 'uterus', 'mullerian', 'septum'],
           subcategory: 'Mullerian Anomaly',
-          isComparisonModel: true,
-          beforeModelFileName: 'uterus_septate_partial',
-          afterModelFileName: 'uterus_septate_complete',
-          beforeLabel: 'Partial',
-          afterLabel: 'Complete',
         ),
         Model3DItem(
           id: 'subseptate_uterus',
@@ -220,7 +215,7 @@ class Model3DConfig {
           id: 'unicornate_uterus',
           name: 'Unicornate Uterus',
           description: 'One-sided uterine development with a single horn',
-          modelFileName: 'unicornate_uterus',
+          modelFileName: 'uterus_unicornuate',
           tags: ['anatomy', 'anomaly', 'uterus', 'mullerian'],
           subcategory: 'Mullerian Anomaly',
         ),
