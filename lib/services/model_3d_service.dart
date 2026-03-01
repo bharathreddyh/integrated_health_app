@@ -231,6 +231,14 @@ class Model3DService {
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2FUterus_unicornuate.glb?alt=media&token=ce2298e1-8a3d-4bef-a9c5-022fafd6b25a',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
+        AssetInfo(
+          id: 'unicornuate_uterus_rudimentary_horn',
+          name: '3D Unicornuate Uterus with Rudimentary Horn',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2FUterus_unicornuate_rudiment.glb?alt=media&token=7500ec9f-e198-466f-a407-593e80d23ac0',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
       ],
     ),
     SystemAssetGroup(
