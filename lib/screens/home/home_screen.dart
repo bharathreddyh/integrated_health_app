@@ -87,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          '3DClinic',
+                          '3D Clinic',
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,

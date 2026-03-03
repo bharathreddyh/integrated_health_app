@@ -53,7 +53,7 @@ class ThreeDClinicApp extends StatelessWidget {
     return ChangeNotifierProvider.value(
       value: WhisperVoiceService.instance,
       child: MaterialApp(
-        title: '3DClinic',
+        title: '3D Clinic',
         navigatorKey: navigatorKey,  // ADD THIS LINE
         theme: ThemeData(
           primarySwatch: Colors.blue,

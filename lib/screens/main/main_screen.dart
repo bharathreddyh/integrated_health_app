@@ -89,7 +89,7 @@ class MainScreen extends StatelessWidget {
                 child: const Column(
                   children: [
                     Text(
-                      '3DClinic',
+                      '3D Clinic',
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,

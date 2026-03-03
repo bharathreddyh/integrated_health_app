@@ -182,7 +182,7 @@ class _SplashScreenState extends State<SplashScreen>
                                 ],
                               ).createShader(bounds),
                               child: const Text(
-                                'Integrated Health',
+                                '3D Clinic',
                                 style: TextStyle(
                                   fontSize: 32,
                                   fontWeight: FontWeight.bold,
