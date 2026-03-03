@@ -5,6 +5,7 @@
 
 import 'package:flutter/material.dart';
 
+import 'dart:convert' as json;
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -393,21 +394,61 @@ class Model3DService {
   // ─── Legacy helper (for ModelViewerScreen compatibility) ───────────
 
   /// Download a model by name. Falls back to 'uterus' if model not found.
+  /// Also checks the remote catalog for dynamically added models.
   Future<String> downloadModel(
     String modelName, {
     ValueChanged<double>? onProgress,
   }) async {
+    // First try the static asset list
     AssetInfo? asset;
     try {
       asset = allAssets.firstWhere((a) => a.id == modelName);
     } catch (_) {
-      // Model not registered - fallback to uterus as placeholder
-      asset = allAssets.firstWhere(
-        (a) => a.id == 'uterus',
-        orElse: () => throw Exception('No fallback model available'),
-      );
+      asset = null;
     }
+
+    // If not found in static list, check the remote catalog cache
+    if (asset == null) {
+      try {
+        final catalog = await _getRemoteCatalogAssets();
+        asset = catalog.firstWhere((a) => a.id == modelName);
+      } catch (_) {
+        // Not in remote catalog either
+      }
+    }
+
+    // Last resort: fallback to uterus
+    if (asset == null) {
+      try {
+        asset = allAssets.firstWhere((a) => a.id == 'uterus');
+      } catch (_) {
+        throw Exception('No fallback model available');
+      }
+    }
+
     return downloadAsset(asset, onProgress: onProgress);
+  }
+
+  /// Get AssetInfo entries from the cached remote catalog.
+  Future<List<AssetInfo>> _getRemoteCatalogAssets() async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonList = prefs.getStringList('remote_catalog_cache') ?? [];
+    final assets = <AssetInfo>[];
+    for (final s in jsonList) {
+      try {
+        final map = Map<String, dynamic>.from(
+          json.jsonDecode(s) as Map,
+        );
+        assets.add(AssetInfo(
+          id: map['modelFileName'] ?? '',
+          name: map['name'] ?? '',
+          systemId: map['categoryId'] ?? '',
+          url: map['downloadUrl'] ?? '',
+          sizeBytes: map['sizeBytes'] ?? 0,
+        ));
+      } catch (_) {}
+    }
+    return assets;
   }
 
   // ─── Cache management ──────────────────────────────────────────────

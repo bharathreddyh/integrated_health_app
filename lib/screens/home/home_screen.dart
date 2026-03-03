@@ -13,6 +13,8 @@ import '../canvas/canvas_system_selection_screen.dart';
 import '../library/library_screen.dart';
 import '../setup/asset_download_screen.dart';
 import '../models_3d/models_3d_screen.dart';
+import '../../services/model_catalog_service.dart';
+import '../../widgets/new_models_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,6 +24,24 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _checkForNewModels();
+  }
+
+  Future<void> _checkForNewModels() async {
+    try {
+      final newModels = await ModelCatalogService.instance.checkForNewModels();
+      if (newModels.isNotEmpty && mounted) {
+        NewModelsDialog.show(context, newModels);
+      }
+    } catch (e) {
+      // Silently fail - don't block the home screen
+      print('New model check failed: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = UserService.currentUser!;
