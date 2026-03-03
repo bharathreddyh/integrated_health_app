@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import '../services/model_3d_service.dart';
+import '../services/model_catalog_service.dart';
 
 class AssetDownloadScreen extends StatefulWidget {
   /// If true, shows as first-launch setup with a Skip button.
@@ -115,6 +116,51 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
     });
   }
 
+  Future<void> _redownloadAll() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Re-download All Models?'),
+        content: const Text(
+          'This will remove all cached models and reset download tracking so you can re-download everything fresh.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF3B82F6),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Re-download'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    // Clear all cached files and tracking
+    await _service.clearAllCache();
+    await ModelCatalogService.instance.resetAllTracking();
+
+    // Reset UI state
+    setState(() {
+      _cached.clear();
+      _downloadStates.clear();
+      _progress.clear();
+      _errors.clear();
+      _selected.clear();
+      _loadingCache = true;
+    });
+
+    // Re-check cache status (everything should show as not downloaded)
+    await _loadCacheStatus();
+  }
+
   void _finish() async {
     await Model3DService.markSetupDone();
     if (mounted) {
@@ -150,6 +196,12 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
             TextButton(
               onPressed: _isDownloading ? null : _finish,
               child: const Text('Skip'),
+            ),
+          if (!widget.isFirstLaunch && !_isDownloading)
+            IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              tooltip: 'Re-download All',
+              onPressed: _redownloadAll,
             ),
         ],
       ),

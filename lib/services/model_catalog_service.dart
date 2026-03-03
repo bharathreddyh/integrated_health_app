@@ -170,6 +170,14 @@ class ModelCatalogService {
     return _getCachedCatalog();
   }
 
+  /// Reset all tracking so every model appears as "new" again.
+  /// Call this together with Model3DService.clearAllCache() to force re-download.
+  Future<void> resetAllTracking() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_prefKnownModelIds);
+    await prefs.remove(_prefDismissedModelIds);
+  }
+
   // ─── Cache helpers ──────────────────────────────────────────────
 
   Future<void> _cacheCatalog(List<RemoteModelEntry> models) async {
