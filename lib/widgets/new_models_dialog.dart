@@ -6,6 +6,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/model_catalog_service.dart';
 import '../services/model_3d_service.dart';
+import '../screens/model_viewer_screen.dart';
+import '../screens/models_3d/models_3d_screen.dart';
 
 /// Manages background model downloads as a singleton.
 /// Emits progress so any screen can show a subtle indicator.
@@ -16,12 +18,17 @@ class BackgroundDownloadManager {
   bool _isDownloading = false;
   bool get isDownloading => _isDownloading;
 
+  /// The models that were downloaded in the last background session.
+  List<RemoteModelEntry> _downloadedModels = [];
+  List<RemoteModelEntry> get downloadedModels => _downloadedModels;
+
   final _progressController = StreamController<BackgroundDownloadProgress>.broadcast();
   Stream<BackgroundDownloadProgress> get progressStream => _progressController.stream;
 
   Future<void> downloadModels(List<RemoteModelEntry> models) async {
     if (_isDownloading) return;
     _isDownloading = true;
+    _downloadedModels = models;
 
     final service = Model3DService.instance;
 
@@ -60,6 +67,7 @@ class BackgroundDownloadManager {
       totalCount: models.length,
       fileProgress: 1.0,
       isComplete: true,
+      completedModels: models,
     ));
   }
 
@@ -74,6 +82,7 @@ class BackgroundDownloadProgress {
   final int totalCount;
   final double fileProgress;
   final bool isComplete;
+  final List<RemoteModelEntry> completedModels;
 
   BackgroundDownloadProgress({
     required this.modelName,
@@ -81,6 +90,7 @@ class BackgroundDownloadProgress {
     required this.totalCount,
     required this.fileProgress,
     this.isComplete = false,
+    this.completedModels = const [],
   });
 
   double get overallProgress =>
@@ -109,7 +119,8 @@ class NewModelsDialog extends StatefulWidget {
 }
 
 class _NewModelsDialogState extends State<NewModelsDialog> {
-  bool _isDownloading = false;
+  // States: prompt -> downloading -> completed
+  String _phase = 'prompt'; // 'prompt', 'downloading', 'completed'
   int _downloadedCount = 0;
   double _currentProgress = 0.0;
   String _currentModelName = '';
@@ -122,7 +133,7 @@ class _NewModelsDialogState extends State<NewModelsDialog> {
 
   Future<void> _downloadAll() async {
     setState(() {
-      _isDownloading = true;
+      _phase = 'downloading';
       _downloadedCount = 0;
     });
 
@@ -153,7 +164,7 @@ class _NewModelsDialogState extends State<NewModelsDialog> {
     await catalog.markModelsAsKnown(widget.newModels);
 
     if (mounted) {
-      Navigator.pop(context, 'downloaded');
+      setState(() => _phase = 'completed');
     }
   }
 
@@ -171,6 +182,35 @@ class _NewModelsDialogState extends State<NewModelsDialog> {
     if (mounted) Navigator.pop(context, 'later');
   }
 
+  void _viewModel() {
+    Navigator.pop(context, 'downloaded');
+    final models = widget.newModels;
+    if (models.length == 1) {
+      // Single model: open directly in viewer
+      final m = models.first;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ModelViewerScreen(
+            modelName: m.modelFileName,
+            title: m.name,
+            systemId: m.categoryId,
+          ),
+        ),
+      );
+    } else {
+      // Multiple models: go to the 3D models browser
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const Models3DScreen()),
+      );
+    }
+  }
+
+  void _dismissCompleted() {
+    Navigator.pop(context, 'downloaded');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -179,7 +219,11 @@ class _NewModelsDialogState extends State<NewModelsDialog> {
       child: Container(
         width: 420,
         padding: const EdgeInsets.all(24),
-        child: _isDownloading ? _buildDownloadProgress() : _buildPrompt(),
+        child: _phase == 'completed'
+            ? _buildCompleted()
+            : _phase == 'downloading'
+                ? _buildDownloadProgress()
+                : _buildPrompt(),
       ),
     );
   }
@@ -355,6 +399,78 @@ class _NewModelsDialogState extends State<NewModelsDialog> {
     );
   }
 
+  Widget _buildCompleted() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Success icon
+        Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            color: const Color(0xFF10B981).withOpacity(0.2),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 36),
+        ),
+        const SizedBox(height: 20),
+
+        const Text(
+          'Download Complete!',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        Text(
+          widget.newModels.length == 1
+              ? '${widget.newModels.first.name} is ready to view'
+              : '${widget.newModels.length} models are ready to view',
+          style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
+
+        // View Model button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _viewModel,
+            icon: const Icon(Icons.view_in_ar_rounded, size: 20),
+            label: Text(
+              widget.newModels.length == 1 ? 'View Model' : 'View Models',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF10B981),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // Later button
+        SizedBox(
+          width: double.infinity,
+          child: TextButton(
+            onPressed: _dismissCompleted,
+            child: Text(
+              'Later',
+              style: TextStyle(fontSize: 15, color: Colors.grey.shade400),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildDownloadProgress() {
     final overallProgress = widget.newModels.isEmpty
         ? 0.0
@@ -427,9 +543,7 @@ class _BackgroundDownloadBannerState extends State<BackgroundDownloadBanner>
         _progress = p;
         if (p.isComplete) {
           _completedRecently = true;
-          Future.delayed(const Duration(seconds: 3), () {
-            if (mounted) setState(() { _visible = false; _completedRecently = false; });
-          });
+          // Stay visible longer so user can tap "View Model"
         } else {
           _visible = true;
           _completedRecently = false;
@@ -442,6 +556,33 @@ class _BackgroundDownloadBannerState extends State<BackgroundDownloadBanner>
   void dispose() {
     _subscription?.cancel();
     super.dispose();
+  }
+
+  void _viewModels() {
+    final models = BackgroundDownloadManager.instance.downloadedModels;
+    setState(() { _visible = false; _completedRecently = false; });
+    if (models.length == 1) {
+      final m = models.first;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ModelViewerScreen(
+            modelName: m.modelFileName,
+            title: m.name,
+            systemId: m.categoryId,
+          ),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const Models3DScreen()),
+      );
+    }
+  }
+
+  void _dismiss() {
+    setState(() { _visible = false; _completedRecently = false; });
   }
 
   @override
@@ -513,17 +654,74 @@ class _BackgroundDownloadBannerState extends State<BackgroundDownloadBanner>
   }
 
   Widget _buildCompleted(BackgroundDownloadProgress p) {
-    return Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 20),
-        const SizedBox(width: 12),
-        Text(
-          '${p.totalCount} model${p.totalCount == 1 ? '' : 's'} downloaded',
-          style: const TextStyle(
-            color: Color(0xFF10B981),
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
+        Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '${p.totalCount} model${p.totalCount == 1 ? '' : 's'} downloaded',
+                style: const TextStyle(
+                  color: Color(0xFF10B981),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            GestureDetector(
+              onTap: _dismiss,
+              child: Icon(Icons.close, size: 18, color: Colors.grey.shade500),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 34,
+                child: ElevatedButton.icon(
+                  onPressed: _viewModels,
+                  icon: const Icon(Icons.view_in_ar_rounded, size: 16),
+                  label: Text(
+                    p.totalCount == 1 ? 'View Model' : 'View Models',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF10B981),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: SizedBox(
+                height: 34,
+                child: OutlinedButton(
+                  onPressed: _dismiss,
+                  child: Text(
+                    'Later',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Colors.grey.shade700),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
