@@ -20,6 +20,7 @@ class RemoteModelEntry {
   final List<String> tags;
   final bool isAnatomy;
   final DateTime addedAt;
+  final DateTime updatedAt;
 
   RemoteModelEntry({
     required this.id,
@@ -33,10 +34,12 @@ class RemoteModelEntry {
     required this.tags,
     required this.isAnatomy,
     required this.addedAt,
-  });
+    DateTime? updatedAt,
+  }) : updatedAt = updatedAt ?? addedAt;
 
   factory RemoteModelEntry.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    final addedAt = (data['addedAt'] as Timestamp?)?.toDate() ?? DateTime.now();
     return RemoteModelEntry(
       id: doc.id,
       name: data['name'] ?? '',
@@ -48,7 +51,8 @@ class RemoteModelEntry {
       sizeBytes: data['sizeBytes'] ?? 0,
       tags: List<String>.from(data['tags'] ?? []),
       isAnatomy: data['isAnatomy'] ?? false,
-      addedAt: (data['addedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      addedAt: addedAt,
+      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? addedAt,
     );
   }
 
@@ -64,9 +68,11 @@ class RemoteModelEntry {
     'tags': tags,
     'isAnatomy': isAnatomy,
     'addedAt': addedAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
   };
 
   factory RemoteModelEntry.fromJson(Map<String, dynamic> json) {
+    final addedAt = DateTime.tryParse(json['addedAt'] ?? '') ?? DateTime.now();
     return RemoteModelEntry(
       id: json['id'] ?? '',
       name: json['name'] ?? '',
@@ -78,7 +84,8 @@ class RemoteModelEntry {
       sizeBytes: json['sizeBytes'] ?? 0,
       tags: List<String>.from(json['tags'] ?? []),
       isAnatomy: json['isAnatomy'] ?? false,
-      addedAt: DateTime.tryParse(json['addedAt'] ?? '') ?? DateTime.now(),
+      addedAt: addedAt,
+      updatedAt: DateTime.tryParse(json['updatedAt'] ?? '') ?? addedAt,
     );
   }
 
@@ -106,6 +113,7 @@ class ModelCatalogService {
   static const _prefKnownModelIds = 'known_remote_model_ids';
   static const _prefDismissedModelIds = 'dismissed_remote_model_ids';
   static const _prefRemoteCatalogCache = 'remote_catalog_cache';
+  static const _prefDownloadedVersions = 'downloaded_model_versions';
 
   /// Fetch the full model catalog from Firestore.
   Future<List<RemoteModelEntry>> fetchRemoteCatalog() async {
@@ -170,12 +178,50 @@ class ModelCatalogService {
     return _getCachedCatalog();
   }
 
+  /// Check for models that have been updated on Firebase since the user
+  /// last downloaded them. Compares remote `updatedAt` vs locally stored
+  /// download timestamp. Returns only models that need re-downloading.
+  Future<List<RemoteModelEntry>> checkForUpdatedModels() async {
+    final remoteModels = await fetchRemoteCatalog();
+    if (remoteModels.isEmpty) return [];
+
+    final prefs = await SharedPreferences.getInstance();
+    final versionsJson = prefs.getString(_prefDownloadedVersions) ?? '{}';
+    final Map<String, dynamic> versions = jsonDecode(versionsJson);
+
+    final updated = <RemoteModelEntry>[];
+    for (final model in remoteModels) {
+      final localTimestamp = versions[model.id];
+      if (localTimestamp == null) continue; // Never downloaded — handled by checkForNewModels
+      final localDate = DateTime.tryParse(localTimestamp);
+      if (localDate != null && model.updatedAt.isAfter(localDate)) {
+        updated.add(model);
+      }
+    }
+
+    return updated;
+  }
+
+  /// Record the download timestamp for models so we can detect future updates.
+  Future<void> saveDownloadedVersions(List<RemoteModelEntry> models) async {
+    final prefs = await SharedPreferences.getInstance();
+    final versionsJson = prefs.getString(_prefDownloadedVersions) ?? '{}';
+    final Map<String, dynamic> versions = jsonDecode(versionsJson);
+
+    for (final model in models) {
+      versions[model.id] = model.updatedAt.toIso8601String();
+    }
+
+    await prefs.setString(_prefDownloadedVersions, jsonEncode(versions));
+  }
+
   /// Reset all tracking so every model appears as "new" again.
   /// Call this together with Model3DService.clearAllCache() to force re-download.
   Future<void> resetAllTracking() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_prefKnownModelIds);
     await prefs.remove(_prefDismissedModelIds);
+    await prefs.remove(_prefDownloadedVersions);
   }
 
   // ─── Cache helpers ──────────────────────────────────────────────

@@ -32,7 +32,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _checkForNewModels() async {
     try {
-      final newModels = await ModelCatalogService.instance.checkForNewModels();
+      final catalog = ModelCatalogService.instance;
+
+      // Check for updated models first (user already has these, but they changed)
+      final updatedModels = await catalog.checkForUpdatedModels();
+      if (updatedModels.isNotEmpty && mounted) {
+        await UpdatedModelsDialog.show(context, updatedModels);
+      }
+
+      // Then check for brand new models
+      final newModels = await catalog.checkForNewModels();
       if (newModels.isNotEmpty && mounted) {
         NewModelsDialog.show(context, newModels);
       }

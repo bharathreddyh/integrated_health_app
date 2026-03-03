@@ -59,6 +59,7 @@ class BackgroundDownloadManager {
     }
 
     await ModelCatalogService.instance.markModelsAsKnown(models);
+    await ModelCatalogService.instance.saveDownloadedVersions(models);
     _isDownloading = false;
 
     _progressController.add(BackgroundDownloadProgress(
@@ -162,6 +163,7 @@ class _NewModelsDialogState extends State<NewModelsDialog> {
     }
 
     await catalog.markModelsAsKnown(widget.newModels);
+    await catalog.saveDownloadedVersions(widget.newModels);
 
     if (mounted) {
       setState(() => _phase = 'completed');
@@ -722,6 +724,370 @@ class _BackgroundDownloadBannerState extends State<BackgroundDownloadBanner>
               ),
             ),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Updated Models Dialog ──────────────────────────────────────────────
+/// Dialog shown when existing models have been updated on Firebase.
+/// Prompts user: "X model updated — Re-download / Later"
+class UpdatedModelsDialog extends StatefulWidget {
+  final List<RemoteModelEntry> updatedModels;
+
+  const UpdatedModelsDialog({super.key, required this.updatedModels});
+
+  /// Show the dialog. Returns:
+  /// - 'redownloaded' if user re-downloaded
+  /// - 'background' if background
+  /// - 'later' / null if dismissed
+  static Future<String?> show(BuildContext context, List<RemoteModelEntry> models) {
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => UpdatedModelsDialog(updatedModels: models),
+    );
+  }
+
+  @override
+  State<UpdatedModelsDialog> createState() => _UpdatedModelsDialogState();
+}
+
+class _UpdatedModelsDialogState extends State<UpdatedModelsDialog> {
+  String _phase = 'prompt'; // 'prompt', 'downloading', 'completed'
+  int _downloadedCount = 0;
+  double _currentProgress = 0.0;
+  String _currentModelName = '';
+
+  Future<void> _redownloadAll() async {
+    setState(() {
+      _phase = 'downloading';
+      _downloadedCount = 0;
+    });
+
+    final service = Model3DService.instance;
+    final catalog = ModelCatalogService.instance;
+
+    for (int i = 0; i < widget.updatedModels.length; i++) {
+      final model = widget.updatedModels[i];
+      setState(() {
+        _currentModelName = model.name;
+        _currentProgress = 0.0;
+      });
+
+      // Clear old cached file first
+      await service.clearAssetCache(model.modelFileName);
+
+      try {
+        await service.downloadAsset(
+          model.toAssetInfo(),
+          onProgress: (p) {
+            setState(() => _currentProgress = p);
+          },
+        );
+      } catch (e) {
+        print('Failed to re-download ${model.name}: $e');
+      }
+
+      setState(() => _downloadedCount = i + 1);
+    }
+
+    await catalog.saveDownloadedVersions(widget.updatedModels);
+
+    if (mounted) {
+      setState(() => _phase = 'completed');
+    }
+  }
+
+  void _redownloadInBackground() {
+    // Clear old caches then download fresh
+    final service = Model3DService.instance;
+    for (final model in widget.updatedModels) {
+      service.clearAssetCache(model.modelFileName);
+    }
+    BackgroundDownloadManager.instance.downloadModels(widget.updatedModels);
+    Navigator.pop(context, 'background');
+  }
+
+  void _later() {
+    Navigator.pop(context, 'later');
+  }
+
+  void _viewModel() {
+    Navigator.pop(context, 'redownloaded');
+    final models = widget.updatedModels;
+    if (models.length == 1) {
+      final m = models.first;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ModelViewerScreen(
+            modelName: m.modelFileName,
+            title: m.name,
+            systemId: m.categoryId,
+          ),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const Models3DScreen()),
+      );
+    }
+  }
+
+  void _dismissCompleted() {
+    Navigator.pop(context, 'redownloaded');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: const Color(0xFF1E293B),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        width: 420,
+        padding: const EdgeInsets.all(24),
+        child: _phase == 'completed'
+            ? _buildCompleted()
+            : _phase == 'downloading'
+                ? _buildProgress()
+                : _buildPrompt(),
+      ),
+    );
+  }
+
+  Widget _buildPrompt() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Update icon
+        Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            color: const Color(0xFF3B82F6).withOpacity(0.2),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Icon(Icons.update_rounded, color: Color(0xFF3B82F6), size: 32),
+        ),
+        const SizedBox(height: 20),
+
+        // Title
+        Text(
+          widget.updatedModels.length == 1
+              ? 'Model Updated'
+              : '${widget.updatedModels.length} Models Updated',
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 12),
+
+        // Model list
+        Container(
+          constraints: const BoxConstraints(maxHeight: 200),
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: widget.updatedModels.length,
+            itemBuilder: (context, index) {
+              final model = widget.updatedModels[index];
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    const Icon(Icons.sync_rounded, size: 16, color: Color(0xFF3B82F6)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            model.name,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            '${model.subcategory} — updated',
+                            style: TextStyle(
+                              color: Colors.grey.shade500,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      model.formattedSize,
+                      style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Re-download Now
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _redownloadAll,
+            icon: const Icon(Icons.download_rounded, size: 20),
+            label: const Text(
+              'Re-download Now',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF3B82F6),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // Re-download in Background
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _redownloadInBackground,
+            icon: const Icon(Icons.downloading_rounded, size: 18),
+            label: const Text(
+              'Update in Background',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF3B82F6),
+              side: const BorderSide(color: Color(0xFF3B82F6), width: 1),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // Later
+        SizedBox(
+          width: double.infinity,
+          child: TextButton(
+            onPressed: _later,
+            child: Text(
+              'Later',
+              style: TextStyle(fontSize: 15, color: Colors.grey.shade400),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProgress() {
+    final overallProgress = widget.updatedModels.isEmpty
+        ? 0.0
+        : (_downloadedCount + _currentProgress) / widget.updatedModels.length;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.downloading_rounded, color: Color(0xFF3B82F6), size: 48),
+        const SizedBox(height: 20),
+        const Text(
+          'Updating Models...',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          _currentModelName,
+          style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 20),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: LinearProgressIndicator(
+            value: overallProgress,
+            minHeight: 8,
+            backgroundColor: const Color(0xFF334155),
+            valueColor: const AlwaysStoppedAnimation(Color(0xFF3B82F6)),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          '$_downloadedCount / ${widget.updatedModels.length} models',
+          style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCompleted() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            color: const Color(0xFF10B981).withOpacity(0.2),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 36),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'Update Complete!',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          widget.updatedModels.length == 1
+              ? '${widget.updatedModels.first.name} has been updated'
+              : '${widget.updatedModels.length} models have been updated',
+          style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _viewModel,
+            icon: const Icon(Icons.view_in_ar_rounded, size: 20),
+            label: Text(
+              widget.updatedModels.length == 1 ? 'View Model' : 'View Models',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF10B981),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          child: TextButton(
+            onPressed: _dismissCompleted,
+            child: Text(
+              'Later',
+              style: TextStyle(fontSize: 15, color: Colors.grey.shade400),
+            ),
+          ),
         ),
       ],
     );
