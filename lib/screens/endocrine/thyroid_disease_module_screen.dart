@@ -20,6 +20,7 @@ class ThyroidDiseaseModuleScreen extends StatefulWidget {
   final String patientName;
   final String diseaseId;
   final String diseaseName;
+  final String? conditionId;
   final bool isQuickMode;
 
   const ThyroidDiseaseModuleScreen({
@@ -28,6 +29,7 @@ class ThyroidDiseaseModuleScreen extends StatefulWidget {
     required this.patientName,
     required this.diseaseId,
     required this.diseaseName,
+    this.conditionId,
     this.isQuickMode = false,
   });
 
