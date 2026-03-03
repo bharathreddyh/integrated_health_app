@@ -56,6 +56,9 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Background download progress banner
+                const BackgroundDownloadBanner(),
+
                 // Top Bar
                 Row(
                   children: [
