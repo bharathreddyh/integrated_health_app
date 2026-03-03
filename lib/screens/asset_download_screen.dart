@@ -117,6 +117,71 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
     });
   }
 
+  Future<void> _seedFirestore() async {
+    final seeder = FirestoreSeederService.instance;
+
+    // Check if already seeded
+    final alreadySeeded = await seeder.isCatalogSeeded();
+    if (!mounted) return;
+
+    if (alreadySeeded) {
+      final runAnyway = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Catalog Already Seeded'),
+          content: const Text(
+            'The model_catalog collection already has data. '
+            'Run again to add any missing entries?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF3B82F6),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Run Anyway'),
+            ),
+          ],
+        ),
+      );
+      if (runAnyway != true) return;
+    }
+
+    // Show progress
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Seeding Firestore model catalog...')),
+    );
+
+    try {
+      final created = await seeder.seedModelCatalog();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            created > 0
+                ? 'Done! Created $created document(s) in model_catalog.'
+                : 'All documents already exist. Nothing to add.',
+          ),
+          backgroundColor: Colors.green.shade600,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Seed failed: $e'),
+          backgroundColor: Colors.red.shade600,
+        ),
+      );
+    }
+  }
+
   Future<void> _redownloadAll() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -199,10 +264,32 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
               child: const Text('Skip'),
             ),
           if (!widget.isFirstLaunch && !_isDownloading)
-            IconButton(
-              icon: const Icon(Icons.refresh_rounded),
-              tooltip: 'Re-download All',
-              onPressed: _redownloadAll,
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              onSelected: (value) {
+                if (value == 'redownload') _redownloadAll();
+                if (value == 'seed') _seedFirestore();
+              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: 'redownload',
+                  child: ListTile(
+                    leading: Icon(Icons.refresh_rounded),
+                    title: Text('Re-download All'),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'seed',
+                  child: ListTile(
+                    leading: Icon(Icons.cloud_upload_outlined),
+                    title: Text('Seed Firestore Catalog'),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ],
             ),
         ],
       ),

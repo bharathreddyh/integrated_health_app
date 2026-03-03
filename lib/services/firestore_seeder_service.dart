@@ -63,7 +63,7 @@ class FirestoreSeederService {
     int created = 0;
 
     // Get all asset groups from the static config
-    final groups = Model3DService.instance.getAssetGroups();
+    final groups = Model3DService.systemAssets;
 
     for (final group in groups) {
       for (final asset in group.assets) {
