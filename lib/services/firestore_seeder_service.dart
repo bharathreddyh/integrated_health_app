@@ -1,87 +1,87 @@
 // lib/services/firestore_seeder_service.dart
-// One-time seeder: populates the Firestore `model_catalog` collection from
-// the static asset list in Model3DService. Run once, then never again.
+// One-time seeder: populates the Firestore `model_catalog` collection by
+// joining Model3DService (download URLs) with Model3DConfig (rich metadata).
+// Safe to re-run — skips documents that already exist.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'model_3d_service.dart';
+import '../config/model_3d_config.dart';
 
 class FirestoreSeederService {
   static final FirestoreSeederService instance = FirestoreSeederService._();
   FirestoreSeederService._();
 
+  /// Build a lookup from modelFileName → Model3DItem so we can grab
+  /// description, subcategory, tags etc. for any asset automatically.
+  static Map<String, _ConfigMatch> _buildConfigIndex() {
+    final index = <String, _ConfigMatch>{};
+    for (final category in Model3DConfig.categories) {
+      for (final model in category.models) {
+        // Primary key: the modelFileName used for downloading
+        index[model.modelFileName] = _ConfigMatch(model, category.id);
+        // Also index by model id (for cases where asset.id == model.id)
+        index[model.id] = _ConfigMatch(model, category.id);
+        // Index before/after comparison filenames
+        if (model.beforeModelFileName != null) {
+          index[model.beforeModelFileName!] = _ConfigMatch(model, category.id);
+        }
+        if (model.afterModelFileName != null) {
+          index[model.afterModelFileName!] = _ConfigMatch(model, category.id);
+        }
+      }
+    }
+    return index;
+  }
+
   /// Seed the `model_catalog` collection from the static asset list.
-  /// Skips documents that already exist (safe to run multiple times).
+  /// Metadata (description, subcategory, tags) is pulled automatically from
+  /// Model3DConfig — no hardcoded maps needed.
   /// Returns the number of new documents created.
   Future<int> seedModelCatalog() async {
     final firestore = FirebaseFirestore.instance;
     final collection = firestore.collection('model_catalog');
     final now = FieldValue.serverTimestamp();
-
-    // Subcategory mapping based on model_3d_config.dart
-    final subcategoryMap = {
-      'uterus': 'Normal Anatomy',
-      'fibroid_cervical': 'Fibroids',
-      'fibroid_subserosal': 'Fibroids',
-      'fibroid_submucosal': 'Fibroids',
-      'fibroid_intramural': 'Fibroids',
-      'uterus_fibroid_compression_before': 'Fibroids',
-      'uterus_fibroid_compression_after': 'Fibroids',
-      'uterus_endo_polyp': 'Endometrium',
-      'uterus_endo_hyperplasia': 'Endometrium',
-      'uterus_endo_ca': 'Endometrium',
-      'uterus_endo_normal': 'Endometrium',
-    };
-
-    final descriptionMap = {
-      'uterus': 'Normal uterine anatomy showing myometrium, endometrium, and cervix',
-      'fibroid_cervical': 'Fibroid located in the cervical region',
-      'fibroid_subserosal': 'Fibroid projecting outward from the uterine surface',
-      'fibroid_submucosal': 'Fibroid projecting into the uterine cavity',
-      'fibroid_intramural': 'Fibroid within the muscular wall of the uterus',
-      'uterus_fibroid_compression_before': 'Fibroid compression effects on bladder and rectum (Before)',
-      'uterus_fibroid_compression_after': 'Fibroid compression effects on bladder and rectum (After)',
-      'uterus_endo_polyp': 'Polypoid growth from the endometrium',
-      'uterus_endo_hyperplasia': 'Thickened endometrial lining',
-      'uterus_endo_ca': 'Malignant tumor of the endometrium',
-      'uterus_endo_normal': 'Normal endometrial lining of the uterus',
-    };
-
-    final tagsMap = {
-      'uterus': ['anatomy', 'normal', 'uterus'],
-      'fibroid_cervical': ['pathology', 'fibroid', 'cervix'],
-      'fibroid_subserosal': ['pathology', 'fibroid', 'uterus'],
-      'fibroid_submucosal': ['pathology', 'fibroid', 'uterus'],
-      'fibroid_intramural': ['pathology', 'fibroid', 'uterus'],
-      'uterus_fibroid_compression_before': ['pathology', 'fibroid', 'uterus', 'compression'],
-      'uterus_fibroid_compression_after': ['pathology', 'fibroid', 'uterus', 'compression'],
-      'uterus_endo_polyp': ['pathology', 'polyp', 'endometrium'],
-      'uterus_endo_hyperplasia': ['pathology', 'endometrium', 'hyperplasia'],
-      'uterus_endo_ca': ['pathology', 'cancer', 'endometrium'],
-      'uterus_endo_normal': ['anatomy', 'normal', 'endometrium'],
-    };
+    final configIndex = _buildConfigIndex();
 
     int created = 0;
 
-    // Get all asset groups from the static config
-    final groups = Model3DService.systemAssets;
-
-    for (final group in groups) {
+    for (final group in Model3DService.systemAssets) {
       for (final asset in group.assets) {
-        // Check if document already exists
+        // Skip if already exists
         final docRef = collection.doc(asset.id);
         final docSnap = await docRef.get();
         if (docSnap.exists) continue;
 
+        // Try to find rich metadata from Model3DConfig
+        final match = configIndex[asset.id];
+        final configModel = match?.model;
+
+        // Derive fields — use config when available, fall back to asset info
+        final description = configModel?.description ?? asset.name;
+        final subcategory = configModel?.subcategory ?? 'General';
+        final tags = configModel?.tags ?? <String>[asset.systemId];
+        final isAnatomy = tags.contains('anatomy');
+
         await docRef.set({
           'name': asset.name,
           'categoryId': asset.systemId,
-          'subcategory': subcategoryMap[asset.id] ?? 'General',
-          'description': descriptionMap[asset.id] ?? asset.name,
+          'subcategory': subcategory,
+          'description': description,
           'modelFileName': asset.id,
           'downloadUrl': asset.url,
           'sizeBytes': asset.sizeBytes,
-          'tags': tagsMap[asset.id] ?? [asset.systemId],
-          'isAnatomy': (tagsMap[asset.id] ?? []).contains('anatomy'),
+          'tags': tags,
+          'isAnatomy': isAnatomy,
+          'isPremium': configModel?.isPremium ?? false,
+          'isComparisonModel': configModel?.isComparisonModel ?? false,
+          if (configModel?.beforeModelFileName != null)
+            'beforeModelFileName': configModel!.beforeModelFileName,
+          if (configModel?.afterModelFileName != null)
+            'afterModelFileName': configModel!.afterModelFileName,
+          if (configModel?.beforeLabel != null)
+            'beforeLabel': configModel!.beforeLabel,
+          if (configModel?.afterLabel != null)
+            'afterLabel': configModel!.afterLabel,
           'addedAt': now,
           'updatedAt': now,
         });
@@ -101,4 +101,11 @@ class FirestoreSeederService {
         .get();
     return snapshot.docs.isNotEmpty;
   }
+}
+
+/// Pairs a Model3DItem with its parent category ID.
+class _ConfigMatch {
+  final Model3DItem model;
+  final String categoryId;
+  const _ConfigMatch(this.model, this.categoryId);
 }
