@@ -11,6 +11,7 @@ import 'screens/patient/patient_selection_screen.dart';
 import 'screens/patient/patient_registration_screen.dart';
 import 'screens/consultation/three_page_consultation_screen.dart';
 import 'screens/canvas/canvas_screen.dart';
+import 'screens/splash/splash_screen.dart';
 import 'models/patient.dart';
 import 'services/user_service.dart';
 import 'services/whisper_voice_service.dart';
@@ -150,6 +151,7 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
+  bool _showSplash = true;
   bool? _setupDone;
   bool? _isLoggedIn;
 
@@ -170,12 +172,21 @@ class _AuthWrapperState extends State<AuthWrapper> {
     }
   }
 
+  void _onSplashComplete() {
+    setState(() => _showSplash = false);
+  }
+
   void _onSetupComplete() {
     setState(() => _setupDone = true);
   }
 
   @override
   Widget build(BuildContext context) {
+    // Show splash screen first
+    if (_showSplash) {
+      return SplashScreen(onComplete: _onSplashComplete);
+    }
+
     // Still loading
     if (_setupDone == null || _isLoggedIn == null) {
       return const Scaffold(

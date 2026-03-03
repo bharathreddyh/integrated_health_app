@@ -172,11 +172,67 @@ class Model3DConfig {
 
         // Mullerian Anomaly
         Model3DItem(
-          id: 'uterine_anomalies',
-          name: 'Uterine Anomalies',
-          description: 'Congenital uterine malformations',
-          modelFileName: 'uterus', // TODO: Replace with 'uterine_anomalies' when uploaded
-          tags: ['anatomy', 'anomaly', 'uterus'],
+          id: 'arcuate_uterus',
+          name: 'Arcuate Uterus',
+          description: 'Minor indentation of the uterine fundus',
+          modelFileName: 'uterus', // TODO: Replace with 'arcuate_uterus' when uploaded
+          tags: ['anatomy', 'anomaly', 'uterus', 'mullerian'],
+          subcategory: 'Mullerian Anomaly',
+        ),
+        Model3DItem(
+          id: 'septate_uterus',
+          name: 'Septate Uterus',
+          description: 'Uterus divided by a fibrous or muscular septum',
+          modelFileName: 'uterus_septate',
+          tags: ['anatomy', 'anomaly', 'uterus', 'mullerian', 'septum'],
+          subcategory: 'Mullerian Anomaly',
+        ),
+        Model3DItem(
+          id: 'subseptate_uterus',
+          name: 'Subseptate Uterus',
+          description: 'Uterus with a small septum that extends less than halfway into the cavity',
+          modelFileName: 'uterus_subseptate',
+          tags: ['anatomy', 'anomaly', 'uterus', 'mullerian', 'septum'],
+          subcategory: 'Mullerian Anomaly',
+        ),
+        Model3DItem(
+          id: 'bicornuate_bicollis',
+          name: 'Bicornuate Bicollis',
+          description: 'Heart-shaped uterus with two horns and two cervices',
+          modelFileName: 'bicornuate_bicollis',
+          tags: ['anatomy', 'anomaly', 'uterus', 'mullerian'],
+          subcategory: 'Mullerian Anomaly',
+        ),
+        Model3DItem(
+          id: 'bicornuate_unicollis',
+          name: 'Bicornuate Unicollis',
+          description: 'Heart-shaped uterus with two horns and a single cervix',
+          modelFileName: 'bicornuate_unicollis',
+          tags: ['anatomy', 'anomaly', 'uterus', 'mullerian'],
+          subcategory: 'Mullerian Anomaly',
+        ),
+        Model3DItem(
+          id: 'unicornate_uterus',
+          name: 'Unicornate Uterus',
+          description: 'One-sided uterine development with a single horn',
+          modelFileName: 'uterus_unicornuate',
+          tags: ['anatomy', 'anomaly', 'uterus', 'mullerian'],
+          subcategory: 'Mullerian Anomaly',
+        ),
+        Model3DItem(
+          id: 'unicornuate_uterus_rudimentary_horn',
+          name: 'Unicornuate Uterus with Rudimentary Horn',
+          description: 'Unicornuate uterus with a non-communicating or communicating rudimentary horn',
+          modelFileName: 'unicornuate_uterus_rudimentary_horn',
+          tags: ['anatomy', 'anomaly', 'uterus', 'mullerian', 'rudimentary horn'],
+          subcategory: 'Mullerian Anomaly',
+        ),
+        Model3DItem(
+          id: 'uterus_didelphys',
+          name: 'Uterus Didelphys',
+          description: 'Complete duplication resulting in double uterus',
+          modelFileName: 'uterus_didelphys',
+          tags: ['anatomy', 'anomaly', 'uterus', 'mullerian'],
           subcategory: 'Mullerian Anomaly',
         ),
 
@@ -240,11 +296,11 @@ class Model3DConfig {
           subcategory: 'Endometrium',
         ),
         Model3DItem(
-          id: 'adenomyosis',
-          name: 'Adenomyosis',
-          description: 'Endometrial tissue within the myometrium',
-          modelFileName: 'uterus', // TODO: Replace with 'adenomyosis' when uploaded
-          tags: ['pathology', 'uterus', 'endometriosis'],
+          id: 'adenomyosis_endometriosis',
+          name: 'Adenomyosis & Endometriosis',
+          description: 'Adenomyosis with endometriosis showing ectopic endometrial tissue',
+          modelFileName: 'uterus_endo_adenoendo',
+          tags: ['pathology', 'uterus', 'endometriosis', 'adenomyosis'],
           subcategory: 'Endometrium',
         ),
         Model3DItem(
@@ -267,7 +323,7 @@ class Model3DConfig {
           id: 'cystic_endometrial_hyperplasia',
           name: 'Cystic Endometrial Hyperplasia',
           description: 'Cystic glandular changes in endometrial hyperplasia',
-          modelFileName: 'uterus', // TODO: Replace with 'uterus_cystic_endo_hyperplasia' when uploaded
+          modelFileName: 'uterus_endo_cystic',
           tags: ['pathology', 'endometrium', 'hyperplasia', 'cystic'],
           subcategory: 'Endometrium',
         ),

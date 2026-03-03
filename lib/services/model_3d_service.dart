@@ -168,6 +168,78 @@ class Model3DService {
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fendometrium%2Futerus_endo_normal.glb?alt=media&token=4148b820-41de-4d30-a76e-9b50281d1e37',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
+        AssetInfo(
+          id: 'uterus_endo_cystic',
+          name: '3D Cystic Endometrial Hyperplasia',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fendometrium%2Futerus_endo_cystic.glb?alt=media&token=5e2d4868-e748-45be-9fa6-9e0e9b3b14bc',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
+          id: 'uterus_endo_adenoendo',
+          name: '3D Adenomyosis & Endometriosis',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fendometrium%2Futerus_endo_adenoendo.glb?alt=media&token=62781751-d574-457a-be4c-70e613c3258c',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
+          id: 'bicornuate_bicollis',
+          name: '3D Bicornuate Bicollis',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2FUterus_bicornuate_bicollis.glb?alt=media&token=aff274b0-f478-4a9b-9841-162cc3f797ef',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
+          id: 'bicornuate_unicollis',
+          name: '3D Bicornuate Unicollis',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2FUterus_bicornuate_unicollis.glb?alt=media&token=df73fd3f-2640-4c51-90fd-78d3cc015202',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
+          id: 'uterus_didelphys',
+          name: '3D Uterus Didelphys',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2Futerus_dideplhys.glb?alt=media&token=e656fc30-f447-4b1f-a122-0fe5785564d9',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
+          id: 'uterus_subseptate',
+          name: '3D Subseptate Uterus',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2Futerus_subseptate.glb?alt=media&token=5bf94329-342d-4a9c-9329-1d25831fff24',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
+          id: 'uterus_septate',
+          name: '3D Septate Uterus',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2FUterus_septate.glb?alt=media&token=05ca4660-f6bd-4e50-a117-b58c4897619e',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
+          id: 'uterus_unicornuate',
+          name: '3D Unicornuate Uterus',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2FUterus_unicornuate.glb?alt=media&token=ce2298e1-8a3d-4bef-a9c5-022fafd6b25a',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
+          id: 'unicornuate_uterus_rudimentary_horn',
+          name: '3D Unicornuate Uterus with Rudimentary Horn',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2FUterus_unicornuate_rudiment.glb?alt=media&token=7500ec9f-e198-466f-a407-593e80d23ac0',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
       ],
     ),
     SystemAssetGroup(
@@ -289,6 +361,33 @@ class Model3DService {
   }
 
   // ─── Cache queries ─────────────────────────────────────────────────
+
+  /// URL for the model-viewer web component JS library.
+  static const _modelViewerJsUrl =
+      'https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js';
+
+  /// Get the cached path for model-viewer.min.js, downloading if needed.
+  /// Returns the local file path for serving via local HTTP server.
+  Future<String> getModelViewerJsPath() async {
+    final dir = await _cacheDir;
+    final file = File('${dir.path}/model-viewer.min.js');
+    if (await file.exists()) return file.path;
+
+    // Download and cache
+    final response = await http.get(Uri.parse(_modelViewerJsUrl));
+    if (response.statusCode == 200) {
+      await file.writeAsBytes(response.bodyBytes);
+      return file.path;
+    }
+    throw Exception('Failed to download model-viewer.js: HTTP ${response.statusCode}');
+  }
+
+  /// Check if the model-viewer JS is already cached locally.
+  Future<bool> isModelViewerJsCached() async {
+    final dir = await _cacheDir;
+    final file = File('${dir.path}/model-viewer.min.js');
+    return file.exists();
+  }
 
   Future<bool> isCached(String assetId, {String ext = 'glb'}) async {
     final file = await _localFile(assetId, ext);

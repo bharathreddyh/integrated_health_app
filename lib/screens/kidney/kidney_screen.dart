@@ -16,6 +16,8 @@ import '../../services/multi_image_pdf_service.dart';
 import '../../widgets/voice_feedback_overlay.dart';
 import '../../widgets/image_selection_dialog.dart';
 import '../patient/visit_history_screen.dart';
+import 'package:model_viewer_plus/model_viewer_plus.dart';
+import '../../services/model_3d_service.dart';
 import 'widgets/kidney_canvas.dart';
 import 'widgets/tool_panel.dart';
 import 'widgets/drawing_tool_panel.dart';
@@ -66,6 +68,12 @@ class _CanvasScreenState extends State<CanvasScreen> {
   Color _drawingColor = Colors.black;
   double _strokeWidth = 3.0;
   bool _showDrawingPanel = false;
+
+  // 3D model state
+  String? _3dModelPath;
+  bool _3dModelLoading = false;
+  double _3dDownloadProgress = 0.0;
+  String? _3dModelError;
 
   @override
   void initState() {
@@ -879,7 +887,32 @@ class _CanvasScreenState extends State<CanvasScreen> {
 
                       // CANVAS AREA
                       Expanded(
-                        child: Container(
+                        child: selectedPreset == 'uterus_3d'
+                            ? Container(
+                                color: Colors.grey.shade100,
+                                child: Center(
+                                  child: Container(
+                                    width: 600,
+                                    height: 400,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: _build3DModelViewer(),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : Container(
                           color: Colors.grey.shade100,
                           child: Center(
                             child: Container(
@@ -920,7 +953,10 @@ class _CanvasScreenState extends State<CanvasScreen> {
                                       setState(() {
                                         markers.add(marker);
                                         selectedMarkerIndex = markers.length - 1;
+                                        // Auto-exit edit mode after adding annotation
                                         selectedTool = 'pan';
+                                        _selectedDrawingTool = 'none';
+                                        _showDrawingPanel = false;
                                         _waitingForClick = false;
                                         _pendingToolType = null;
                                         _pendingToolSize = null;
@@ -964,6 +1000,9 @@ class _CanvasScreenState extends State<CanvasScreen> {
                                       setState(() {
                                         drawingPaths.add(path);
                                         selectedPathIndex = null;
+                                        // Auto-exit drawing mode after adding annotation
+                                        _selectedDrawingTool = 'none';
+                                        _showDrawingPanel = false;
                                       });
                                     },
                                     onDrawingPathSelected: (index) {
@@ -1095,6 +1134,149 @@ class _CanvasScreenState extends State<CanvasScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _load3DModel(String modelName) {
+    if (_3dModelLoading) return;
+    setState(() {
+      _3dModelLoading = true;
+      _3dDownloadProgress = 0.0;
+      _3dModelError = null;
+    });
+
+    Model3DService.instance.downloadModelWithProgress(
+      modelName,
+      onProgress: (progress) {
+        if (mounted) {
+          setState(() {
+            _3dDownloadProgress = progress;
+          });
+        }
+      },
+    ).then((path) {
+      if (mounted) {
+        setState(() {
+          _3dModelPath = path;
+          _3dModelLoading = false;
+          if (path == null) {
+            _3dModelError = 'Failed to load 3D model. Check your Firebase URL in model_3d_service.dart';
+          }
+        });
+      }
+    });
+  }
+
+  Widget _build3DModelViewer() {
+    // Start loading if not already loaded
+    if (_3dModelPath == null && !_3dModelLoading && _3dModelError == null) {
+      _load3DModel('uterus');
+    }
+
+    // Loading state with progress bar
+    if (_3dModelLoading) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.view_in_ar, size: 48, color: Colors.teal),
+              const SizedBox(height: 16),
+              const Text(
+                'Downloading 3D Model...',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 16),
+              LinearProgressIndicator(
+                value: _3dDownloadProgress > 0 ? _3dDownloadProgress : null,
+                backgroundColor: Colors.grey.shade200,
+                color: Colors.teal,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${(_3dDownloadProgress * 100).toStringAsFixed(0)}%',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Error state
+    if (_3dModelError != null || _3dModelPath == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+              const SizedBox(height: 16),
+              Text(
+                _3dModelError ?? 'Model not available',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _3dModelError = null;
+                  });
+                  _load3DModel('uterus');
+                },
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('Retry'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Loaded — show model
+    return Stack(
+      children: [
+        ModelViewer(
+          src: 'file://$_3dModelPath',
+          alt: '3D model of a uterus',
+          ar: true,
+          autoRotate: true,
+          autoRotateDelay: 0,
+          rotationPerSecond: '30deg',
+          cameraControls: true,
+          disableZoom: false,
+          backgroundColor: const Color(0xFFF5F5F5),
+        ),
+        Positioned(
+          top: 8,
+          right: 8,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.teal.withOpacity(0.85),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.view_in_ar, color: Colors.white, size: 14),
+                SizedBox(width: 4),
+                Text(
+                  '3D View',
+                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 

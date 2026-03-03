@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../config/model_3d_config.dart';
 import '../services/model_3d_service.dart';
@@ -73,6 +74,12 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
   @override
   void initState() {
     super.initState();
+    // Enter immersive mode to hide status bar and force landscape
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     _findCurrentModelConfig();
     _loadCustomAnnotations();
     _loadModel();
@@ -184,6 +191,14 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
 
   @override
   void dispose() {
+    // Restore normal system UI mode and orientation
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     _server?.close(force: true);
     super.dispose();
   }
@@ -221,6 +236,15 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
 
   Future<void> _initWebView(String modelPath) async {
     _server?.close(force: true);
+
+    // Ensure model-viewer JS is cached locally for offline use
+    String? modelViewerJsPath;
+    try {
+      modelViewerJsPath = await _service.getModelViewerJsPath();
+    } catch (e) {
+      debugPrint('Warning: Could not cache model-viewer.js: $e');
+    }
+
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     _server = server;
     final port = server.port;
@@ -237,6 +261,19 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
           request.response.statusCode = 404;
           await request.response.close();
         }
+      } else if (request.uri.path == '/model-viewer.min.js') {
+        if (modelViewerJsPath != null) {
+          final file = File(modelViewerJsPath);
+          if (await file.exists()) {
+            request.response.headers.set('Content-Type', 'application/javascript');
+            request.response.headers.set('Access-Control-Allow-Origin', '*');
+            await request.response.addStream(file.openRead());
+            await request.response.close();
+            return;
+          }
+        }
+        request.response.statusCode = 404;
+        await request.response.close();
       } else if (request.uri.path == '/') {
         request.response.headers.set('Content-Type', 'text/html');
         request.response.write(_buildHtml(port));
@@ -685,14 +722,20 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <script type="module" src="http://127.0.0.1:$port/model-viewer.min.js"></script>
   <style>
     * { margin: 0; padding: 0; }
-    html, body { width: 100%; height: 100%; overflow: hidden; background: #0A1628; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(ellipse at center, #1a3a6e 0%, #0d1f3c 40%, #050d1a 100%);
+    }
     model-viewer {
       width: 100%;
       height: 100%;
       --poster-color: transparent;
+      background: transparent;
     }
     #loading {
       position: absolute;
@@ -836,6 +879,9 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     camera-controls
     shadow-intensity="1"
     interaction-prompt="auto"
+    min-field-of-view="10deg"
+    max-field-of-view="90deg"
+    touch-action="none"
     style="width:100%;height:100%;"
     loading="eager">
 $hotspotsHtml
@@ -971,7 +1017,11 @@ $hotspotsHtml
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF050d1a),
       appBar: AppBar(
+        backgroundColor: const Color(0xFF0d1f3c),
+        foregroundColor: Colors.white,
+        elevation: 0,
         title: Text(widget.title),
         actions: [
           if (_state == _LoadState.ready) ...[
