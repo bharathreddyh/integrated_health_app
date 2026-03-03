@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import '../services/model_3d_service.dart';
 import '../services/model_catalog_service.dart';
+import '../services/firestore_seeder_service.dart';
 
 class AssetDownloadScreen extends StatefulWidget {
   /// If true, shows as first-launch setup with a Skip button.
