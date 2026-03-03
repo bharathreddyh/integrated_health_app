@@ -41,18 +41,18 @@ void main() async {
   final initialized = await WhisperVoiceService.instance.initialize();
   print('Voice service initialized: $initialized');
 
-  runApp(const ClinicClarityApp());
+  runApp(const ThreeDClinicApp());
 }
 
-class ClinicClarityApp extends StatelessWidget {
-  const ClinicClarityApp({super.key});
+class ThreeDClinicApp extends StatelessWidget {
+  const ThreeDClinicApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
       value: WhisperVoiceService.instance,
       child: MaterialApp(
-        title: 'IHA',
+        title: '3DClinic',
         navigatorKey: navigatorKey,  // ADD THIS LINE
         theme: ThemeData(
           primarySwatch: Colors.blue,

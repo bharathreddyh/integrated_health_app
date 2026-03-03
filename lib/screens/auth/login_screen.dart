@@ -161,7 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                             // Title
                             Text(
-                              'IHA',
+                              '3DClinic',
                               style: TextStyle(
                                 fontSize: titleSize,
                                 fontWeight: FontWeight.bold,

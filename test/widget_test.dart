@@ -15,7 +15,7 @@ void main() {
         child: const MaterialApp(
           home: Scaffold(
             body: Center(
-              child: Text('IHA'),
+              child: Text('3DClinic'),
             ),
           ),
         ),
@@ -23,6 +23,6 @@ void main() {
     );
 
     // Verify that our app shows IHA text.
-    expect(find.text('IHA'), findsOneWidget);
+    expect(find.text('3DClinic'), findsOneWidget);
   });
 }

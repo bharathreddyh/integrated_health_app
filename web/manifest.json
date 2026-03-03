@@ -1,6 +1,6 @@
 {
-    "name": "integrated_health_app",
-    "short_name": "integrated_health_app",
+    "name": "3DClinic",
+    "short_name": "3DClinic",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

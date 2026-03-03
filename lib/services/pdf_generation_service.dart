@@ -63,7 +63,7 @@ class PDFGenerationService {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              _buildHeader(clinicName ?? 'Clinic Clarity Suite'),
+              _buildHeader(clinicName ?? '3DClinic'),
               pw.SizedBox(height: 30),
               _buildSectionTitle('Patient Information'),
               pw.SizedBox(height: 15),
@@ -125,7 +125,7 @@ class PDFGenerationService {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              _buildHeader(clinicName ?? 'Clinic Clarity Suite'),
+              _buildHeader(clinicName ?? '3DClinic'),
               pw.SizedBox(height: 30),
               _buildSectionTitle('Medical Diagram - Kidney Annotation'),
               pw.SizedBox(height: 15),
@@ -193,7 +193,7 @@ class PDFGenerationService {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              _buildHeader(clinicName ?? 'Clinic Clarity Suite'),
+              _buildHeader(clinicName ?? '3DClinic'),
               pw.SizedBox(height: 30),
               _buildSectionTitle('Clinical Summary'),
               pw.SizedBox(height: 20),

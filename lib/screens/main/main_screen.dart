@@ -89,7 +89,7 @@ class MainScreen extends StatelessWidget {
                 child: const Column(
                   children: [
                     Text(
-                      'IHA',
+                      '3DClinic',
                       style: TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
@@ -98,7 +98,7 @@ class MainScreen extends StatelessWidget {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      'Integrated health app for patient education and consultation',
+                      '3D clinical education and consultation platform',
                       style: TextStyle(
                         fontSize: 16,
                         color: Colors.black54,
