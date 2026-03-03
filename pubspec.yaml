@@ -64,16 +64,16 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/icons/launcher_icon.png"
-  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_background: "transparent"
   adaptive_icon_foreground: "assets/icons/launcher_icon.png"
-  adaptive_icon_padding: -15
+  adaptive_icon_padding: -25
   min_sdk_android: 21
-  remove_alpha_ios: true
-  ios_content_padding: -15
+  remove_alpha_ios: false
+  ios_content_padding: -25
   web:
     generate: true
     image_path: "assets/icons/launcher_icon.png"
-    background_color: "#FFFFFF"
+    background_color: "transparent"
     theme_color: "#EC4899"
 
 flutter:
