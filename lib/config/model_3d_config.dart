@@ -175,7 +175,7 @@ class Model3DConfig {
           id: 'normal_uterus_mullerian',
           name: 'Normal Uterus',
           description: 'Normal uterine anatomy for comparison with mullerian anomalies',
-          modelFileName: 'uterus',
+          modelFileName: 'normal_uterus_mullerian',
           tags: ['anatomy', 'normal', 'uterus', 'mullerian'],
           subcategory: 'Mullerian Anomaly',
         ),

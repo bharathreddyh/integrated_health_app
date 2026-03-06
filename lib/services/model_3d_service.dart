@@ -240,6 +240,14 @@ class Model3DService {
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2FUterus_unicornuate_rudiment.glb?alt=media&token=7500ec9f-e198-466f-a407-593e80d23ac0',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
+        AssetInfo(
+          id: 'normal_uterus_mullerian',
+          name: '3D Normal Uterus (Mullerian)',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2FUterus_Normal.glb?alt=media&token=02eadfdf-5947-402e-8979-cec2084e917d',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
       ],
     ),
     SystemAssetGroup(
