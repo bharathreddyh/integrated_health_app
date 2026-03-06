@@ -183,7 +183,7 @@ class Model3DConfig {
           id: 'arcuate_uterus',
           name: 'Arcuate Uterus',
           description: 'Minor indentation of the uterine fundus',
-          modelFileName: 'uterus', // TODO: Replace with 'arcuate_uterus' when uploaded
+          modelFileName: 'arcuate_uterus',
           tags: ['anatomy', 'anomaly', 'uterus', 'mullerian'],
           subcategory: 'Mullerian Anomaly',
         ),

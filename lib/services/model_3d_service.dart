@@ -241,6 +241,14 @@ class Model3DService {
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
+          id: 'arcuate_uterus',
+          name: '3D Arcuate Uterus',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Futerus_mullerian%2FUterus_Arcuate.glb?alt=media&token=dfa07528-d3ee-4370-8931-79d05421b910',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
           id: 'normal_uterus_mullerian',
           name: '3D Normal Uterus (Mullerian)',
           systemId: 'gynaecology',
