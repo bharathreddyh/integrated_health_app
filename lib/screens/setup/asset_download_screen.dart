@@ -141,6 +141,104 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
     }
   }
 
+  Future<void> _deleteSystem(String systemId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Models'),
+        content: const Text(
+          'This will delete all downloaded models for this system. You can re-download them later.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _service.clearSystemCache(systemId);
+      setState(() {
+        _downloadComplete[systemId] = false;
+        _downloadProgress[systemId] = 0.0;
+        _selectedSystems[systemId] = true;
+        _downloadFinished = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.delete_outline, color: Colors.white),
+                SizedBox(width: 12),
+                Text('Models deleted successfully'),
+              ],
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _redownloadSystem(String systemId) async {
+    await _service.clearSystemCache(systemId);
+    setState(() {
+      _downloadComplete[systemId] = false;
+      _downloadProgress[systemId] = 0.0;
+      _selectedSystems[systemId] = true;
+      _downloadFinished = false;
+      _isDownloading = true;
+      _currentlyDownloading = systemId;
+    });
+
+    try {
+      await _service.downloadSystem(
+        systemId,
+        onProgress: (progress) {
+          if (mounted) {
+            setState(() => _downloadProgress[systemId] = progress);
+          }
+        },
+      );
+      if (mounted) {
+        setState(() => _downloadComplete[systemId] = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Text('Re-download complete!'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to re-download: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+
+    setState(() {
+      _isDownloading = false;
+      _currentlyDownloading = null;
+    });
+  }
+
   void _goBack() async {
     await Model3DService.markSetupDone();
     widget.onComplete();
@@ -393,6 +491,47 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
                                       ),
                                     ),
                                   ),
+
+                                  // Actions menu for downloaded systems
+                                  if (isComplete && !_isDownloading)
+                                    PopupMenuButton<String>(
+                                      icon: Icon(
+                                        Icons.more_vert,
+                                        color: Colors.grey[600],
+                                      ),
+                                      onSelected: (value) {
+                                        if (value == 'delete') {
+                                          _deleteSystem(system.systemId);
+                                        } else if (value == 'redownload') {
+                                          _redownloadSystem(system.systemId);
+                                        }
+                                      },
+                                      itemBuilder: (ctx) => [
+                                        const PopupMenuItem(
+                                          value: 'redownload',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.refresh, size: 20),
+                                              SizedBox(width: 12),
+                                              Text('Re-download'),
+                                            ],
+                                          ),
+                                        ),
+                                        PopupMenuItem(
+                                          value: 'delete',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.delete_outline,
+                                                  size: 20, color: Colors.red),
+                                              const SizedBox(width: 12),
+                                              Text('Delete',
+                                                  style: TextStyle(
+                                                      color: Colors.red)),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                 ],
                               ),
                             ),
