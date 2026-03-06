@@ -172,6 +172,14 @@ class Model3DConfig {
 
         // Mullerian Anomaly
         Model3DItem(
+          id: 'normal_uterus_mullerian',
+          name: 'Normal Uterus',
+          description: 'Normal uterine anatomy for comparison with mullerian anomalies',
+          modelFileName: 'uterus',
+          tags: ['anatomy', 'normal', 'uterus', 'mullerian'],
+          subcategory: 'Mullerian Anomaly',
+        ),
+        Model3DItem(
           id: 'arcuate_uterus',
           name: 'Arcuate Uterus',
           description: 'Minor indentation of the uterine fundus',
