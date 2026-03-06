@@ -21,6 +21,7 @@ import 'screens/patient/visit_history_screen.dart';
 import 'screens/endocrine/thyroid_disease_module_screen.dart';
 import 'screens/setup/asset_download_screen.dart';
 import 'services/model_3d_service.dart';
+import 'services/favorites_service.dart';
 
 
 
@@ -41,6 +42,9 @@ void main() async {
 
   final initialized = await WhisperVoiceService.instance.initialize();
   print('Voice service initialized: $initialized');
+
+  // Load favorites early so they're ready when needed
+  await FavoritesService.instance.load();
 
   runApp(const ThreeDClinicApp());
 }

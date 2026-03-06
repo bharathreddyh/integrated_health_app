@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import '../../config/model_3d_config.dart';
+import '../../services/favorites_service.dart';
 import '../model_viewer_screen.dart';
 import 'model_compare_screen.dart';
 import 'model_before_after_screen.dart';
@@ -38,6 +39,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
   void initState() {
     super.initState();
     _filteredModels = widget.category.models;
+    FavoritesService.instance.load();
 
     // If initial model specified, open it immediately
     if (widget.initialModelId != null) {
@@ -539,6 +541,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
     final isSelected = _selectedForCompare.contains(model);
     final selectionIndex = _selectedForCompare.indexOf(model) + 1;
     final isComparison = model.isComparisonModel;
+    final isFav = FavoritesService.instance.isFavorite(model.id);
 
     return Material(
       color: Colors.transparent,
@@ -576,7 +579,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // 3D icon with selection/comparison indicator
+              // 3D icon with selection/comparison indicator and favorite
               Stack(
                 clipBehavior: Clip.none,
                 children: [
@@ -652,6 +655,30 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 8,
+                          ),
+                        ),
+                      ),
+                    ),
+                  // Favorite heart icon
+                  if (!_compareMode)
+                    Positioned(
+                      top: -6,
+                      left: -6,
+                      child: GestureDetector(
+                        onTap: () async {
+                          await FavoritesService.instance.toggle(model.id);
+                          setState(() {});
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF0F172A),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isFav ? Icons.favorite : Icons.favorite_border,
+                            size: 16,
+                            color: isFav ? Colors.red : Colors.grey.shade600,
                           ),
                         ),
                       ),

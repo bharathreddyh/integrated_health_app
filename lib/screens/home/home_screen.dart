@@ -13,6 +13,7 @@ import '../canvas/canvas_system_selection_screen.dart';
 import '../library/library_screen.dart';
 import '../setup/asset_download_screen.dart';
 import '../models_3d/models_3d_screen.dart';
+import '../favorites/favorites_screen.dart';
 import '../../services/model_catalog_service.dart';
 import '../../widgets/new_models_dialog.dart';
 
@@ -202,19 +203,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       spacing: 24,
                       runSpacing: 24,
                       children: [
-                        // Canvas Card
-                        _buildMainCard(
-                          width: cardWidth,
-                          icon: Icons.draw_rounded,
-                          title: 'Canvas',
-                          subtitle: 'Annotate medical diagrams with markers and drawings',
-                          color: const Color(0xFFF97316),
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const CanvasSystemSelectionScreen()),
-                          ),
-                        ),
-
                         // 3D Models Card
                         _buildMainCard(
                           width: cardWidth,
@@ -225,6 +213,19 @@ class _HomeScreenState extends State<HomeScreen> {
                           onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const Models3DScreen()),
+                          ),
+                        ),
+
+                        // Favourites Card
+                        _buildMainCard(
+                          width: cardWidth,
+                          icon: Icons.favorite_rounded,
+                          title: 'Favourites',
+                          subtitle: 'Quickly access your saved 3D models',
+                          color: const Color(0xFFEF4444),
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const FavoritesScreen()),
                           ),
                         ),
 
