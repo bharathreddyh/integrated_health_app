@@ -478,6 +478,14 @@ class Model3DConfig {
       models: [
         // Placenta Previa
         Model3DItem(
+          id: 'placenta_normal',
+          name: 'Normal Placenta',
+          description: 'Normal placental position in the upper uterine segment (fundal)',
+          modelFileName: 'placenta_normal',
+          tags: ['anatomy', 'normal', 'placenta'],
+          subcategory: 'Placenta Previa',
+        ),
+        Model3DItem(
           id: 'placenta_previa_type1',
           name: 'Placenta Previa Type I',
           description: 'Low-lying placenta reaching the lower uterine segment but not the internal os',
