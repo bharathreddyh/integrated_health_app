@@ -558,10 +558,15 @@ class Model3DConfig {
         Model3DItem(
           id: 'fetal_longitudinal',
           name: 'Longitudinal Lie',
-          description: 'Fetal long axis parallel to the maternal long axis — normal lie',
+          description: 'Fetal long axis parallel to the maternal long axis — cephalic and breech comparison',
           modelFileName: 'fetus_present_cephalic',
           tags: ['anatomy', 'normal', 'fetus', 'lie'],
           subcategory: 'Fetal Lie',
+          isComparisonModel: true,
+          beforeModelFileName: 'fetus_present_cephalic',
+          afterModelFileName: 'fetus_present_breech',
+          beforeLabel: 'Cephalic',
+          afterLabel: 'Breech',
         ),
         Model3DItem(
           id: 'fetal_transverse',
