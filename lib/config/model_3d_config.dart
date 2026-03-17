@@ -350,7 +350,7 @@ class Model3DConfig {
     Model3DCategory(
       id: 'obstetric',
       name: 'Obstetric',
-      description: 'Pregnancy and placental anatomy and pathology',
+      description: 'Pregnancy and placental normal and abnormal models',
       icon: '🤰',
       color: Color(0xFFE879F9),
       models: [

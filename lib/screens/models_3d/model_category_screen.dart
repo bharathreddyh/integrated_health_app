@@ -125,6 +125,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
     final availableTags = _getAvailableTags();
     final hasPathology = availableTags.contains('pathology');
     final hasAnatomy = availableTags.contains('anatomy');
+    final isObstetric = widget.category.id == 'obstetric';
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
@@ -311,9 +312,9 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                       children: [
                         _buildFilterChip('all', 'All', null),
                         if (hasAnatomy)
-                          _buildFilterChip('anatomy', 'Normal Anatomy', Icons.check_circle_outline),
+                          _buildFilterChip('anatomy', isObstetric ? 'Normal' : 'Normal Anatomy', Icons.check_circle_outline),
                         if (hasPathology)
-                          _buildFilterChip('pathology', 'Pathology', Icons.medical_services_outlined),
+                          _buildFilterChip('pathology', isObstetric ? 'Abnormal' : 'Pathology', Icons.medical_services_outlined),
                         // Add specific pathology filters
                         if (availableTags.contains('fibroid'))
                           _buildFilterChip('fibroid', 'Fibroids', null),
@@ -717,8 +718,8 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                   isComparison
                       ? '${model.beforeLabel ?? 'Before'}/${model.afterLabel ?? 'After'}'
                       : isPathology
-                          ? 'Pathology'
-                          : 'Anatomy',
+                          ? (widget.category.id == 'obstetric' ? 'Abnormal' : 'Pathology')
+                          : (widget.category.id == 'obstetric' ? 'Normal' : 'Anatomy'),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
