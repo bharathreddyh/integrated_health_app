@@ -555,12 +555,23 @@ class Model3DService {
     String modelName, {
     ValueChanged<double>? onProgress,
   }) async {
-    // First try the static asset list
+    // First try the static asset list by id
     AssetInfo? asset;
     try {
       asset = allAssets.firstWhere((a) => a.id == modelName);
     } catch (_) {
       asset = null;
+    }
+
+    // Also try matching by modelFileName (URL contains the file name)
+    if (asset == null) {
+      try {
+        asset = allAssets.firstWhere(
+          (a) => a.url.contains('$modelName.glb') || a.url.contains('$modelName%2F') || a.url.contains('%2F$modelName.'),
+        );
+      } catch (_) {
+        // Not found by file name either
+      }
     }
 
     // If not found in static list, check the remote catalog cache
