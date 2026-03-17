@@ -556,9 +556,17 @@ class Model3DConfig {
 
         // Fetal Lie
         Model3DItem(
+          id: 'fetal_longitudinal',
+          name: 'Longitudinal Lie',
+          description: 'Fetal long axis parallel to the maternal long axis — normal lie',
+          modelFileName: 'fetus_present_cephalic',
+          tags: ['anatomy', 'normal', 'fetus', 'lie'],
+          subcategory: 'Fetal Lie',
+        ),
+        Model3DItem(
           id: 'fetal_transverse',
           name: 'Transverse Lie',
-          description: 'Fetus lying horizontally across the uterus — shoulder presenting',
+          description: 'Fetal long axis perpendicular to the maternal long axis — shoulder presenting',
           modelFileName: 'fetus_present_Transverse',
           tags: ['pathology', 'fetus', 'lie', 'malposition'],
           subcategory: 'Fetal Lie',
@@ -566,7 +574,7 @@ class Model3DConfig {
         Model3DItem(
           id: 'fetal_oblique',
           name: 'Oblique Lie',
-          description: 'Fetus lying at an angle between longitudinal and transverse axes',
+          description: 'Fetal long axis at an angle to the maternal long axis',
           modelFileName: 'fetus_present_oblique',
           tags: ['pathology', 'fetus', 'lie', 'malposition'],
           subcategory: 'Fetal Lie',
