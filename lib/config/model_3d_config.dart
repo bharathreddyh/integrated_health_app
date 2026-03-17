@@ -535,6 +535,40 @@ class Model3DConfig {
           tags: ['pathology', 'placenta', 'abruption'],
           subcategory: 'Placental Abruption',
         ),
+
+        // Fetal Presentation
+        Model3DItem(
+          id: 'fetal_cephalic',
+          name: 'Cephalic Presentation',
+          description: 'Normal head-down presentation — vertex is the presenting part',
+          modelFileName: 'fetal_cephalic',
+          tags: ['anatomy', 'normal', 'fetus', 'presentation'],
+          subcategory: 'Fetal Presentation',
+        ),
+        Model3DItem(
+          id: 'fetal_breech',
+          name: 'Breech Presentation',
+          description: 'Buttocks or feet presenting first — frank, complete, or footling',
+          modelFileName: 'fetal_breech',
+          tags: ['pathology', 'fetus', 'presentation', 'malpresentation'],
+          subcategory: 'Fetal Presentation',
+        ),
+        Model3DItem(
+          id: 'fetal_transverse',
+          name: 'Transverse Lie',
+          description: 'Fetus lying horizontally across the uterus — shoulder presentation',
+          modelFileName: 'fetal_transverse',
+          tags: ['pathology', 'fetus', 'presentation', 'malpresentation'],
+          subcategory: 'Fetal Presentation',
+        ),
+        Model3DItem(
+          id: 'fetal_oblique',
+          name: 'Oblique Lie',
+          description: 'Fetus lying at an angle between longitudinal and transverse axes',
+          modelFileName: 'fetal_oblique',
+          tags: ['pathology', 'fetus', 'presentation', 'malpresentation'],
+          subcategory: 'Fetal Presentation',
+        ),
       ],
     ),
 
