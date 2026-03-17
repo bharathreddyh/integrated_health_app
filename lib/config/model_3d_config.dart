@@ -553,21 +553,23 @@ class Model3DConfig {
           tags: ['pathology', 'fetus', 'presentation', 'malpresentation'],
           subcategory: 'Fetal Presentation',
         ),
+
+        // Fetal Lie
         Model3DItem(
           id: 'fetal_transverse',
           name: 'Transverse Lie',
-          description: 'Fetus lying horizontally across the uterus — shoulder presentation',
+          description: 'Fetus lying horizontally across the uterus — shoulder presenting',
           modelFileName: 'fetus_present_Transverse',
-          tags: ['pathology', 'fetus', 'presentation', 'malpresentation'],
-          subcategory: 'Fetal Presentation',
+          tags: ['pathology', 'fetus', 'lie', 'malposition'],
+          subcategory: 'Fetal Lie',
         ),
         Model3DItem(
           id: 'fetal_oblique',
           name: 'Oblique Lie',
           description: 'Fetus lying at an angle between longitudinal and transverse axes',
           modelFileName: 'fetus_present_oblique',
-          tags: ['pathology', 'fetus', 'presentation', 'malpresentation'],
-          subcategory: 'Fetal Presentation',
+          tags: ['pathology', 'fetus', 'lie', 'malposition'],
+          subcategory: 'Fetal Lie',
         ),
       ],
     ),

@@ -261,7 +261,7 @@ class Model3DService {
     SystemAssetGroup(
       systemId: 'obstetric',
       name: 'Obstetric',
-      description: '3D models: Fetal Presentation, Placenta',
+      description: '3D models: Fetal Presentation, Fetal Lie, Placenta',
       colorValue: 0xFFE879F9,
       icon: Icons.pregnant_woman,
       assets: [
