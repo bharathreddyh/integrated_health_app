@@ -259,6 +259,47 @@ class Model3DService {
       ],
     ),
     SystemAssetGroup(
+      systemId: 'obstetric',
+      name: 'Obstetric',
+      description: '3D models: Fetal Presentation, Placenta',
+      colorValue: 0xFFE879F9,
+      icon: Icons.pregnant_woman,
+      assets: [
+        AssetInfo(
+          id: 'fetal_cephalic',
+          name: '3D Cephalic Presentation',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Ffetus_present_cephalic.glb?alt=media&token=c8526189-2363-41ed-98e3-e9e2149a6dc2',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
+          id: 'fetal_breech',
+          name: '3D Breech Presentation',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Ffetus_present_breech.glb?alt=media&token=921d28e3-11ef-4f62-99b7-6cf83968479f',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
+          id: 'fetal_transverse',
+          name: '3D Transverse Lie',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Ffetus_present_Transverse.glb?alt=media&token=4ce6159c-e88d-491e-b3d8-3d60e716d203',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
+          id: 'fetal_oblique',
+          name: '3D Oblique Lie',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Ffetus_present_oblique.glb?alt=media&token=32f8b8b0-1d69-443c-ab12-073e0651d36e',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+      ],
+    ),
+    SystemAssetGroup(
       systemId: 'endocrine',
       name: 'Endocrine System',
       description: '3D models: Thyroid, Pituitary, Adrenal',
