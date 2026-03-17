@@ -526,6 +526,32 @@ class Model3DConfig {
           subcategory: 'Fetal Presentation',
         ),
 
+        // Amniotic Fluid
+        Model3DItem(
+          id: 'amniotic_fluid_normal',
+          name: 'Normal Amniotic Fluid',
+          description: 'Normal amniotic fluid volume surrounding the fetus',
+          modelFileName: 'amniotic_fluid_normal',
+          tags: ['anatomy', 'normal', 'amniotic', 'fluid'],
+          subcategory: 'Amniotic Fluid',
+        ),
+        Model3DItem(
+          id: 'polyhydramnios',
+          name: 'Polyhydramnios',
+          description: 'Excess amniotic fluid — AFI > 24 cm or single deepest pocket > 8 cm',
+          modelFileName: 'polyhydramnios',
+          tags: ['pathology', 'amniotic', 'fluid', 'polyhydramnios'],
+          subcategory: 'Amniotic Fluid',
+        ),
+        Model3DItem(
+          id: 'oligohydramnios',
+          name: 'Oligohydramnios',
+          description: 'Reduced amniotic fluid — AFI < 5 cm or single deepest pocket < 2 cm',
+          modelFileName: 'oligohydramnios',
+          tags: ['pathology', 'amniotic', 'fluid', 'oligohydramnios'],
+          subcategory: 'Amniotic Fluid',
+        ),
+
         // Placenta Previa
         Model3DItem(
           id: 'placenta_normal',
