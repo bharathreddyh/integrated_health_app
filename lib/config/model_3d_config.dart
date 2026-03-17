@@ -346,128 +346,6 @@ class Model3DConfig {
       ],
     ),
 
-    // ==================== CARDIAC ====================
-    Model3DCategory(
-      id: 'cardiac',
-      name: 'Cardiovascular',
-      description: 'Heart and blood vessel anatomy',
-      icon: '❤️',
-      color: Color(0xFFEF4444),
-      models: [
-        Model3DItem(
-          id: 'heart_normal',
-          name: 'Heart - Normal',
-          description: 'Complete cardiac anatomy with chambers and valves',
-          modelFileName: 'heart_normal',
-          tags: ['anatomy', 'normal', 'heart'],
-        ),
-        Model3DItem(
-          id: 'heart_coronary',
-          name: 'Coronary Arteries',
-          description: 'Heart with coronary artery system highlighted',
-          modelFileName: 'heart_coronary',
-          tags: ['anatomy', 'coronary', 'arteries'],
-        ),
-      ],
-    ),
-
-    // ==================== RENAL ====================
-    Model3DCategory(
-      id: 'renal',
-      name: 'Renal System',
-      description: 'Kidney and urinary tract anatomy',
-      icon: '💎',
-      color: Color(0xFFF59E0B),
-      models: [
-        Model3DItem(
-          id: 'kidney_normal',
-          name: 'Kidney - Normal',
-          description: 'Normal kidney anatomy showing cortex, medulla, and pelvis',
-          modelFileName: 'kidney_normal',
-          tags: ['anatomy', 'normal', 'kidney'],
-        ),
-        Model3DItem(
-          id: 'kidney_stones',
-          name: 'Kidney Stones',
-          description: 'Kidney with calculi in various locations',
-          modelFileName: 'kidney_stones',
-          tags: ['pathology', 'stones', 'kidney'],
-        ),
-      ],
-    ),
-
-    // ==================== RESPIRATORY ====================
-    Model3DCategory(
-      id: 'respiratory',
-      name: 'Respiratory',
-      description: 'Lungs and airway anatomy',
-      icon: '💨',
-      color: Color(0xFF3B82F6),
-      models: [
-        Model3DItem(
-          id: 'lungs_normal',
-          name: 'Lungs - Normal',
-          description: 'Normal pulmonary anatomy with bronchial tree',
-          modelFileName: 'lungs_normal',
-          tags: ['anatomy', 'normal', 'lungs'],
-        ),
-      ],
-    ),
-
-    // ==================== NEUROLOGICAL ====================
-    Model3DCategory(
-      id: 'neuro',
-      name: 'Neurological',
-      description: 'Brain and nervous system anatomy',
-      icon: '🧠',
-      color: Color(0xFF8B5CF6),
-      models: [
-        Model3DItem(
-          id: 'brain_normal',
-          name: 'Brain - Normal',
-          description: 'Complete brain anatomy with major structures',
-          modelFileName: 'brain_normal',
-          tags: ['anatomy', 'normal', 'brain'],
-        ),
-      ],
-    ),
-
-    // ==================== HEPATIC ====================
-    Model3DCategory(
-      id: 'hepatic',
-      name: 'Hepatobiliary',
-      description: 'Liver and biliary system anatomy',
-      icon: '🔶',
-      color: Color(0xFF10B981),
-      models: [
-        Model3DItem(
-          id: 'liver_normal',
-          name: 'Liver - Normal',
-          description: 'Normal liver anatomy with segments',
-          modelFileName: 'liver_normal',
-          tags: ['anatomy', 'normal', 'liver'],
-        ),
-      ],
-    ),
-
-    // ==================== MUSCULOSKELETAL ====================
-    Model3DCategory(
-      id: 'musculoskeletal',
-      name: 'Musculoskeletal',
-      description: 'Bones, joints, and muscles',
-      icon: '🦴',
-      color: Color(0xFF6366F1),
-      models: [
-        Model3DItem(
-          id: 'spine_normal',
-          name: 'Spine - Normal',
-          description: 'Complete spinal column anatomy',
-          modelFileName: 'spine_normal',
-          tags: ['anatomy', 'normal', 'spine'],
-        ),
-      ],
-    ),
-
     // ==================== OBSTETRIC ====================
     Model3DCategory(
       id: 'obstetric',
@@ -744,6 +622,128 @@ class Model3DConfig {
           modelFileName: 'placenta_battledore',
           tags: ['pathology', 'placenta', 'battledore', 'cord insertion'],
           subcategory: 'Placental Pathology',
+        ),
+      ],
+    ),
+
+    // ==================== CARDIAC ====================
+    Model3DCategory(
+      id: 'cardiac',
+      name: 'Cardiovascular',
+      description: 'Heart and blood vessel anatomy',
+      icon: '❤️',
+      color: Color(0xFFEF4444),
+      models: [
+        Model3DItem(
+          id: 'heart_normal',
+          name: 'Heart - Normal',
+          description: 'Complete cardiac anatomy with chambers and valves',
+          modelFileName: 'heart_normal',
+          tags: ['anatomy', 'normal', 'heart'],
+        ),
+        Model3DItem(
+          id: 'heart_coronary',
+          name: 'Coronary Arteries',
+          description: 'Heart with coronary artery system highlighted',
+          modelFileName: 'heart_coronary',
+          tags: ['anatomy', 'coronary', 'arteries'],
+        ),
+      ],
+    ),
+
+    // ==================== RENAL ====================
+    Model3DCategory(
+      id: 'renal',
+      name: 'Renal System',
+      description: 'Kidney and urinary tract anatomy',
+      icon: '💎',
+      color: Color(0xFFF59E0B),
+      models: [
+        Model3DItem(
+          id: 'kidney_normal',
+          name: 'Kidney - Normal',
+          description: 'Normal kidney anatomy showing cortex, medulla, and pelvis',
+          modelFileName: 'kidney_normal',
+          tags: ['anatomy', 'normal', 'kidney'],
+        ),
+        Model3DItem(
+          id: 'kidney_stones',
+          name: 'Kidney Stones',
+          description: 'Kidney with calculi in various locations',
+          modelFileName: 'kidney_stones',
+          tags: ['pathology', 'stones', 'kidney'],
+        ),
+      ],
+    ),
+
+    // ==================== RESPIRATORY ====================
+    Model3DCategory(
+      id: 'respiratory',
+      name: 'Respiratory',
+      description: 'Lungs and airway anatomy',
+      icon: '💨',
+      color: Color(0xFF3B82F6),
+      models: [
+        Model3DItem(
+          id: 'lungs_normal',
+          name: 'Lungs - Normal',
+          description: 'Normal pulmonary anatomy with bronchial tree',
+          modelFileName: 'lungs_normal',
+          tags: ['anatomy', 'normal', 'lungs'],
+        ),
+      ],
+    ),
+
+    // ==================== NEUROLOGICAL ====================
+    Model3DCategory(
+      id: 'neuro',
+      name: 'Neurological',
+      description: 'Brain and nervous system anatomy',
+      icon: '🧠',
+      color: Color(0xFF8B5CF6),
+      models: [
+        Model3DItem(
+          id: 'brain_normal',
+          name: 'Brain - Normal',
+          description: 'Complete brain anatomy with major structures',
+          modelFileName: 'brain_normal',
+          tags: ['anatomy', 'normal', 'brain'],
+        ),
+      ],
+    ),
+
+    // ==================== HEPATIC ====================
+    Model3DCategory(
+      id: 'hepatic',
+      name: 'Hepatobiliary',
+      description: 'Liver and biliary system anatomy',
+      icon: '🔶',
+      color: Color(0xFF10B981),
+      models: [
+        Model3DItem(
+          id: 'liver_normal',
+          name: 'Liver - Normal',
+          description: 'Normal liver anatomy with segments',
+          modelFileName: 'liver_normal',
+          tags: ['anatomy', 'normal', 'liver'],
+        ),
+      ],
+    ),
+
+    // ==================== MUSCULOSKELETAL ====================
+    Model3DCategory(
+      id: 'musculoskeletal',
+      name: 'Musculoskeletal',
+      description: 'Bones, joints, and muscles',
+      icon: '🦴',
+      color: Color(0xFF6366F1),
+      models: [
+        Model3DItem(
+          id: 'spine_normal',
+          name: 'Spine - Normal',
+          description: 'Complete spinal column anatomy',
+          modelFileName: 'spine_normal',
+          tags: ['anatomy', 'normal', 'spine'],
         ),
       ],
     ),
