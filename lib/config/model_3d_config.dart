@@ -476,6 +476,56 @@ class Model3DConfig {
       icon: '🤰',
       color: Color(0xFFE879F9),
       models: [
+        // Fetal Lie
+
+        Model3DItem(
+          id: 'fetal_longitudinal',
+          name: 'Longitudinal Lie',
+          description: 'Fetal long axis parallel to the maternal long axis — cephalic and breech comparison',
+          modelFileName: 'fetus_present_cephalic',
+          tags: ['anatomy', 'normal', 'fetus', 'lie'],
+          subcategory: 'Fetal Lie',
+          isComparisonModel: true,
+          beforeModelFileName: 'fetus_present_cephalic',
+          afterModelFileName: 'fetus_present_breech',
+          beforeLabel: 'Cephalic',
+          afterLabel: 'Breech',
+        ),
+        Model3DItem(
+          id: 'fetal_transverse',
+          name: 'Transverse Lie',
+          description: 'Fetal long axis perpendicular to the maternal long axis — shoulder presenting',
+          modelFileName: 'fetus_present_Transverse',
+          tags: ['pathology', 'fetus', 'lie', 'malposition'],
+          subcategory: 'Fetal Lie',
+        ),
+        Model3DItem(
+          id: 'fetal_oblique',
+          name: 'Oblique Lie',
+          description: 'Fetal long axis at an angle to the maternal long axis',
+          modelFileName: 'fetus_present_oblique',
+          tags: ['pathology', 'fetus', 'lie', 'malposition'],
+          subcategory: 'Fetal Lie',
+        ),
+
+        // Fetal Presentation
+        Model3DItem(
+          id: 'fetal_cephalic',
+          name: 'Cephalic Presentation',
+          description: 'Normal head-down presentation — vertex is the presenting part',
+          modelFileName: 'fetus_present_cephalic',
+          tags: ['anatomy', 'normal', 'fetus', 'presentation'],
+          subcategory: 'Fetal Presentation',
+        ),
+        Model3DItem(
+          id: 'fetal_breech',
+          name: 'Breech Presentation',
+          description: 'Buttocks or feet presenting first — frank, complete, or footling',
+          modelFileName: 'fetus_present_breech',
+          tags: ['pathology', 'fetus', 'presentation', 'malpresentation'],
+          subcategory: 'Fetal Presentation',
+        ),
+
         // Placenta Previa
         Model3DItem(
           id: 'placenta_normal',
@@ -534,55 +584,6 @@ class Model3DConfig {
           modelFileName: 'placental_abruption_concealed',
           tags: ['pathology', 'placenta', 'abruption'],
           subcategory: 'Placental Abruption',
-        ),
-
-        // Fetal Presentation
-        Model3DItem(
-          id: 'fetal_cephalic',
-          name: 'Cephalic Presentation',
-          description: 'Normal head-down presentation — vertex is the presenting part',
-          modelFileName: 'fetus_present_cephalic',
-          tags: ['anatomy', 'normal', 'fetus', 'presentation'],
-          subcategory: 'Fetal Presentation',
-        ),
-        Model3DItem(
-          id: 'fetal_breech',
-          name: 'Breech Presentation',
-          description: 'Buttocks or feet presenting first — frank, complete, or footling',
-          modelFileName: 'fetus_present_breech',
-          tags: ['pathology', 'fetus', 'presentation', 'malpresentation'],
-          subcategory: 'Fetal Presentation',
-        ),
-
-        // Fetal Lie
-        Model3DItem(
-          id: 'fetal_longitudinal',
-          name: 'Longitudinal Lie',
-          description: 'Fetal long axis parallel to the maternal long axis — cephalic and breech comparison',
-          modelFileName: 'fetus_present_cephalic',
-          tags: ['anatomy', 'normal', 'fetus', 'lie'],
-          subcategory: 'Fetal Lie',
-          isComparisonModel: true,
-          beforeModelFileName: 'fetus_present_cephalic',
-          afterModelFileName: 'fetus_present_breech',
-          beforeLabel: 'Cephalic',
-          afterLabel: 'Breech',
-        ),
-        Model3DItem(
-          id: 'fetal_transverse',
-          name: 'Transverse Lie',
-          description: 'Fetal long axis perpendicular to the maternal long axis — shoulder presenting',
-          modelFileName: 'fetus_present_Transverse',
-          tags: ['pathology', 'fetus', 'lie', 'malposition'],
-          subcategory: 'Fetal Lie',
-        ),
-        Model3DItem(
-          id: 'fetal_oblique',
-          name: 'Oblique Lie',
-          description: 'Fetal long axis at an angle to the maternal long axis',
-          modelFileName: 'fetus_present_oblique',
-          tags: ['pathology', 'fetus', 'lie', 'malposition'],
-          subcategory: 'Fetal Lie',
         ),
       ],
     ),
