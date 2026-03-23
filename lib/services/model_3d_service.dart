@@ -297,6 +297,14 @@ class Model3DService {
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Ffetus_present_oblique.glb?alt=media&token=32f8b8b0-1d69-443c-ab12-073e0651d36e',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
+        AssetInfo(
+          id: 'fetal_cord_loop',
+          name: '3D Loop of Cord',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2FFetus_cord_loop%2Ffetal_cord_loop_.glb?alt=media&token=b6d2d533-9cdd-4943-9f70-21f7ab1ae78a',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
       ],
     ),
     SystemAssetGroup(

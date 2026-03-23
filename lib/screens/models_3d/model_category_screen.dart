@@ -437,7 +437,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
     final Map<String?, List<Model3DItem>> groupedModels = {};
 
     // Define the order of subcategories
-    const subcategoryOrder = ['Fibroids', 'Mullerian Anomaly', 'Ovary', 'Endometrium', 'Fetal Lie', 'Fetal Presentation', 'Amniotic Fluid', 'Placenta Previa', 'Placental Abruption', 'Twin Pregnancy', 'Ectopic Pregnancy', 'Placental Pathology'];
+    const subcategoryOrder = ['Fibroids', 'Mullerian Anomaly', 'Ovary', 'Endometrium', 'Fetal Lie', 'Fetal Presentation', 'Amniotic Fluid', 'Placenta Previa', 'Placental Abruption', 'Twin Pregnancy', 'Ectopic Pregnancy', 'Placental Pathology', 'Loop of Cord'];
 
     for (final model in _filteredModels) {
       final key = model.subcategory;
