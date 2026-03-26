@@ -294,7 +294,7 @@ class Model3DService {
           name: '3D Oblique Lie',
           systemId: 'obstetric',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Ffetus_present_oblique.glb?alt=media&token=32f8b8b0-1d69-443c-ab12-073e0651d36e',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Ffetus_present_oblique.glb?alt=media&token=6b0594af-e0b9-4d43-a3a7-84167617ad1a',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
