@@ -270,7 +270,7 @@ class Model3DService {
           name: '3D Cephalic Presentation',
           systemId: 'obstetric',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Ffetus_present_cephalic.glb?alt=media&token=c8526189-2363-41ed-98e3-e9e2149a6dc2',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Ffetus_present_cephalic.glb?alt=media&token=2bba4a07-77d9-4818-8cca-e53420c67211',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
@@ -278,7 +278,7 @@ class Model3DService {
           name: '3D Breech Presentation',
           systemId: 'obstetric',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Ffetus_present_breech.glb?alt=media&token=921d28e3-11ef-4f62-99b7-6cf83968479f',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Ffetus_present_breech.glb?alt=media&token=cef8e5d0-fab6-41fa-b282-63880ccff3f2',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
