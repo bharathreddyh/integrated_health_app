@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/home/nurse_home_screen.dart';
@@ -35,6 +36,12 @@ void main() async {
   try {
     await Firebase.initializeApp();
     print('Firebase initialized');
+
+    // Sign in anonymously for Firebase Storage access
+    if (FirebaseAuth.instance.currentUser == null) {
+      await FirebaseAuth.instance.signInAnonymously();
+    }
+    print('Firebase auth ready: ${FirebaseAuth.instance.currentUser?.uid}');
   } catch (e) {
     print('Firebase initialization failed: $e');
     // App can still work offline without Firebase

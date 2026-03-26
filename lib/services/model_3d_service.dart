@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:firebase_storage/firebase_storage.dart';
 
 /// Metadata for a single downloadable asset.
 class AssetInfo {
@@ -29,6 +30,17 @@ class AssetInfo {
     required this.sizeBytes,
     this.fileExtension = 'glb',
   });
+
+  /// Extract Firebase Storage path from the full URL.
+  /// e.g. "https://...firebasestorage.app/o/models%2Ffile.glb?alt=media&token=..."
+  ///   → "models/file.glb"
+  String get storagePath {
+    // Extract the encoded path between "/o/" and "?"
+    final oIndex = url.indexOf('/o/');
+    final qIndex = url.indexOf('?', oIndex);
+    final encoded = url.substring(oIndex + 3, qIndex > 0 ? qIndex : url.length);
+    return Uri.decodeComponent(encoded);
+  }
 }
 
 /// A medical system with its downloadable assets.
@@ -503,35 +515,18 @@ class Model3DService {
       return cached;
     }
 
-    final request = http.Request('GET', Uri.parse(asset.url));
-    final client = http.Client();
-    try {
-      final response = await client.send(request);
+    final file = await _localFile(asset.id, asset.fileExtension);
+    final ref = FirebaseStorage.instance.ref(asset.storagePath);
+    final task = ref.writeToFile(file);
 
-      if (response.statusCode != 200) {
-        throw Exception(
-          'Download failed for "${asset.name}": HTTP ${response.statusCode}',
-        );
+    task.snapshotEvents.listen((snapshot) {
+      if (snapshot.totalBytes > 0) {
+        onProgress?.call(snapshot.bytesTransferred / snapshot.totalBytes);
       }
+    });
 
-      final contentLength = response.contentLength ?? 0;
-      final file = await _localFile(asset.id, asset.fileExtension);
-      final sink = file.openWrite();
-
-      int received = 0;
-      await for (final chunk in response.stream) {
-        sink.add(chunk);
-        received += chunk.length;
-        if (contentLength > 0) {
-          onProgress?.call(received / contentLength);
-        }
-      }
-
-      await sink.close();
-      return file.path;
-    } finally {
-      client.close();
-    }
+    await task;
+    return file.path;
   }
 
   /// Download all assets for a given system.
