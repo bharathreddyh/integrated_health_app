@@ -286,7 +286,7 @@ class Model3DService {
           name: '3D Transverse Lie',
           systemId: 'obstetric',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Ffetus_present_Transverse.glb?alt=media&token=4ce6159c-e88d-491e-b3d8-3d60e716d203',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Ffetus_present_Transverse.glb?alt=media&token=2c18b3a5-d5da-4dae-80c8-96e8b066a75d',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
