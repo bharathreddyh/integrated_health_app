@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import '../../config/model_3d_config.dart';
 import '../../services/favorites_service.dart';
+import '../../services/model_3d_service.dart';
 import '../model_viewer_screen.dart';
 import 'model_compare_screen.dart';
 import 'model_before_after_screen.dart';
@@ -537,23 +538,32 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
     );
   }
 
+  /// Check if a model has a real uploaded asset (not a placeholder fallback).
+  bool _hasUploadedAsset(Model3DItem model) {
+    final assets = Model3DService.instance.allAssets;
+    // Check if the model's own ID or its modelFileName matches a real asset
+    return assets.any((a) => a.id == model.id || a.id == model.modelFileName) ||
+        assets.any((a) => a.url.contains('${model.modelFileName}.glb'));
+  }
+
   Widget _buildModelCard(Model3DItem model) {
     final isPathology = model.tags.contains('pathology');
     final isSelected = _selectedForCompare.contains(model);
     final selectionIndex = _selectedForCompare.indexOf(model) + 1;
     final isComparison = model.isComparisonModel;
     final isFav = FavoritesService.instance.isFavorite(model.id);
+    final isAvailable = _hasUploadedAsset(model);
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {
+        onTap: isAvailable ? () {
           if (_compareMode) {
             _toggleModelSelection(model);
           } else {
             _openModelViewer(model);
           }
-        },
+        } : null,
         onLongPress: () {
           if (!_compareMode && widget.category.modelCount >= 2) {
             setState(() {
@@ -563,7 +573,9 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
           }
         },
         borderRadius: BorderRadius.circular(12),
-        child: Container(
+        child: Opacity(
+          opacity: isAvailable ? 1.0 : 0.45,
+          child: Container(
           decoration: BoxDecoration(
             color: const Color(0xFF1E293B),
             borderRadius: BorderRadius.circular(12),
@@ -700,39 +712,46 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                 ),
               ),
               const SizedBox(height: 4),
-              // Type Badge - show "Before/After" for comparison models
+              // Type Badge - show "Coming Soon" for unavailable models
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8,
                   vertical: 2,
                 ),
                 decoration: BoxDecoration(
-                  color: isComparison
-                      ? Colors.cyan.withOpacity(0.15)
-                      : isPathology
-                          ? Colors.red.withOpacity(0.15)
-                          : Colors.green.withOpacity(0.15),
+                  color: !isAvailable
+                      ? Colors.grey.withOpacity(0.15)
+                      : isComparison
+                          ? Colors.cyan.withOpacity(0.15)
+                          : isPathology
+                              ? Colors.red.withOpacity(0.15)
+                              : Colors.green.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  isComparison
-                      ? '${model.beforeLabel ?? 'Before'}/${model.afterLabel ?? 'After'}'
-                      : isPathology
-                          ? (widget.category.id == 'obstetric' ? 'Abnormal' : 'Pathology')
-                          : (widget.category.id == 'obstetric' ? 'Normal' : 'Anatomy'),
+                  !isAvailable
+                      ? 'Coming Soon'
+                      : isComparison
+                          ? '${model.beforeLabel ?? 'Before'}/${model.afterLabel ?? 'After'}'
+                          : isPathology
+                              ? (widget.category.id == 'obstetric' ? 'Abnormal' : 'Pathology')
+                              : (widget.category.id == 'obstetric' ? 'Normal' : 'Anatomy'),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: isComparison
-                        ? Colors.cyan.shade400
-                        : isPathology
-                            ? Colors.red.shade400
-                            : Colors.green.shade400,
+                    color: !isAvailable
+                        ? Colors.grey
+                        : isComparison
+                            ? Colors.cyan.shade400
+                            : isPathology
+                                ? Colors.red.shade400
+                                : Colors.green.shade400,
                   ),
                 ),
               ),
             ],
           ),
+        ),
         ),
       ),
     );
