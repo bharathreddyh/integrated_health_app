@@ -22,7 +22,9 @@ import 'screens/patient/visit_history_screen.dart';
 import 'screens/endocrine/thyroid_disease_module_screen.dart';
 import 'screens/setup/asset_download_screen.dart';
 import 'services/model_3d_service.dart';
+import 'services/model_catalog_service.dart';
 import 'services/favorites_service.dart';
+import 'config/model_3d_config.dart';
 
 
 
@@ -52,6 +54,15 @@ void main() async {
 
   // Load favorites early so they're ready when needed
   await FavoritesService.instance.load();
+
+  // Fetch remote model catalog and merge into static config
+  try {
+    final remoteModels = await ModelCatalogService.instance.fetchRemoteCatalog();
+    Model3DConfig.mergeRemoteModels(remoteModels);
+    print('Remote catalog merged: ${remoteModels.length} models');
+  } catch (e) {
+    print('Remote catalog fetch failed: $e');
+  }
 
   runApp(const ThreeDClinicApp());
 }

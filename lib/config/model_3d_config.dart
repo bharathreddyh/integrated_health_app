@@ -3,6 +3,7 @@
 // Inspired by anatomy apps like Complete Anatomy, Visible Body, 3D4Medical
 
 import 'package:flutter/material.dart';
+import '../services/model_catalog_service.dart';
 
 /// Annotation/hotspot for 3D models
 /// Position is in 3D space coordinates (x y z) relative to the model
@@ -89,7 +90,10 @@ class Model3DCategory {
 }
 
 class Model3DConfig {
-  static const List<Model3DCategory> categories = [
+  /// Merged categories (static + remote). Populated by [mergeRemoteModels].
+  static List<Model3DCategory>? _mergedCategories;
+
+  static const List<Model3DCategory> _staticCategories = [
     // ==================== GYNAECOLOGY ====================
     Model3DCategory(
       id: 'gynaecology',
@@ -768,7 +772,10 @@ class Model3DConfig {
     ),
   ];
 
-  // Get all categories
+  /// The static categories list (for backward compatibility).
+  static List<Model3DCategory> get categories => _mergedCategories ?? _staticCategories;
+
+  // Get all categories (static + remote merged)
   static List<Model3DCategory> getAllCategories() => categories;
 
   // Get category by ID
@@ -797,4 +804,63 @@ class Model3DConfig {
 
   // Get total model count
   static int get totalModelCount => getAllModels().length;
+
+  /// Merge remote Firestore models into the static config.
+  /// Call this once after fetching the remote catalog.
+  /// Remote models are appended to their matching category (by categoryId)
+  /// or skip if a model with the same id already exists.
+  static void mergeRemoteModels(List<RemoteModelEntry> remoteModels) {
+    if (remoteModels.isEmpty) {
+      _mergedCategories = null;
+      return;
+    }
+
+    // Group remote models by categoryId
+    final Map<String, List<RemoteModelEntry>> grouped = {};
+    for (final remote in remoteModels) {
+      grouped.putIfAbsent(remote.categoryId, () => []).add(remote);
+    }
+
+    // Build merged categories
+    final merged = <Model3DCategory>[];
+    for (final category in _staticCategories) {
+      final remoteForCategory = grouped.remove(category.id);
+      if (remoteForCategory == null || remoteForCategory.isEmpty) {
+        merged.add(category);
+        continue;
+      }
+
+      // Get existing model IDs to avoid duplicates
+      final existingIds = category.models.map((m) => m.id).toSet();
+      final existingFileNames = category.models.map((m) => m.modelFileName).toSet();
+
+      final newModels = <Model3DItem>[];
+      for (final remote in remoteForCategory) {
+        if (existingIds.contains(remote.id) ||
+            existingIds.contains(remote.modelFileName) ||
+            existingFileNames.contains(remote.modelFileName)) {
+          continue; // Already in static config
+        }
+        newModels.add(Model3DItem(
+          id: remote.id,
+          name: remote.name,
+          description: remote.description,
+          modelFileName: remote.modelFileName,
+          tags: remote.tags,
+          subcategory: remote.subcategory.isNotEmpty ? remote.subcategory : null,
+        ));
+      }
+
+      merged.add(Model3DCategory(
+        id: category.id,
+        name: category.name,
+        description: category.description,
+        icon: category.icon,
+        color: category.color,
+        models: [...category.models, ...newModels],
+      ));
+    }
+
+    _mergedCategories = merged;
+  }
 }
