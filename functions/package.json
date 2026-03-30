@@ -2,7 +2,7 @@
   "name": "integrated-health-functions",
   "description": "Cloud Functions for 3D Clinic app",
   "engines": {
-    "node": "18"
+    "node": "20"
   },
   "main": "index.js",
   "dependencies": {
