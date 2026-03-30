@@ -344,57 +344,63 @@ class _Models3DScreenState extends State<Models3DScreen> {
     );
   }
 
+  static const _activeCategories = {'gynaecology', 'obstetric'};
+
   Widget _buildCategoryCard(Model3DCategory category) {
+    final isActive = _activeCategories.contains(category.id);
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => _openCategoryScreen(category),
+        onTap: isActive ? () => _openCategoryScreen(category) : null,
         borderRadius: BorderRadius.circular(12),
-        child: Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF334155)),
-          ),
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Icon
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: category.color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
+        child: Opacity(
+          opacity: isActive ? 1.0 : 0.5,
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E293B),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF334155)),
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Icon
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: category.color.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    category.icon,
+                    style: const TextStyle(fontSize: 28),
+                  ),
                 ),
-                child: Text(
-                  category.icon,
-                  style: const TextStyle(fontSize: 28),
+                const SizedBox(height: 10),
+                // Title
+                Text(
+                  category.name,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              // Title
-              Text(
-                category.name,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                const SizedBox(height: 4),
+                // Count or Coming Soon
+                Text(
+                  isActive ? '${category.modelCount} models' : 'Coming Soon',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isActive ? category.color : Colors.grey,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              // Count
-              Text(
-                '${category.modelCount} models',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: category.color,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
