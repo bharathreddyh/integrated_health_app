@@ -317,6 +317,38 @@ class Model3DService {
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2FFetus_cord_loop%2Ffetal_cord_loop_.glb?alt=media&token=b6d2d533-9cdd-4943-9f70-21f7ab1ae78a',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
+        AssetInfo(
+          id: 'placenta_previa_type1',
+          name: '3D Placenta Previa Type 1',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fplacenta_previa%2Fprevia_stage1.glb?alt=media',
+          sizeBytes: 15 * 1024 * 1024,
+        ),
+        AssetInfo(
+          id: 'placenta_previa_type2',
+          name: '3D Placenta Previa Type 2',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fplacenta_previa%2Fprevia_stage2.glb?alt=media',
+          sizeBytes: 15 * 1024 * 1024,
+        ),
+        AssetInfo(
+          id: 'placenta_previa_type3',
+          name: '3D Placenta Previa Type 3',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fplacenta_previa%2Fprevia_stage3.glb?alt=media',
+          sizeBytes: 15 * 1024 * 1024,
+        ),
+        AssetInfo(
+          id: 'placenta_previa_type4',
+          name: '3D Placenta Previa Type 4',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fplacenta_previa%2Fprevia_stage4.glb?alt=media',
+          sizeBytes: 15 * 1024 * 1024,
+        ),
       ],
     ),
     SystemAssetGroup(
