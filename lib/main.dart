@@ -23,6 +23,7 @@ import 'screens/endocrine/thyroid_disease_module_screen.dart';
 import 'screens/setup/asset_download_screen.dart';
 import 'services/model_3d_service.dart';
 import 'services/model_catalog_service.dart';
+import 'services/firestore_seeder_service.dart';
 import 'services/favorites_service.dart';
 import 'config/model_3d_config.dart';
 
@@ -54,6 +55,17 @@ void main() async {
 
   // Load favorites early so they're ready when needed
   await FavoritesService.instance.load();
+
+  // Seed Firestore model_catalog if empty (one-time)
+  try {
+    final seeder = FirestoreSeederService.instance;
+    if (!await seeder.isCatalogSeeded()) {
+      final count = await seeder.seedModelCatalog();
+      print('Firestore model_catalog seeded: $count models');
+    }
+  } catch (e) {
+    print('Firestore seeding failed: $e');
+  }
 
   // Fetch remote model catalog and merge into static config
   try {
