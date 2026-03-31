@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import '../../services/model_3d_service.dart';
+import '../../services/model_catalog_service.dart';
 
 class AssetDownloadScreen extends StatefulWidget {
   final VoidCallback onComplete;
@@ -125,6 +126,17 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
 
     await Model3DService.markSetupDone();
 
+    // Mark all current remote catalog models as "known" so they don't
+    // trigger the "new models available" prompt on the home screen.
+    try {
+      final catalog = ModelCatalogService.instance;
+      final allRemote = await catalog.fetchRemoteCatalog();
+      if (allRemote.isNotEmpty) {
+        await catalog.markModelsAsKnown(allRemote);
+        await catalog.saveDownloadedVersions(allRemote);
+      }
+    } catch (_) {}
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -241,6 +253,14 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
 
   void _goBack() async {
     await Model3DService.markSetupDone();
+    try {
+      final catalog = ModelCatalogService.instance;
+      final allRemote = await catalog.fetchRemoteCatalog();
+      if (allRemote.isNotEmpty) {
+        await catalog.markModelsAsKnown(allRemote);
+        await catalog.saveDownloadedVersions(allRemote);
+      }
+    } catch (_) {}
     widget.onComplete();
   }
 
