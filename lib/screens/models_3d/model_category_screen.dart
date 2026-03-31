@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../config/model_3d_config.dart';
 import '../../services/favorites_service.dart';
 import '../../services/model_3d_service.dart';
+import '../../services/model_catalog_service.dart';
 import '../model_viewer_screen.dart';
 import 'model_compare_screen.dart';
 import 'model_before_after_screen.dart';
@@ -41,6 +42,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
     super.initState();
     _filteredModels = widget.category.models;
     FavoritesService.instance.load();
+    _loadRemoteCatalog();
 
     // If initial model specified, open it immediately
     if (widget.initialModelId != null) {
@@ -538,12 +540,35 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
     );
   }
 
+  /// Cached remote catalog asset IDs for availability checks.
+  Set<String>? _remoteCatalogIds;
+
+  Future<void> _loadRemoteCatalog() async {
+    final remoteModels = await ModelCatalogService.instance.getAllRemoteModels();
+    if (mounted) {
+      setState(() {
+        _remoteCatalogIds = {
+          ...remoteModels.map((m) => m.id),
+          ...remoteModels.map((m) => m.modelFileName),
+        };
+      });
+    }
+  }
+
   /// Check if a model has a real uploaded asset (not a placeholder fallback).
   bool _hasUploadedAsset(Model3DItem model) {
+    // Check static assets
     final assets = Model3DService.allAssets;
-    // Check if the model's own ID or its modelFileName matches a real asset
-    return assets.any((a) => a.id == model.id || a.id == model.modelFileName) ||
-        assets.any((a) => a.url.contains('${model.modelFileName}.glb'));
+    if (assets.any((a) => a.id == model.id || a.id == model.modelFileName) ||
+        assets.any((a) => a.url.contains('${model.modelFileName}.glb'))) {
+      return true;
+    }
+    // Check remote catalog
+    final remote = _remoteCatalogIds;
+    if (remote != null) {
+      return remote.contains(model.id) || remote.contains(model.modelFileName);
+    }
+    return false;
   }
 
   Widget _buildModelCard(Model3DItem model) {
