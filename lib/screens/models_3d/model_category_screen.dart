@@ -540,7 +540,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
 
   /// Check if a model has a real uploaded asset (not a placeholder fallback).
   bool _hasUploadedAsset(Model3DItem model) {
-    final assets = Model3DService.instance.allAssets;
+    final assets = Model3DService.allAssets;
     // Check if the model's own ID or its modelFileName matches a real asset
     return assets.any((a) => a.id == model.id || a.id == model.modelFileName) ||
         assets.any((a) => a.url.contains('${model.modelFileName}.glb'));
