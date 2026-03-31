@@ -434,6 +434,40 @@ class Model3DConfig {
           subcategory: 'Amniotic Fluid',
         ),
 
+        // Placenta Previa
+        Model3DItem(
+          id: 'previa_stage1',
+          name: 'Placenta Previa Type I',
+          description: 'Low-lying placenta reaching the lower uterine segment but not the internal os',
+          modelFileName: 'previa_stage1',
+          tags: ['pathology', 'placenta', 'previa'],
+          subcategory: 'Placenta Previa',
+        ),
+        Model3DItem(
+          id: 'previa_stage2',
+          name: 'Placenta Previa Type II',
+          description: 'Marginal previa — placenta reaching but not covering the internal os',
+          modelFileName: 'previa_stage2',
+          tags: ['pathology', 'placenta', 'previa'],
+          subcategory: 'Placenta Previa',
+        ),
+        Model3DItem(
+          id: 'previa_stage3',
+          name: 'Placenta Previa Type III',
+          description: 'Partial previa — placenta partially covering the internal os',
+          modelFileName: 'previa_stage3',
+          tags: ['pathology', 'placenta', 'previa'],
+          subcategory: 'Placenta Previa',
+        ),
+        Model3DItem(
+          id: 'previa_stage4',
+          name: 'Placenta Previa Type IV',
+          description: 'Complete previa — placenta completely covering the internal os',
+          modelFileName: 'previa_stage4',
+          tags: ['pathology', 'placenta', 'previa'],
+          subcategory: 'Placenta Previa',
+        ),
+
         // Placental Abruption
         Model3DItem(
           id: 'placental_abruption_revealed',
