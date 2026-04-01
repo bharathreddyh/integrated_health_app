@@ -317,6 +317,22 @@ class Model3DService {
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2FFetus_cord_loop%2Ffetal_cord_loop_.glb?alt=media&token=b6d2d533-9cdd-4943-9f70-21f7ab1ae78a',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
+        AssetInfo(
+          id: 'obs_polyhydramnios',
+          name: '3D Polyhydramnios',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fhydramnios%2Fobs_polyhydramnios.glb?alt=media',
+          sizeBytes: 25 * 1024 * 1024, // ~25 MB
+        ),
+        AssetInfo(
+          id: 'obs_oligohydramnios',
+          name: '3D Oligohydramnios',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fhydramnios%2Fobs_oligohydramnios.glb?alt=media',
+          sizeBytes: 25 * 1024 * 1024, // ~25 MB
+        ),
       ],
     ),
     SystemAssetGroup(
