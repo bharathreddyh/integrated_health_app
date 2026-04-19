@@ -253,7 +253,7 @@ class Model3DConfig {
           id: 'simple_cyst',
           name: 'Simple Ovarian Cyst',
           description: 'Fluid-filled simple cyst on the ovary',
-          modelFileName: 'uterus', // TODO: Replace with 'simple_cyst' when uploaded
+          modelFileName: 'ovary_simple_Cyst',
           tags: ['pathology', 'cyst', 'ovary'],
           subcategory: 'Ovary',
         ),
@@ -282,20 +282,32 @@ class Model3DConfig {
           subcategory: 'Ovary',
         ),
         Model3DItem(
-          id: 'endometrioma',
-          name: 'Endometrioma',
-          description: 'Endometriotic cyst (chocolate cyst)',
-          modelFileName: 'uterus', // TODO: Replace with 'endometrioma' when uploaded
-          tags: ['pathology', 'endometriosis', 'ovary'],
-          subcategory: 'Ovary',
-        ),
-        Model3DItem(
           id: 'pcos_ovary',
-          name: 'PCOS Ovary',
-          description: 'Polycystic ovary with multiple small follicles',
-          modelFileName: 'uterus', // TODO: Replace with 'pcos_ovary' when uploaded
-          tags: ['pathology', 'pcos', 'ovary'],
+          name: 'Polycystic Ovary',
+          description: 'Polycystic ovary shown side-by-side — two comparative views',
+          modelFileName: 'ovary_Polycystic_1',
+          tags: ['pathology', 'pcos', 'ovary', 'polycystic'],
           subcategory: 'Ovary',
+          isComparisonModel: true,
+          beforeModelFileName: 'ovary_Polycystic_1',
+          afterModelFileName: 'ovary_Polycystic_2',
+          beforeLabel: 'View 1',
+          afterLabel: 'View 2',
+        ),
+
+        // Ovulation
+        Model3DItem(
+          id: 'ovulation',
+          name: 'Ovulation',
+          description: 'Ovulation shown side-by-side — two comparative views',
+          modelFileName: 'Ovary_ovulation_1',
+          tags: ['anatomy', 'ovulation', 'ovary', 'follicle'],
+          subcategory: 'Ovulation',
+          isComparisonModel: true,
+          beforeModelFileName: 'Ovary_ovulation_1',
+          afterModelFileName: 'Ovary_ovulation_2',
+          beforeLabel: 'View 1',
+          afterLabel: 'View 2',
         ),
 
         // Endometrium
