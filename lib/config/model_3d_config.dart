@@ -261,7 +261,7 @@ class Model3DConfig {
           id: 'hemorrhagic_cyst',
           name: 'Hemorrhagic Cyst',
           description: 'Ovarian cyst with internal bleeding',
-          modelFileName: 'uterus', // TODO: Replace with 'hemorrhagic_cyst' when uploaded
+          modelFileName: 'ovary_hemorrhagic_cyst',
           tags: ['pathology', 'cyst', 'ovary'],
           subcategory: 'Ovary',
         ),
