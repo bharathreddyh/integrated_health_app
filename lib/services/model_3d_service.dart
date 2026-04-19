@@ -270,10 +270,18 @@ class Model3DService {
         ),
         AssetInfo(
           id: 'ovary_simple_Cyst',
-          name: '3D Simple Ovarian Cyst',
+          name: '3D Simple Ovarian Cyst (View 1)',
           systemId: 'gynaecology',
           url:
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgyn%2Fovary%2Fovary_simple_Cyst.glb?alt=media',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
+          id: 'ovary_simple_Cyst_2',
+          name: '3D Simple Ovarian Cyst (View 2)',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgyn%2Fovary%2Fovary_simple_Cyst_2.glb?alt=media',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(

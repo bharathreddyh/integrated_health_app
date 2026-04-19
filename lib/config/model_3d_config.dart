@@ -252,10 +252,15 @@ class Model3DConfig {
         Model3DItem(
           id: 'simple_cyst',
           name: 'Simple Ovarian Cyst',
-          description: 'Fluid-filled simple cyst on the ovary',
+          description: 'Fluid-filled simple cyst on the ovary — two comparative views',
           modelFileName: 'ovary_simple_Cyst',
           tags: ['pathology', 'cyst', 'ovary'],
           subcategory: 'Ovary',
+          isComparisonModel: true,
+          beforeModelFileName: 'ovary_simple_Cyst',
+          afterModelFileName: 'ovary_simple_Cyst_2',
+          beforeLabel: 'View 1',
+          afterLabel: 'View 2',
         ),
         Model3DItem(
           id: 'hemorrhagic_cyst',
