@@ -265,10 +265,15 @@ class Model3DConfig {
         Model3DItem(
           id: 'hemorrhagic_cyst',
           name: 'Hemorrhagic Cyst',
-          description: 'Ovarian cyst with internal bleeding',
+          description: 'Ovarian cyst with internal bleeding — two comparative views',
           modelFileName: 'ovary_hemorrhagic_cyst',
           tags: ['pathology', 'cyst', 'ovary'],
           subcategory: 'Ovary',
+          isComparisonModel: true,
+          beforeModelFileName: 'ovary_hemorrhagic_cyst',
+          afterModelFileName: 'ovary_hemorrhagic_cyst_2',
+          beforeLabel: 'View 1',
+          afterLabel: 'View 2',
         ),
         Model3DItem(
           id: 'endometrioid_cyst',
