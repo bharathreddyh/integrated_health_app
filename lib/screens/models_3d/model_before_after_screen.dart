@@ -45,6 +45,9 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
   // UI controls
   bool _showLabels = true;
 
+  // Video support
+  bool get _hasVideo => widget.model.videoFileName != null;
+
   // Fullscreen state
   bool _isFullscreen = false;
   bool _fullscreenIsBefore = true; // Which model is shown in fullscreen
@@ -90,16 +93,25 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
   }
 
   Future<void> _loadBothModels() async {
-    // Load sequentially to prevent GPU resource conflicts
-    await _loadModel(isBefore: true);
-    await Future.delayed(const Duration(milliseconds: 500));
-    await _loadModel(isBefore: false);
+    if (_hasVideo) {
+      // Video mode: load 3D model on left, video on right
+      await _loadModel(isBefore: true);
+      await Future.delayed(const Duration(milliseconds: 500));
+      await _loadVideo();
+    } else {
+      // Standard comparison: load both 3D models
+      await _loadModel(isBefore: true);
+      await Future.delayed(const Duration(milliseconds: 500));
+      await _loadModel(isBefore: false);
+    }
   }
 
   Future<void> _loadModel({required bool isBefore}) async {
-    final modelFileName = isBefore
-        ? widget.model.beforeModelFileName
-        : widget.model.afterModelFileName;
+    final modelFileName = _hasVideo && isBefore
+        ? widget.model.modelFileName
+        : (isBefore
+            ? widget.model.beforeModelFileName
+            : widget.model.afterModelFileName);
 
     if (modelFileName == null) {
       setState(() {
@@ -161,6 +173,37 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
             _afterState = _LoadState.error;
           }
         });
+      }
+    }
+  }
+
+  Future<void> _loadVideo() async {
+    final videoFileName = widget.model.videoFileName;
+    if (videoFileName == null) return;
+
+    if (!mounted) return;
+    setState(() {
+      _afterState = _LoadState.loading;
+      _afterProgress = 0.0;
+    });
+
+    try {
+      final path = await _service.downloadModel(
+        videoFileName,
+        onProgress: (p) {
+          if (mounted) {
+            setState(() => _afterProgress = p);
+          }
+        },
+      );
+
+      if (!mounted) return;
+      setState(() => _afterState = _LoadState.ready);
+      await _initVideoWebView(path);
+    } catch (e) {
+      debugPrint('Error loading video $videoFileName: $e');
+      if (mounted) {
+        setState(() => _afterState = _LoadState.error);
       }
     }
   }
@@ -257,6 +300,96 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
         });
       }
     }
+  }
+
+  Future<void> _initVideoWebView(String videoPath) async {
+    try {
+      _afterServer?.close(force: true);
+
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      _afterServer = server;
+      final port = server.port;
+
+      server.listen((request) async {
+        try {
+          if (request.uri.path == '/video.mp4') {
+            final file = File(videoPath);
+            if (await file.exists()) {
+              final length = await file.length();
+              request.response.headers.set('Content-Type', 'video/mp4');
+              request.response.headers.set('Accept-Ranges', 'bytes');
+              request.response.headers.set('Content-Length', '$length');
+              request.response.headers.set('Access-Control-Allow-Origin', '*');
+              await request.response.addStream(file.openRead());
+              await request.response.close();
+            } else {
+              request.response.statusCode = 404;
+              await request.response.close();
+            }
+          } else if (request.uri.path == '/') {
+            request.response.headers.set('Content-Type', 'text/html');
+            request.response.write(_buildVideoHtml(port));
+            await request.response.close();
+          } else {
+            request.response.statusCode = 404;
+            await request.response.close();
+          }
+        } catch (e) {
+          debugPrint('Video server error: $e');
+        }
+      });
+
+      final controller = WebViewController()
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setBackgroundColor(const Color(0xFF0A1628))
+        ..setNavigationDelegate(NavigationDelegate(
+          onPageFinished: (_) {
+            controller.runJavaScript("document.querySelector('video')?.play();");
+          },
+        ))
+        ..loadRequest(Uri.parse('http://127.0.0.1:$port/'));
+
+      if (mounted) {
+        setState(() => _afterController = controller);
+      }
+    } catch (e) {
+      debugPrint('Error initializing video WebView: $e');
+      if (mounted) {
+        setState(() => _afterState = _LoadState.error);
+      }
+    }
+  }
+
+  String _buildVideoHtml(int port) {
+    return '''
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <style>
+    * { margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #0A1628; display: flex; align-items: center; justify-content: center; }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #0A1628;
+    }
+  </style>
+</head>
+<body>
+  <video
+    src="http://127.0.0.1:$port/video.mp4"
+    autoplay
+    loop
+    muted
+    playsinline
+    controls>
+  </video>
+</body>
+</html>
+''';
   }
 
   String _buildHtml(int port, String title) {
@@ -572,10 +705,10 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
             Expanded(
               child: Row(
                 children: [
-                  // Before Model
+                  // Before Model (or 3D Model in video mode)
                   Expanded(
                     child: _buildModelPanel(
-                      label: widget.model.beforeLabel ?? 'Before',
+                      label: _hasVideo ? '3D Model' : (widget.model.beforeLabel ?? 'Before'),
                       state: _beforeState,
                       progress: _beforeProgress,
                       controller: _beforeController,
@@ -588,10 +721,10 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
                     width: 2,
                     color: const Color(0xFF334155),
                   ),
-                  // After Model
+                  // After Model (or Video in video mode)
                   Expanded(
                     child: _buildModelPanel(
-                      label: widget.model.afterLabel ?? 'After',
+                      label: _hasVideo ? 'Video' : (widget.model.afterLabel ?? 'After'),
                       state: _afterState,
                       progress: _afterProgress,
                       controller: _afterController,
@@ -1178,16 +1311,16 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
               // Before label
               Expanded(
                 child: _buildStageLabel(
-                  widget.model.beforeLabel ?? 'Before',
+                  _hasVideo ? '3D Model' : (widget.model.beforeLabel ?? 'Before'),
                   Colors.blue,
                   false,
                 ),
               ),
-              // Arrow indicator
+              // Arrow/separator indicator
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 child: Icon(
-                  Icons.arrow_forward,
+                  _hasVideo ? Icons.compare : Icons.arrow_forward,
                   color: color,
                   size: 24,
                 ),
@@ -1195,7 +1328,7 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
               // After label
               Expanded(
                 child: _buildStageLabel(
-                  widget.model.afterLabel ?? 'After',
+                  _hasVideo ? 'Video' : (widget.model.afterLabel ?? 'After'),
                   Colors.orange,
                   true,
                 ),

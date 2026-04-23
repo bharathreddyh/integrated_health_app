@@ -41,6 +41,9 @@ class Model3DItem {
   final String? beforeLabel;         // Label for before model (e.g., "Early Stage")
   final String? afterLabel;          // Label for after model (e.g., "Advanced")
 
+  // Video support (shown alongside 3D model)
+  final String? videoFileName;       // Video file name in Firebase Storage (without extension)
+
   const Model3DItem({
     required this.id,
     required this.name,
@@ -55,6 +58,7 @@ class Model3DItem {
     this.afterModelFileName,
     this.beforeLabel,
     this.afterLabel,
+    this.videoFileName,
   });
 
   /// Get the thumbnail asset path for this model
@@ -402,6 +406,7 @@ class Model3DConfig {
           modelFileName: 'fetus_present_Transverse',
           tags: ['pathology', 'fetus', 'lie', 'malposition'],
           subcategory: 'Fetal Lie',
+          videoFileName: 'fetus_present_transverse_2',
         ),
         Model3DItem(
           id: 'fetal_oblique',

@@ -783,10 +783,11 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
   }
 
   void _openModelViewer(Model3DItem model) {
-    // Check if this is a comparison model (before/after)
-    if (model.isComparisonModel &&
+    // Check if this is a comparison model (before/after) or has video
+    if ((model.isComparisonModel &&
         model.beforeModelFileName != null &&
-        model.afterModelFileName != null) {
+        model.afterModelFileName != null) ||
+        model.videoFileName != null) {
       Navigator.push(
         context,
         MaterialPageRoute(

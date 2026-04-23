@@ -366,6 +366,15 @@ class Model3DService {
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
+          id: 'fetus_present_transverse_2',
+          name: 'Transverse Lie Video',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Ffetus_present_transverse_2.mp4?alt=media&token=162a4930-76f8-49b9-8979-4ab209133bac',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+          fileExtension: 'mp4',
+        ),
+        AssetInfo(
           id: 'fetal_oblique',
           name: '3D Oblique Lie',
           systemId: 'obstetric',
@@ -650,7 +659,7 @@ class Model3DService {
     if (asset == null) {
       try {
         asset = allAssets.firstWhere(
-          (a) => a.url.contains('$modelName.glb') || a.url.contains('$modelName%2F') || a.url.contains('%2F$modelName.'),
+          (a) => a.url.contains('$modelName.glb') || a.url.contains('$modelName.mp4') || a.url.contains('$modelName%2F') || a.url.contains('%2F$modelName.'),
         );
       } catch (_) {
         // Not found by file name either
