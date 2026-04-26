@@ -285,11 +285,11 @@ class Model3DService {
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
-          id: 'ovary_hemorrhagic_cyst',
+          id: 'ovary_hemorrhagic_cyst_3',
           name: '3D Hemorrhagic Cyst (View 1)',
           systemId: 'gynaecology',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgyn%2Fovary%2Fovary_hemorrhagic_cyst.glb?alt=media',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgynaec%2Fovary%2Fovary_hemorrhagic_cyst_3.glb?alt=media&token=6ce463ea-d4b2-4f00-b719-3bc232c37a61',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
