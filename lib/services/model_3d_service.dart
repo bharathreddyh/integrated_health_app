@@ -301,6 +301,14 @@ class Model3DService {
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
+          id: 'ovary_dermoid_Cyst_2',
+          name: '3D Dermoid Cyst',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgynaec%2Fovary%2Fovary_dermoid_Cyst_2.glb?alt=media&token=d1a1cb35-3d7f-4f9a-a789-cacb1f2293ea',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
           id: 'ovary_Polycystic_1',
           name: '3D Polycystic Ovary (View 1)',
           systemId: 'gynaecology',

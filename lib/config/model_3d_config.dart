@@ -291,7 +291,7 @@ class Model3DConfig {
           id: 'dermoid_cyst',
           name: 'Dermoid Cyst',
           description: 'Mature cystic teratoma containing various tissues',
-          modelFileName: 'uterus', // TODO: Replace with 'dermoid_cyst' when uploaded
+          modelFileName: 'ovary_dermoid_Cyst_2',
           tags: ['pathology', 'cyst', 'ovary', 'teratoma'],
           subcategory: 'Ovary',
         ),
