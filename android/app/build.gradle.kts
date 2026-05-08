@@ -7,13 +7,13 @@ plugins {
 
 android {
     namespace = "com.example.integrated_health_app"
-    compileSdk = 36// ✅ 36 isn’t officially released yet; safest to use 34 for now
+    compileSdk = 35
     ndkVersion = "28.2.13676358"
 
     defaultConfig {
         applicationId = "com.example.integrated_health_app"
         minSdk = flutter.minSdkVersion
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
     }
