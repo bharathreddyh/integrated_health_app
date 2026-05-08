@@ -5,6 +5,60 @@ admin.initializeApp();
 const db = admin.firestore();
 
 /**
+ * Callable function: return a short-lived signed URL for a Storage model.
+ *
+ * The caller must be authenticated (anonymous or email Firebase Auth).
+ * The signed URL is valid for 1 hour and is generated server-side using
+ * the Admin SDK, so no public download token is ever embedded in the app.
+ *
+ * Request data: { path: "models/obs/placenta_previa/previa_stage1.glb" }
+ * Response:     { url: "https://storage.googleapis.com/...?X-Goog-Signature=..." }
+ */
+exports.getModelDownloadUrl = functions.https.onCall(async (data, context) => {
+  // Reject unauthenticated callers (covers anonymous Firebase Auth too)
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "You must be signed in to download models."
+    );
+  }
+
+  const storagePath = data.path;
+  if (!storagePath || typeof storagePath !== "string") {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "A valid storage path is required."
+    );
+  }
+
+  // Only allow paths under models/ to prevent misuse
+  if (!storagePath.startsWith("models/")) {
+    throw new functions.https.HttpsError(
+      "permission-denied",
+      "Access to this path is not allowed."
+    );
+  }
+
+  const bucket = admin.storage().bucket();
+  const file = bucket.file(storagePath);
+
+  const [exists] = await file.exists();
+  if (!exists) {
+    throw new functions.https.HttpsError(
+      "not-found",
+      `Model not found: ${storagePath}`
+    );
+  }
+
+  const [url] = await file.getSignedUrl({
+    action: "read",
+    expires: Date.now() + 60 * 60 * 1000, // 1 hour
+  });
+
+  return { url };
+});
+
+/**
  * Cloud Function: Auto-create a Firestore `model_catalog` document
  * when a .glb file is uploaded to Firebase Storage under models/.
  *

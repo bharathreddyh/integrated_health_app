@@ -1,0 +1,16 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /models/{allPaths=**} {
+      // All model downloads must go through the getModelDownloadUrl Cloud Function,
+      // which verifies Firebase Auth and returns a short-lived signed URL.
+      // Direct reads are blocked so raw token URLs cannot be shared externally.
+      allow read: if false;
+      allow write: if false;
+    }
+    // Block everything else by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

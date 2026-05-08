@@ -1,7 +1,6 @@
 // lib/services/model_3d_service.dart
-// Downloads 3D models and assets from Firebase Storage via plain HTTP.
-// Caches to app-scoped directory (auto-deleted on uninstall).
-// No Firebase SDK required.
+// Downloads 3D models via a Cloud Function that verifies Firebase Auth
+// and returns a short-lived signed URL. Direct Storage access is blocked.
 
 import 'package:flutter/material.dart';
 
@@ -12,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 /// Metadata for a single downloadable asset.
 class AssetInfo {
@@ -600,8 +600,8 @@ class Model3DService {
   // ─── Download ──────────────────────────────────────────────────────
 
   /// Download a single asset with progress reporting.
-  /// Uses HTTP directly so tokens in the URL are honoured.
-  /// Throws if the file is not found on the server (404 / object-not-found).
+  /// Calls the `getModelDownloadUrl` Cloud Function (requires Firebase Auth)
+  /// to get a 1-hour signed URL, then streams the file via HTTP.
   Future<String> downloadAsset(
     AssetInfo asset, {
     ValueChanged<double>? onProgress,
@@ -613,9 +613,13 @@ class Model3DService {
       return cached;
     }
 
+    // Get a short-lived signed URL from the Cloud Function
+    final callable = FirebaseFunctions.instance.httpsCallable('getModelDownloadUrl');
+    final result = await callable.call({'path': asset.storagePath});
+    final signedUrl = result.data['url'] as String;
+
     final file = await _localFile(asset.id, asset.fileExtension);
-    final uri = Uri.parse(asset.url);
-    final request = http.Request('GET', uri);
+    final request = http.Request('GET', Uri.parse(signedUrl));
     final response = await http.Client().send(request);
 
     if (response.statusCode == 404) {
@@ -661,15 +665,21 @@ class Model3DService {
             onProgress?.call(overall);
           },
         );
-      } on FirebaseException catch (e) {
-        if (e.code == 'object-not-found') {
+      } on FirebaseFunctionsException catch (e) {
+        if (e.code == 'not-found') {
           // File not yet uploaded — skip silently
           debugPrint('Skipping missing asset ${group.assets[i].id}: ${e.message}');
         } else {
           rethrow;
         }
+      } on FirebaseException catch (e) {
+        if (e.code == 'object-not-found') {
+          debugPrint('Skipping missing asset ${group.assets[i].id}: ${e.message}');
+        } else {
+          rethrow;
+        }
       } catch (e) {
-        if (e.toString().contains('404') || e.toString().contains('object-not-found')) {
+        if (e.toString().contains('404') || e.toString().contains('object-not-found') || e.toString().contains('not-found')) {
           debugPrint('Skipping missing asset ${group.assets[i].id}');
         } else {
           rethrow;
