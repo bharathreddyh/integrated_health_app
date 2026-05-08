@@ -600,7 +600,8 @@ class Model3DService {
   // ─── Download ──────────────────────────────────────────────────────
 
   /// Download a single asset with progress reporting.
-  /// [onProgress] receives values from 0.0 to 1.0.
+  /// Uses HTTP directly so tokens in the URL are honoured.
+  /// Throws if the file is not found on the server (404 / object-not-found).
   Future<String> downloadAsset(
     AssetInfo asset, {
     ValueChanged<double>? onProgress,
@@ -613,20 +614,36 @@ class Model3DService {
     }
 
     final file = await _localFile(asset.id, asset.fileExtension);
-    final ref = FirebaseStorage.instance.ref(asset.storagePath);
-    final task = ref.writeToFile(file);
+    final uri = Uri.parse(asset.url);
+    final request = http.Request('GET', uri);
+    final response = await http.Client().send(request);
 
-    task.snapshotEvents.listen((snapshot) {
-      if (snapshot.totalBytes > 0) {
-        onProgress?.call(snapshot.bytesTransferred / snapshot.totalBytes);
-      }
-    });
+    if (response.statusCode == 404) {
+      throw FirebaseException(
+        plugin: 'firebase_storage',
+        code: 'object-not-found',
+        message: 'No object exists at the desired reference.',
+      );
+    }
+    if (response.statusCode != 200) {
+      throw Exception('Download failed: HTTP ${response.statusCode}');
+    }
 
-    await task;
+    final total = response.contentLength ?? 0;
+    int received = 0;
+    final sink = file.openWrite();
+    await for (final chunk in response.stream) {
+      sink.add(chunk);
+      received += chunk.length;
+      if (total > 0) onProgress?.call(received / total);
+    }
+    await sink.close();
+    onProgress?.call(1.0);
     return file.path;
   }
 
   /// Download all assets for a given system.
+  /// Missing assets (not yet uploaded) are skipped — they won't block others.
   /// [onProgress] receives overall progress 0.0 to 1.0.
   Future<void> downloadSystem(
     String systemId, {
@@ -636,13 +653,28 @@ class Model3DService {
     if (group.assets.isEmpty) return;
 
     for (int i = 0; i < group.assets.length; i++) {
-      await downloadAsset(
-        group.assets[i],
-        onProgress: (p) {
-          final overall = (i + p) / group.assets.length;
-          onProgress?.call(overall);
-        },
-      );
+      try {
+        await downloadAsset(
+          group.assets[i],
+          onProgress: (p) {
+            final overall = (i + p) / group.assets.length;
+            onProgress?.call(overall);
+          },
+        );
+      } on FirebaseException catch (e) {
+        if (e.code == 'object-not-found') {
+          // File not yet uploaded — skip silently
+          debugPrint('Skipping missing asset ${group.assets[i].id}: ${e.message}');
+        } else {
+          rethrow;
+        }
+      } catch (e) {
+        if (e.toString().contains('404') || e.toString().contains('object-not-found')) {
+          debugPrint('Skipping missing asset ${group.assets[i].id}');
+        } else {
+          rethrow;
+        }
+      }
     }
     onProgress?.call(1.0);
   }
