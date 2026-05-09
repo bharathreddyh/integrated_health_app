@@ -321,7 +321,7 @@ class Model3DService {
           name: '3D Polycystic Ovary (View 2)',
           systemId: 'gynaecology',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgyn%2Fovary%2Fovary_Polycystic_2.glb?alt=media',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgynaec%2Fovary%2Fovary_Polycystic_2.glb?alt=media&token=7dd354bc-f2b5-4542-a44d-d0e8987ce817',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
