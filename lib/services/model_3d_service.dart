@@ -337,7 +337,7 @@ class Model3DService {
           name: '3D Ovulation (View 2)',
           systemId: 'gynaecology',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgyn%2Fovary%2FOvary_ovulation_2.glb?alt=media',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgynaec%2Fovary%2FOvary_ovulation_2.glb?alt=media&token=afffe19e-a2c3-4f32-882a-af92a75825ec',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
       ],
