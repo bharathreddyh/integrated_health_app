@@ -2,10 +2,9 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     match /models/{allPaths=**} {
-      // All model downloads must go through the getModelDownloadUrl Cloud Function,
-      // which verifies Firebase Auth and returns a short-lived signed URL.
-      // Direct reads are blocked so raw token URLs cannot be shared externally.
-      allow read: if false;
+      // Only Firebase-authenticated users can read (anonymous auth included).
+      // This blocks all browser/curl access without the app's Firebase session.
+      allow read: if request.auth != null;
       allow write: if false;
     }
     // Block everything else by default

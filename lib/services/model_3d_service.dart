@@ -11,7 +11,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 
 /// Metadata for a single downloadable asset.
 class AssetInfo {
@@ -600,8 +599,8 @@ class Model3DService {
   // ─── Download ──────────────────────────────────────────────────────
 
   /// Download a single asset with progress reporting.
-  /// Calls the `getModelDownloadUrl` Cloud Function (requires Firebase Auth)
-  /// to get a 1-hour signed URL, then streams the file via HTTP.
+  /// Uses FirebaseStorage.getDownloadURL() (requires Firebase Auth — anonymous
+  /// sign-in is sufficient) to get a fresh token URL, then streams via HTTP.
   Future<String> downloadAsset(
     AssetInfo asset, {
     ValueChanged<double>? onProgress,
@@ -613,13 +612,12 @@ class Model3DService {
       return cached;
     }
 
-    // Get a short-lived signed URL from the Cloud Function
-    final callable = FirebaseFunctions.instance.httpsCallable('getModelDownloadUrl');
-    final result = await callable.call({'path': asset.storagePath});
-    final signedUrl = result.data['url'] as String;
+    // Get a fresh download URL — requires Firebase Auth, blocks anonymous access
+    final ref = FirebaseStorage.instance.ref(asset.storagePath);
+    final downloadUrl = await ref.getDownloadURL();
 
     final file = await _localFile(asset.id, asset.fileExtension);
-    final request = http.Request('GET', Uri.parse(signedUrl));
+    final request = http.Request('GET', Uri.parse(downloadUrl));
     final response = await http.Client().send(request);
 
     if (response.statusCode == 404) {
@@ -665,13 +663,6 @@ class Model3DService {
             onProgress?.call(overall);
           },
         );
-      } on FirebaseFunctionsException catch (e) {
-        if (e.code == 'not-found') {
-          // File not yet uploaded — skip silently
-          debugPrint('Skipping missing asset ${group.assets[i].id}: ${e.message}');
-        } else {
-          rethrow;
-        }
       } on FirebaseException catch (e) {
         if (e.code == 'object-not-found') {
           debugPrint('Skipping missing asset ${group.assets[i].id}: ${e.message}');
