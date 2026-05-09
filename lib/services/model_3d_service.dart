@@ -10,6 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 /// Metadata for a single downloadable asset.
@@ -612,7 +613,12 @@ class Model3DService {
       return cached;
     }
 
-    // Get a fresh download URL — requires Firebase Auth, blocks anonymous access
+    // Ensure Firebase Auth is active — sign in anonymously if needed
+    if (FirebaseAuth.instance.currentUser == null) {
+      await FirebaseAuth.instance.signInAnonymously();
+    }
+
+    // Get a fresh download URL — requires Firebase Auth, blocks unauthenticated access
     final ref = FirebaseStorage.instance.ref(asset.storagePath);
     final downloadUrl = await ref.getDownloadURL();
 
