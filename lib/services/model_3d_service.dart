@@ -411,7 +411,7 @@ class Model3DService {
           name: '3D Oligohydramnios',
           systemId: 'obstetric',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fhydramnios%2Fobs_oligohydramnios.glb?alt=media',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fhydramnios%2Foligohydramnios.glb?alt=media&token=5090ee6f-e592-4ef8-80e0-5ab7a07093c9',
           sizeBytes: 25 * 1024 * 1024, // ~25 MB
         ),
       ],
