@@ -273,7 +273,7 @@ class Model3DService {
           name: '3D Simple Ovarian Cyst (View 1)',
           systemId: 'gynaecology',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgyn%2Fovary%2Fovary_simple_Cyst.glb?alt=media',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgynaec%2Fovary%2Fovary_simple_Cyst.glb?alt=media&token=dbad29c6-b0e2-4b4b-b458-6f60f713c55c',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
@@ -281,7 +281,7 @@ class Model3DService {
           name: '3D Simple Ovarian Cyst (View 2)',
           systemId: 'gynaecology',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgyn%2Fovary%2Fovary_simple_Cyst_2.glb?alt=media',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgynaec%2Fovary%2Fovary_simple_Cyst_2.glb?alt=media&token=b3c30838-399a-4fdd-b1ce-106070f1a540',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
@@ -297,7 +297,7 @@ class Model3DService {
           name: '3D Hemorrhagic Cyst (View 2)',
           systemId: 'gynaecology',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgyn%2Fovary%2Fovary_hemorrhagic_cyst_2.glb?alt=media',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgynaec%2Fovary%2Fovary_hemorrhagic_cyst_2.glb?alt=media&token=604166a6-f3b3-4e85-bb7e-0dd9cf9e59cb',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
