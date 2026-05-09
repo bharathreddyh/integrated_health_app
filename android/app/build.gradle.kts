@@ -7,13 +7,13 @@ plugins {
 
 android {
     namespace = "com.example.integrated_health_app"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = "28.2.13676358"
 
     defaultConfig {
         applicationId = "com.example.integrated_health_app"
         minSdk = flutter.minSdkVersion
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
     }

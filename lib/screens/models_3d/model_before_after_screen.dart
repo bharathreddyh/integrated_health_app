@@ -339,7 +339,8 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
         }
       });
 
-      final controller = WebViewController()
+      final controller = WebViewController();
+      controller
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
         ..setBackgroundColor(const Color(0xFF0A1628))
         ..setNavigationDelegate(NavigationDelegate(
