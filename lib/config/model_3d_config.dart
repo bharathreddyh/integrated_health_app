@@ -437,14 +437,6 @@ class Model3DConfig {
 
         // Amniotic Fluid
         Model3DItem(
-          id: 'amniotic_fluid_normal',
-          name: 'Normal Amniotic Fluid',
-          description: 'Normal amniotic fluid volume surrounding the fetus',
-          modelFileName: 'amniotic_fluid_normal',
-          tags: ['anatomy', 'normal', 'amniotic', 'fluid'],
-          subcategory: 'Amniotic Fluid',
-        ),
-        Model3DItem(
           id: 'obs_polyhydramnios',
           name: 'Polyhydramnios',
           description: 'Excess amniotic fluid — AFI > 24 cm or single deepest pocket > 8 cm',
