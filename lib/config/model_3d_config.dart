@@ -849,9 +849,17 @@ class Model3DConfig {
         continue;
       }
 
-      // Get existing model IDs to avoid duplicates
+      // Get existing model IDs/filenames to avoid duplicates
       final existingIds = category.models.map((m) => m.id).toSet();
       final existingFileNames = category.models.map((m) => m.modelFileName).toSet();
+      // Only allow remote models with a subcategory that already exists in this
+      // category (or no subcategory). Firestore auto-catalog can create entries
+      // with wrong/orphan subcategories (e.g. "Hydramnios", "Test") from folder
+      // names that don't match the static config's subcategory names.
+      final knownSubcategories = category.models
+          .map((m) => m.subcategory)
+          .whereType<String>()
+          .toSet();
 
       final newModels = <Model3DItem>[];
       for (final remote in remoteForCategory) {
@@ -859,6 +867,11 @@ class Model3DConfig {
             existingIds.contains(remote.modelFileName) ||
             existingFileNames.contains(remote.modelFileName)) {
           continue; // Already in static config
+        }
+        // Skip remote models with an unknown subcategory
+        if (remote.subcategory.isNotEmpty &&
+            !knownSubcategories.contains(remote.subcategory)) {
+          continue;
         }
         newModels.add(Model3DItem(
           id: remote.id,
