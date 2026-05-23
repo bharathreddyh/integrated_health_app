@@ -451,11 +451,6 @@ class Model3DConfig {
           modelFileName: 'obs_polyhydramnios',
           tags: ['pathology', 'amniotic', 'fluid', 'polyhydramnios'],
           subcategory: 'Amniotic Fluid',
-          isComparisonModel: true,
-          beforeModelFileName: 'fetus_present_cephalic',
-          afterModelFileName: 'obs_polyhydramnios',
-          beforeLabel: 'Normal',
-          afterLabel: 'Polyhydramnios',
         ),
         Model3DItem(
           id: 'obs_oligohydramnios',
@@ -464,11 +459,6 @@ class Model3DConfig {
           modelFileName: 'obs_oligohydramnios',
           tags: ['pathology', 'amniotic', 'fluid', 'oligohydramnios'],
           subcategory: 'Amniotic Fluid',
-          isComparisonModel: true,
-          beforeModelFileName: 'fetus_present_cephalic',
-          afterModelFileName: 'obs_oligohydramnios',
-          beforeLabel: 'Normal',
-          afterLabel: 'Oligohydramnios',
         ),
 
         // Placenta Previa
