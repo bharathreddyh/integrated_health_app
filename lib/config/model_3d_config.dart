@@ -530,15 +530,6 @@ class Model3DConfig {
           tags: ['pathology', 'twins', 'pregnancy', 'monochorionic'],
           subcategory: 'Twin Pregnancy',
         ),
-        Model3DItem(
-          id: 'twin_ttts',
-          name: 'Twin-to-Twin Transfusion',
-          description: 'TTTS — unbalanced blood flow via placental anastomoses between monochorionic twins',
-          modelFileName: 'twin_ttts',
-          tags: ['pathology', 'twins', 'pregnancy', 'ttts', 'monochorionic'],
-          subcategory: 'Twin Pregnancy',
-        ),
-
         // Ectopic Pregnancy
         Model3DItem(
           id: 'ectopic_ampullary',
