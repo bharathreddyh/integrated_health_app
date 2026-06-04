@@ -526,7 +526,7 @@ class Model3DConfig {
           id: 'twin_mcma',
           name: 'MCMA Twins',
           description: 'Monochorionic monoamniotic — shared placenta and amniotic sac',
-          modelFileName: 'twin_mcma',
+          modelFileName: 'obs_twins_mcma',
           tags: ['pathology', 'twins', 'pregnancy', 'monochorionic'],
           subcategory: 'Twin Pregnancy',
         ),
