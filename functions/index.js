@@ -99,6 +99,7 @@ const SUBCATEGORY_MAP = {
   "fetal_lie": "Fetal Lie",
   "amniotic_fluid": "Amniotic Fluid",
   "twin_pregnancy": "Twin Pregnancy",
+  "twins": "Twin Pregnancy",
   "ectopic_pregnancy": "Ectopic Pregnancy",
   "placental_pathology": "Placental Pathology",
   "Fetus_cord_loop": "Loop of Cord",

@@ -510,7 +510,7 @@ class Model3DConfig {
           id: 'twin_dcda',
           name: 'DCDA Twins',
           description: 'Dichorionic diamniotic — two separate placentas and amniotic sacs',
-          modelFileName: 'twin_dcda',
+          modelFileName: 'obs_twins_dcda',
           tags: ['anatomy', 'twins', 'pregnancy', 'dichorionic'],
           subcategory: 'Twin Pregnancy',
         ),
