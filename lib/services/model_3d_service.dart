@@ -422,6 +422,14 @@ class Model3DService {
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ftwins%2Fobs_twins_dcda.glb?alt=media&token=43920c08-e6c9-46af-8082-5cf85d53d853',
           sizeBytes: 25 * 1024 * 1024,
         ),
+        AssetInfo(
+          id: 'obs_twins_mcda',
+          name: '3D MCDA Twins',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ftwins%2Fobs_twins_mcda.glb?alt=media&token=51ee384f-f9e1-4f0c-9a87-e1ebed2d7405',
+          sizeBytes: 25 * 1024 * 1024,
+        ),
       ],
     ),
     SystemAssetGroup(

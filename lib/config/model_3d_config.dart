@@ -518,7 +518,7 @@ class Model3DConfig {
           id: 'twin_mcda',
           name: 'MCDA Twins',
           description: 'Monochorionic diamniotic — shared placenta, separate amniotic sacs',
-          modelFileName: 'twin_mcda',
+          modelFileName: 'obs_twins_mcda',
           tags: ['pathology', 'twins', 'pregnancy', 'monochorionic'],
           subcategory: 'Twin Pregnancy',
         ),
