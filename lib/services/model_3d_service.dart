@@ -439,11 +439,11 @@ class Model3DService {
           sizeBytes: 25 * 1024 * 1024,
         ),
         AssetInfo(
-          id: 'Ectopic',
+          id: 'tubal_ectopic',
           name: '3D Tubal Ectopic',
           systemId: 'obstetric',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fectopic%2FEctopic.glb?alt=media&token=6e9a6f3b-fde3-4eb8-86f5-daf321501497',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fectopic%2Ftubal_ectopic.glb?alt=media&token=f322b6b5-40fe-4d4e-b45f-9da43d7a5914',
           sizeBytes: 25 * 1024 * 1024,
         ),
         AssetInfo(

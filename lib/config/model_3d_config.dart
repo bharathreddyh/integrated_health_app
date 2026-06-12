@@ -535,7 +535,7 @@ class Model3DConfig {
           id: 'ectopic_tubal',
           name: 'Tubal Ectopic',
           description: 'Ectopic pregnancy implanted within the fallopian tube — accounts for ~95% of all ectopic pregnancies',
-          modelFileName: 'Ectopic',
+          modelFileName: 'tubal_ectopic',
           tags: ['pathology', 'ectopic', 'tubal', 'pregnancy'],
           subcategory: 'Ectopic Pregnancy',
         ),
