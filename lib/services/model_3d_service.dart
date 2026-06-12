@@ -439,6 +439,14 @@ class Model3DService {
           sizeBytes: 25 * 1024 * 1024,
         ),
         AssetInfo(
+          id: 'normal_pregnancy',
+          name: '3D Normal Pregnancy',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fectopic%2Fnormal_pregnancy.glb?alt=media&token=9efddfd3-d0b6-49d4-8dbb-f3daac1633eb',
+          sizeBytes: 25 * 1024 * 1024,
+        ),
+        AssetInfo(
           id: 'tubal_ectopic',
           name: '3D Tubal Ectopic',
           systemId: 'obstetric',

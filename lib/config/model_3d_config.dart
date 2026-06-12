@@ -532,6 +532,14 @@ class Model3DConfig {
         ),
         // Ectopic Pregnancy
         Model3DItem(
+          id: 'normal_pregnancy',
+          name: 'Normal Pregnancy',
+          description: 'Normal intrauterine pregnancy with implantation in the uterine cavity',
+          modelFileName: 'normal_pregnancy',
+          tags: ['anatomy', 'normal', 'pregnancy'],
+          subcategory: 'Ectopic Pregnancy',
+        ),
+        Model3DItem(
           id: 'ectopic_tubal',
           name: 'Tubal Ectopic',
           description: 'Ectopic pregnancy implanted within the fallopian tube — accounts for ~95% of all ectopic pregnancies',
