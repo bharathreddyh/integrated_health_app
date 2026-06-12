@@ -446,6 +446,14 @@ class Model3DService {
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fectopic%2FEctopic.glb?alt=media&token=6e9a6f3b-fde3-4eb8-86f5-daf321501497',
           sizeBytes: 25 * 1024 * 1024,
         ),
+        AssetInfo(
+          id: 'ectopic_cervical',
+          name: '3D Cervical Ectopic',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fectopic%2Fcervical_ectopic.glb?alt=media&token=d8d50ca9-ce82-4efc-92a8-17d34a1a7b8e',
+          sizeBytes: 25 * 1024 * 1024,
+        ),
       ],
     ),
     SystemAssetGroup(
