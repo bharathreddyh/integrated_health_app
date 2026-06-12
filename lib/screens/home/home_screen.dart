@@ -95,13 +95,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: Colors.white,
                           ),
                         ),
-                        Text(
-                          '3D Clinic',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
                       ],
                     ),
                     const Spacer(),
