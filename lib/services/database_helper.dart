@@ -33,10 +33,10 @@ class DatabaseHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
     print('🔧 Database path: $path');
-    print('🔧 Database version: 15');
+    print('🔧 Database version: 16');
     return await openDatabase(
       path,
-      version: 15,
+      version: 16,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
     );
@@ -295,7 +295,7 @@ class DatabaseHelper {
     // Create default admin user (password: "admin123")
     await db.insert('users', {
       'id': 'USR001',
-      'name': 'Dr. Admin',
+      'name': 'Hema Patil',
       'email': 'admin@clinic.com',
       'password_hash': _hashPassword('admin123'),
       'role': 'doctor',
@@ -337,7 +337,7 @@ class DatabaseHelper {
       if (users.isEmpty) {
         await db.insert('users', {
           'id': 'USR001',
-          'name': 'Dr. Admin',
+          'name': 'Hema Patil',
           'email': 'admin@clinic.com',
           'password_hash': _hashPassword('admin123'),
           'role': 'doctor',
@@ -553,7 +553,15 @@ class DatabaseHelper {
       }
     }
 
-
+    // Version 16: Update admin user name to Dr Hema Patil
+    if (oldVersion < 16) {
+      await db.update(
+        'users',
+        {'name': 'Hema Patil'},
+        where: 'email = ?',
+        whereArgs: ['admin@clinic.com'],
+      );
+    }
   }
 
   // ==================== HELPER METHODS (MUST BE DECLARED BEFORE USE) ====================
