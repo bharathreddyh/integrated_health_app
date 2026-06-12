@@ -299,7 +299,7 @@ class DatabaseHelper {
       'email': 'admin@clinic.com',
       'password_hash': _hashPassword('admin123'),
       'role': 'doctor',
-      'specialty': 'General Medicine',
+      'specialty': 'DGO',
       'created_at': DateTime.now().toIso8601String(),
     });
 
@@ -341,7 +341,7 @@ class DatabaseHelper {
           'email': 'admin@clinic.com',
           'password_hash': _hashPassword('admin123'),
           'role': 'doctor',
-          'specialty': 'General Medicine',
+          'specialty': 'DGO',
           'created_at': DateTime.now().toIso8601String(),
         });
       }
@@ -553,11 +553,11 @@ class DatabaseHelper {
       }
     }
 
-    // Version 16: Update admin user name to Dr Hema Patil
+    // Version 16: Update admin user to Dr Hema Patil, DGO
     if (oldVersion < 16) {
       await db.update(
         'users',
-        {'name': 'Hema Patil'},
+        {'name': 'Hema Patil', 'specialty': 'DGO'},
         where: 'email = ?',
         whereArgs: ['admin@clinic.com'],
       );
