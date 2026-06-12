@@ -160,7 +160,7 @@ class Model3DConfig {
           id: 'fibroid_multiple',
           name: 'Multiple Fibroids',
           description: 'Uterus with multiple fibroids of different types',
-          modelFileName: 'uterus', // TODO: Replace with 'fibroid_multiple' when uploaded
+          modelFileName: 'fibroid_multiple', // Not uploaded yet — shows "Coming Soon"
           tags: ['pathology', 'fibroid', 'uterus'],
           subcategory: 'Fibroids',
         ),
