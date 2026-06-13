@@ -35,26 +35,48 @@ void main() async {
 
   print('App starting...');
 
-  // Initialize Firebase
+  // Initialize Firebase core (local, fast) before rendering so Firebase
+  // services are available. Network-heavy init runs in the background below.
   try {
     await Firebase.initializeApp();
     print('Firebase initialized');
-
-    // Sign in anonymously for Firebase Storage access
-    if (FirebaseAuth.instance.currentUser == null) {
-      await FirebaseAuth.instance.signInAnonymously();
-    }
-    print('Firebase auth ready: ${FirebaseAuth.instance.currentUser?.uid}');
   } catch (e) {
     print('Firebase initialization failed: $e');
     // App can still work offline without Firebase
   }
 
-  final initialized = await WhisperVoiceService.instance.initialize();
-  print('Voice service initialized: $initialized');
+  // Render immediately — the splash animation shows while background init runs.
+  runApp(const ThreeDClinicApp());
 
-  // Load favorites early so they're ready when needed
-  await FavoritesService.instance.load();
+  // Background initialization — does NOT block first frame.
+  _initInBackground();
+}
+
+/// Heavy / network-dependent initialization that must not block the UI.
+Future<void> _initInBackground() async {
+  // Sign in anonymously for Firebase Storage access
+  try {
+    if (FirebaseAuth.instance.currentUser == null) {
+      await FirebaseAuth.instance.signInAnonymously();
+    }
+    print('Firebase auth ready: ${FirebaseAuth.instance.currentUser?.uid}');
+  } catch (e) {
+    print('Firebase anonymous sign-in failed: $e');
+  }
+
+  try {
+    final initialized = await WhisperVoiceService.instance.initialize();
+    print('Voice service initialized: $initialized');
+  } catch (e) {
+    print('Voice service init failed: $e');
+  }
+
+  // Load favorites
+  try {
+    await FavoritesService.instance.load();
+  } catch (e) {
+    print('Favorites load failed: $e');
+  }
 
   // Seed Firestore model_catalog if empty (one-time)
   try {
@@ -75,8 +97,6 @@ void main() async {
   } catch (e) {
     print('Remote catalog fetch failed: $e');
   }
-
-  runApp(const ThreeDClinicApp());
 }
 
 class ThreeDClinicApp extends StatelessWidget {
