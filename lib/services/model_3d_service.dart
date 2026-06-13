@@ -656,8 +656,32 @@ class Model3DService {
   // ─── Download ──────────────────────────────────────────────────────
 
   /// Download a single asset with progress reporting.
-  /// Downloads a model asset using the stored Firebase Storage URL directly.
-  /// The token embedded in asset.url provides access — no Firebase Auth needed.
+  /// Ensure an anonymous Firebase session exists. Retries once and waits for
+  /// the sign-in to actually complete (real devices can be slow). Throws a
+  /// clear error if auth cannot be established.
+  Future<void> _ensureAuth() async {
+    if (FirebaseAuth.instance.currentUser != null) return;
+    for (var attempt = 0; attempt < 2; attempt++) {
+      try {
+        await FirebaseAuth.instance.signInAnonymously()
+            .timeout(const Duration(seconds: 20));
+        if (FirebaseAuth.instance.currentUser != null) return;
+      } catch (e) {
+        if (attempt == 1) {
+          throw Exception(
+              'Could not sign in to download (network issue). Please retry.');
+        }
+        await Future.delayed(const Duration(seconds: 2));
+      }
+    }
+    if (FirebaseAuth.instance.currentUser == null) {
+      throw Exception(
+          'Could not sign in to download (network issue). Please retry.');
+    }
+  }
+
+  /// Downloads a model asset via the authenticated Firebase Storage SDK.
+  /// This respects the storage rules (auth-gated) and reports progress.
   Future<String> downloadAsset(
     AssetInfo asset, {
     ValueChanged<double>? onProgress,
@@ -669,41 +693,37 @@ class Model3DService {
       return cached;
     }
 
+    // App-only gating: must have a Firebase session to read storage
+    await _ensureAuth();
+
     final file = await _localFile(asset.id, asset.fileExtension);
-    final client = http.Client();
+    final ref = FirebaseStorage.instance.ref(asset.storagePath);
+
+    final task = ref.writeToFile(file);
+    task.snapshotEvents.listen((snapshot) {
+      final total = snapshot.totalBytes;
+      if (total > 0) {
+        onProgress?.call(snapshot.bytesTransferred / total);
+      }
+    });
+
     try {
-      // Use the token URL directly — no Firebase SDK call needed
-      final request = http.Request('GET', Uri.parse(asset.url));
-      final response = await client.send(request)
-          .timeout(const Duration(seconds: 30), onTimeout: () {
-        throw Exception('Download request timed out. Check network connection.');
+      await task.timeout(const Duration(seconds: 120), onTimeout: () {
+        throw Exception('Download timed out. Check network connection.');
       });
-
-      if (response.statusCode == 404) {
-        throw FirebaseException(
-          plugin: 'firebase_storage',
-          code: 'object-not-found',
-          message: 'No object exists at the desired reference.',
-        );
+    } on FirebaseException catch (e) {
+      // Clean up partial file
+      if (await file.exists()) {
+        try {
+          await file.delete();
+        } catch (_) {}
       }
-      if (response.statusCode != 200) {
-        throw Exception('Download failed: HTTP ${response.statusCode}');
-      }
-
-      final total = response.contentLength ?? 0;
-      int received = 0;
-      final sink = file.openWrite();
-      await for (final chunk in response.stream) {
-        sink.add(chunk);
-        received += chunk.length;
-        if (total > 0) onProgress?.call(received / total);
-      }
-      await sink.close();
-      onProgress?.call(1.0);
-      return file.path;
-    } finally {
-      client.close();
+      if (e.code == 'object-not-found') rethrow;
+      throw Exception('Download failed: ${e.message ?? e.code}');
     }
+
+    onProgress?.call(1.0);
+    return file.path;
   }
 
   /// Download all assets for a given system.
