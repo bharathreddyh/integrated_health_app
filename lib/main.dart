@@ -196,11 +196,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   Future<void> _checkStatus() async {
-    final setupDone = await Model3DService.isSetupDone();
+    // Mark setup as done on first launch — models are downloaded on-demand
+    await Model3DService.markSetupDone();
     final loggedIn = await UserService.isLoggedIn();
     if (mounted) {
       setState(() {
-        _setupDone = setupDone;
+        _setupDone = true;
         _isLoggedIn = loggedIn;
       });
     }
