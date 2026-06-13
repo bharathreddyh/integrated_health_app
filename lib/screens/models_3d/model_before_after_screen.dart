@@ -263,7 +263,7 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
             await request.response.close();
           } else if (request.uri.path == '/') {
             request.response.headers.set('Content-Type', 'text/html');
-            request.response.write(_buildHtml(port, label));
+            request.response.write(_buildHtml(port, label, hasLocalJs: modelViewerJsPath != null));
             await request.response.close();
           } else {
             request.response.statusCode = 404;
@@ -393,14 +393,17 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
 ''';
   }
 
-  String _buildHtml(int port, String title) {
+  String _buildHtml(int port, String title, {bool hasLocalJs = true}) {
+    final jsUrl = hasLocalJs
+        ? 'http://127.0.0.1:$port/model-viewer.min.js'
+        : 'https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js';
     return '''
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <script type="module" src="http://127.0.0.1:$port/model-viewer.min.js"></script>
+  <script type="module" src="$jsUrl"></script>
   <style>
     * { margin: 0; padding: 0; }
     html, body { width: 100%; height: 100%; overflow: hidden; background: #0A1628; }
