@@ -671,39 +671,53 @@ class Model3DService {
 
     // Ensure Firebase Auth is active — sign in anonymously if needed
     if (FirebaseAuth.instance.currentUser == null) {
-      await FirebaseAuth.instance.signInAnonymously();
+      await FirebaseAuth.instance.signInAnonymously()
+          .timeout(const Duration(seconds: 15), onTimeout: () {
+        throw Exception('Firebase sign-in timed out. Check network connection.');
+      });
     }
 
     // Get a fresh download URL — requires Firebase Auth, blocks unauthenticated access
     final ref = FirebaseStorage.instance.ref(asset.storagePath);
-    final downloadUrl = await ref.getDownloadURL();
+    final downloadUrl = await ref.getDownloadURL()
+        .timeout(const Duration(seconds: 15), onTimeout: () {
+      throw Exception('Failed to get download URL. Check network connection.');
+    });
 
     final file = await _localFile(asset.id, asset.fileExtension);
-    final request = http.Request('GET', Uri.parse(downloadUrl));
-    final response = await http.Client().send(request);
+    final client = http.Client();
+    try {
+      final request = http.Request('GET', Uri.parse(downloadUrl));
+      final response = await client.send(request)
+          .timeout(const Duration(seconds: 30), onTimeout: () {
+        throw Exception('Download request timed out.');
+      });
 
-    if (response.statusCode == 404) {
-      throw FirebaseException(
-        plugin: 'firebase_storage',
-        code: 'object-not-found',
-        message: 'No object exists at the desired reference.',
-      );
-    }
-    if (response.statusCode != 200) {
-      throw Exception('Download failed: HTTP ${response.statusCode}');
-    }
+      if (response.statusCode == 404) {
+        throw FirebaseException(
+          plugin: 'firebase_storage',
+          code: 'object-not-found',
+          message: 'No object exists at the desired reference.',
+        );
+      }
+      if (response.statusCode != 200) {
+        throw Exception('Download failed: HTTP ${response.statusCode}');
+      }
 
-    final total = response.contentLength ?? 0;
-    int received = 0;
-    final sink = file.openWrite();
-    await for (final chunk in response.stream) {
-      sink.add(chunk);
-      received += chunk.length;
-      if (total > 0) onProgress?.call(received / total);
+      final total = response.contentLength ?? 0;
+      int received = 0;
+      final sink = file.openWrite();
+      await for (final chunk in response.stream) {
+        sink.add(chunk);
+        received += chunk.length;
+        if (total > 0) onProgress?.call(received / total);
+      }
+      await sink.close();
+      onProgress?.call(1.0);
+      return file.path;
+    } finally {
+      client.close();
     }
-    await sink.close();
-    onProgress?.call(1.0);
-    return file.path;
   }
 
   /// Download all assets for a given system.
