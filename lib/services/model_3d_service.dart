@@ -656,8 +656,8 @@ class Model3DService {
   // ─── Download ──────────────────────────────────────────────────────
 
   /// Download a single asset with progress reporting.
-  /// Uses FirebaseStorage.getDownloadURL() (requires Firebase Auth — anonymous
-  /// sign-in is sufficient) to get a fresh token URL, then streams via HTTP.
+  /// Downloads a model asset using the stored Firebase Storage URL directly.
+  /// The token embedded in asset.url provides access — no Firebase Auth needed.
   Future<String> downloadAsset(
     AssetInfo asset, {
     ValueChanged<double>? onProgress,
@@ -669,28 +669,14 @@ class Model3DService {
       return cached;
     }
 
-    // Ensure Firebase Auth is active — sign in anonymously if needed
-    if (FirebaseAuth.instance.currentUser == null) {
-      await FirebaseAuth.instance.signInAnonymously()
-          .timeout(const Duration(seconds: 15), onTimeout: () {
-        throw Exception('Firebase sign-in timed out. Check network connection.');
-      });
-    }
-
-    // Get a fresh download URL — requires Firebase Auth, blocks unauthenticated access
-    final ref = FirebaseStorage.instance.ref(asset.storagePath);
-    final downloadUrl = await ref.getDownloadURL()
-        .timeout(const Duration(seconds: 15), onTimeout: () {
-      throw Exception('Failed to get download URL. Check network connection.');
-    });
-
     final file = await _localFile(asset.id, asset.fileExtension);
     final client = http.Client();
     try {
-      final request = http.Request('GET', Uri.parse(downloadUrl));
+      // Use the token URL directly — no Firebase SDK call needed
+      final request = http.Request('GET', Uri.parse(asset.url));
       final response = await client.send(request)
           .timeout(const Duration(seconds: 30), onTimeout: () {
-        throw Exception('Download request timed out.');
+        throw Exception('Download request timed out. Check network connection.');
       });
 
       if (response.statusCode == 404) {
