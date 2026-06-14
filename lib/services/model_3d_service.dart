@@ -737,15 +737,36 @@ class Model3DService {
         throw Exception('Download failed: HTTP ${response.statusCode}');
       }
 
-      final total = response.contentLength ?? 0;
+      // Use content-length if present; otherwise fall back to the asset's
+      // approximate size so the progress bar still moves on responses that
+      // omit a content-length header (e.g. gzip transfer-encoding).
+      final total = (response.contentLength != null && response.contentLength! > 0)
+          ? response.contentLength!
+          : asset.sizeBytes;
+
+      // Download to a temp ".part" file so a stalled/failed download never
+      // leaves a partial file that looks like a valid cached model.
+      final partFile = File('${file.path}.part');
       int received = 0;
-      final sink = file.openWrite();
-      await for (final chunk in response.stream) {
-        sink.add(chunk);
-        received += chunk.length;
-        if (total > 0) onProgress?.call(received / total);
+      final sink = partFile.openWrite();
+      try {
+        // Per-chunk stall watchdog: if no bytes arrive for 45s, fail instead
+        // of hanging forever (the symptom on slow/flaky device networks).
+        await for (final chunk
+            in response.stream.timeout(const Duration(seconds: 45))) {
+          sink.add(chunk);
+          received += chunk.length;
+          if (total > 0) {
+            onProgress?.call((received / total).clamp(0.0, 1.0));
+          }
+        }
+        await sink.close();
+      } catch (e) {
+        await sink.close();
+        if (await partFile.exists()) await partFile.delete().catchError((_) => partFile);
+        rethrow;
       }
-      await sink.close();
+      await partFile.rename(file.path);
       onProgress?.call(1.0);
       return file.path;
     } finally {
@@ -758,19 +779,27 @@ class Model3DService {
     ValueChanged<double>? onProgress,
   }) async {
     final file = await _localFile(asset.id, asset.fileExtension);
+    final partFile = File('${file.path}.part');
     final ref = FirebaseStorage.instance.ref(asset.storagePath);
-    final task = ref.writeToFile(file);
+    final task = ref.writeToFile(partFile);
     task.snapshotEvents.listen((snapshot) {
       final total = snapshot.totalBytes;
       if (total > 0) onProgress?.call(snapshot.bytesTransferred / total);
-    });
+    }, onError: (_) {});
     try {
       await task.timeout(const Duration(seconds: 120));
     } on FirebaseException catch (e) {
-      if (await file.exists()) await file.delete().catchError((_) {});
+      try { await task.cancel(); } catch (_) {}
+      if (await partFile.exists()) await partFile.delete().catchError((_) => partFile);
       if (e.code == 'object-not-found') rethrow;
       throw Exception('Download failed: ${e.message ?? e.code}');
+    } catch (e) {
+      // Timeout or other error — cancel the task and clean up the partial file
+      try { await task.cancel(); } catch (_) {}
+      if (await partFile.exists()) await partFile.delete().catchError((_) => partFile);
+      throw Exception('Download timed out. Check network connection.');
     }
+    await partFile.rename(file.path);
     onProgress?.call(1.0);
     return file.path;
   }
