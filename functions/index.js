@@ -109,8 +109,9 @@ const SUBCATEGORY_MAP = {
   "ovary": "Ovary",
 };
 
-exports.onModelUploaded = functions.storage
-  .object()
+exports.onModelUploaded = functions
+  .runWith({ memory: "2GB", timeoutSeconds: 540 })
+  .storage.object()
   .onFinalize(async (object) => {
     const filePath = object.name; // e.g. "models/obs/placenta_previa/previa_stage1.glb"
     const contentType = object.contentType;
@@ -119,6 +120,22 @@ exports.onModelUploaded = functions.storage
     if (!filePath || !filePath.startsWith("models/") || !filePath.endsWith(".glb")) {
       console.log(`Skipping non-model file: ${filePath}`);
       return null;
+    }
+
+    // If this upload is our own Draco-compressed re-upload, skip compression
+    // and go straight to cataloguing (using the final, smaller size).
+    const alreadyCompressed =
+      object.metadata && object.metadata.dracoCompressed === "true";
+
+    if (!alreadyCompressed) {
+      const didCompress = await _compressAndReupload(object, filePath);
+      if (didCompress) {
+        // The re-upload re-triggers this function with dracoCompressed=true,
+        // which creates the catalog entry with the compressed size. Stop here
+        // so we don't catalog the (now stale) original size.
+        return null;
+      }
+      // Compression skipped or not beneficial — catalog the original below.
     }
 
     // Parse the path
@@ -192,6 +209,93 @@ exports.onModelUploaded = functions.storage
     console.log(`Created model_catalog entry: ${modelFileName} (${categoryId}/${subcategory})`);
     return null;
   });
+
+/**
+ * Download a freshly-uploaded .glb, apply Draco mesh compression, and
+ * re-upload it in place if the result is meaningfully smaller.
+ *
+ * Returns true if a compressed version was uploaded (which re-triggers this
+ * function), false if compression was skipped, failed, or not beneficial.
+ *
+ * The original Firebase download token is preserved so any URLs with an
+ * embedded ?token=... (e.g. those hardcoded in the app) keep working. A
+ * `dracoCompressed: "true"` custom-metadata flag marks the file so the
+ * re-upload doesn't trigger an endless compress loop.
+ */
+async function _compressAndReupload(object, filePath) {
+  const os = require("os");
+  const path = require("path");
+  const fs = require("fs");
+
+  // gltf-transform v4 is ESM-only; load it via dynamic import from CommonJS.
+  const { NodeIO } = await import("@gltf-transform/core");
+  const { ALL_EXTENSIONS } = await import("@gltf-transform/extensions");
+  const { draco, dedup, prune, weld } = await import("@gltf-transform/functions");
+  const draco3d = require("draco3dgltf");
+
+  const bucket = admin.storage().bucket(object.bucket);
+  const file = bucket.file(filePath);
+
+  const stamp = Date.now();
+  const tmpIn = path.join(os.tmpdir(), `model_in_${stamp}.glb`);
+  const tmpOut = path.join(os.tmpdir(), `model_out_${stamp}.glb`);
+
+  try {
+    await file.download({ destination: tmpIn });
+    const originalSize = fs.statSync(tmpIn).size;
+
+    const io = new NodeIO()
+      .registerExtensions(ALL_EXTENSIONS)
+      .registerDependencies({
+        "draco3d.decoder": await draco3d.createDecoderModule(),
+        "draco3d.encoder": await draco3d.createEncoderModule(),
+      });
+
+    const doc = await io.read(tmpIn);
+    // dedup + prune remove redundant data; weld indexes geometry (required for
+    // good Draco results); draco() applies the actual mesh compression.
+    await doc.transform(dedup(), prune(), weld(), draco());
+    await io.write(tmpOut, doc);
+
+    const compressedSize = fs.statSync(tmpOut).size;
+    const pct = (100 * (1 - compressedSize / originalSize)).toFixed(1);
+    console.log(
+      `Draco ${filePath}: ${originalSize} → ${compressedSize} bytes (${pct}% smaller)`
+    );
+
+    // Skip the re-upload if it barely helped (<5% savings) — not worth the
+    // token churn / extra write.
+    if (compressedSize >= originalSize * 0.95) {
+      console.log(`Compression not beneficial, keeping original: ${filePath}`);
+      return false;
+    }
+
+    // Preserve the existing download token so embedded ?token=... URLs survive.
+    const originalToken =
+      object.metadata && object.metadata.firebaseStorageDownloadTokens;
+
+    await bucket.upload(tmpOut, {
+      destination: filePath,
+      metadata: {
+        contentType: "model/gltf-binary",
+        metadata: {
+          dracoCompressed: "true",
+          ...(originalToken
+            ? { firebaseStorageDownloadTokens: originalToken }
+            : {}),
+        },
+      },
+    });
+    console.log(`Re-uploaded Draco-compressed model: ${filePath}`);
+    return true;
+  } catch (e) {
+    console.error(`Draco compression failed for ${filePath}:`, e);
+    return false;
+  } finally {
+    try { fs.unlinkSync(tmpIn); } catch (_) {}
+    try { fs.unlinkSync(tmpOut); } catch (_) {}
+  }
+}
 
 /**
  * Convert snake_case or camelCase filename to readable name.
