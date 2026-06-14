@@ -287,41 +287,23 @@ exports.compressAllModels = functions
  * re-upload doesn't trigger an endless compress loop.
  */
 async function _compressAndReupload(object, filePath) {
-  const os = require("os");
-  const path = require("path");
-  const fs = require("fs");
-
-  // gltf-transform v4 is ESM-only; load it via dynamic import from CommonJS.
-  const { NodeIO } = await import("@gltf-transform/core");
-  const { ALL_EXTENSIONS } = await import("@gltf-transform/extensions");
-  const { draco, dedup, prune, weld } = await import("@gltf-transform/functions");
-  const draco3d = require("draco3dgltf");
+  // gltf-pipeline does Draco geometry compression via draco3d (WebAssembly).
+  // It has no native/platform-specific binaries (unlike gltf-transform, which
+  // pulls in `sharp`), so the lock file works on Firebase's Linux builders.
+  const gltfPipeline = require("gltf-pipeline");
 
   const bucket = admin.storage().bucket(object.bucket);
   const file = bucket.file(filePath);
 
-  const stamp = Date.now();
-  const tmpIn = path.join(os.tmpdir(), `model_in_${stamp}.glb`);
-  const tmpOut = path.join(os.tmpdir(), `model_out_${stamp}.glb`);
-
   try {
-    await file.download({ destination: tmpIn });
-    const originalSize = fs.statSync(tmpIn).size;
+    const [inputBuffer] = await file.download();
+    const originalSize = inputBuffer.length;
 
-    const io = new NodeIO()
-      .registerExtensions(ALL_EXTENSIONS)
-      .registerDependencies({
-        "draco3d.decoder": await draco3d.createDecoderModule(),
-        "draco3d.encoder": await draco3d.createEncoderModule(),
-      });
-
-    const doc = await io.read(tmpIn);
-    // dedup + prune remove redundant data; weld indexes geometry (required for
-    // good Draco results); draco() applies the actual mesh compression.
-    await doc.transform(dedup(), prune(), weld(), draco());
-    await io.write(tmpOut, doc);
-
-    const compressedSize = fs.statSync(tmpOut).size;
+    const result = await gltfPipeline.processGlb(inputBuffer, {
+      dracoOptions: { compressionLevel: 10 },
+    });
+    const outputBuffer = result.glb;
+    const compressedSize = outputBuffer.length;
     const pct = (100 * (1 - compressedSize / originalSize)).toFixed(1);
     console.log(
       `Draco ${filePath}: ${originalSize} → ${compressedSize} bytes (${pct}% smaller)`
@@ -338,8 +320,7 @@ async function _compressAndReupload(object, filePath) {
     const originalToken =
       object.metadata && object.metadata.firebaseStorageDownloadTokens;
 
-    await bucket.upload(tmpOut, {
-      destination: filePath,
+    await file.save(outputBuffer, {
       metadata: {
         contentType: "model/gltf-binary",
         metadata: {
@@ -355,9 +336,6 @@ async function _compressAndReupload(object, filePath) {
   } catch (e) {
     console.error(`Draco compression failed for ${filePath}:`, e);
     return false;
-  } finally {
-    try { fs.unlinkSync(tmpIn); } catch (_) {}
-    try { fs.unlinkSync(tmpOut); } catch (_) {}
   }
 }
 

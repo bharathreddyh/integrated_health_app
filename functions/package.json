@@ -6,10 +6,7 @@
   },
   "main": "index.js",
   "dependencies": {
-    "@gltf-transform/core": "^4.1.1",
-    "@gltf-transform/extensions": "^4.1.1",
-    "@gltf-transform/functions": "^4.1.1",
-    "draco3dgltf": "^1.5.7",
+    "gltf-pipeline": "^4.1.0",
     "firebase-admin": "^11.11.0",
     "firebase-functions": "^4.5.0"
   }
