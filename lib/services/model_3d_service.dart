@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 
+import 'dart:async';
 import 'dart:convert' as json;
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -713,14 +714,21 @@ class Model3DService {
     ValueChanged<double>? onProgress,
   }) async {
     final file = await _localFile(asset.id, asset.fileExtension);
+    final partFile = File('${file.path}.part');
+
+    // Resume from an existing partial download if present.
+    final existingBytes = await partFile.exists() ? await partFile.length() : 0;
+
     final client = http.Client();
     try {
       final request = http.Request('GET', Uri.parse(asset.url));
+      if (existingBytes > 0) {
+        request.headers['Range'] = 'bytes=$existingBytes-';
+      }
       final response = await client.send(request)
           .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 401 || response.statusCode == 403) {
-        // Drain and discard response body before throwing
         await response.stream.drain<void>();
         throw _HttpAuthError();
       }
@@ -732,28 +740,35 @@ class Model3DService {
           message: 'No object exists at the desired reference.',
         );
       }
-      if (response.statusCode != 200) {
+      // 200 = full download, 206 = server accepted Range and sends partial content.
+      if (response.statusCode != 200 && response.statusCode != 206) {
         await response.stream.drain<void>();
         throw Exception('Download failed: HTTP ${response.statusCode}');
       }
 
-      // Use content-length if present; otherwise fall back to the asset's
-      // approximate size so the progress bar still moves on responses that
-      // omit a content-length header (e.g. gzip transfer-encoding).
-      final total = (response.contentLength != null && response.contentLength! > 0)
-          ? response.contentLength!
+      // 206: append to existing partial file. 200: server ignored Range, restart.
+      final resuming = response.statusCode == 206;
+      final startBytes = resuming ? existingBytes : 0;
+
+      // Content-Length in a 206 response is the remaining bytes, not the full size.
+      // Add startBytes to recover the true total for progress reporting.
+      final contentLen = response.contentLength;
+      final total = (contentLen != null && contentLen > 0)
+          ? contentLen + startBytes
           : asset.sizeBytes;
 
-      // Download to a temp ".part" file so a stalled/failed download never
-      // leaves a partial file that looks like a valid cached model.
-      final partFile = File('${file.path}.part');
-      int received = 0;
-      final sink = partFile.openWrite();
+      final sink = resuming
+          ? partFile.openWrite(mode: FileMode.append)
+          : partFile.openWrite();
+
+      int received = startBytes;
       try {
-        // Per-chunk stall watchdog: if no bytes arrive for 45s, fail instead
-        // of hanging forever (the symptom on slow/flaky device networks).
+        // Stall watchdog: 90s without bytes → give up (gentler than 45s for
+        // tablet Wi-Fi which can pause briefly without dying). On a true stall
+        // we preserve the .part file so the next attempt resumes rather than
+        // restarting from zero.
         await for (final chunk
-            in response.stream.timeout(const Duration(seconds: 45))) {
+            in response.stream.timeout(const Duration(seconds: 90))) {
           sink.add(chunk);
           received += chunk.length;
           if (total > 0) {
@@ -761,6 +776,10 @@ class Model3DService {
           }
         }
         await sink.close();
+      } on TimeoutException {
+        await sink.close();
+        // Preserve the .part file — it will be resumed on the next attempt.
+        throw Exception('Download stalled. Tap retry to continue where it left off.');
       } catch (e) {
         await sink.close();
         if (await partFile.exists()) await partFile.delete().catchError((_) => partFile);
