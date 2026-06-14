@@ -35,17 +35,7 @@ void main() async {
 
   print('App starting...');
 
-  // Initialize Firebase core (local, fast) before rendering so Firebase
-  // services are available. Network-heavy init runs in the background below.
-  try {
-    await Firebase.initializeApp();
-    print('Firebase initialized');
-  } catch (e) {
-    print('Firebase initialization failed: $e');
-    // App can still work offline without Firebase
-  }
-
-  // Render immediately — the splash animation shows while background init runs.
+  // Render immediately on first frame — Firebase and all network ops run in background.
   runApp(const ThreeDClinicApp());
 
   // Background initialization — does NOT block first frame.
@@ -54,6 +44,15 @@ void main() async {
 
 /// Heavy / network-dependent initialization that must not block the UI.
 Future<void> _initInBackground() async {
+  // Initialize Firebase first — all Firebase services depend on this.
+  try {
+    await Firebase.initializeApp();
+    print('Firebase initialized');
+  } catch (e) {
+    print('Firebase initialization failed: $e');
+    // App can still work offline without Firebase
+  }
+
   // Sign in anonymously for Firebase Storage access
   try {
     if (FirebaseAuth.instance.currentUser == null) {
