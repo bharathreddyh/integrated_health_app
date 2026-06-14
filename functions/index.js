@@ -211,6 +211,70 @@ exports.onModelUploaded = functions
   });
 
 /**
+ * One-time admin endpoint: Draco-compress every existing .glb under models/
+ * that hasn't been compressed yet.
+ *
+ * Already-compressed files (dracoCompressed=true) are skipped, so this is
+ * safe to call repeatedly. To avoid hitting the function timeout, only a
+ * batch of files is processed per call — keep calling until "remaining" is 0.
+ *
+ * Usage (open in a browser or curl):
+ *   https://<region>-<project>.cloudfunctions.net/compressAllModels?key=YOUR_KEY&limit=5
+ *
+ * IMPORTANT: change BULK_COMPRESS_KEY below to a long random secret before
+ * deploying, and never commit the real key to a public repo.
+ */
+const BULK_COMPRESS_KEY = "CHANGE_ME_to_a_long_random_secret";
+
+exports.compressAllModels = functions
+  .runWith({ memory: "2GB", timeoutSeconds: 540 })
+  .https.onRequest(async (req, res) => {
+    if (req.query.key !== BULK_COMPRESS_KEY) {
+      res.status(403).send("Forbidden");
+      return;
+    }
+
+    const limit = Math.max(1, parseInt(req.query.limit, 10) || 5);
+    const bucket = admin.storage().bucket();
+    const [files] = await bucket.getFiles({ prefix: "models/" });
+
+    const results = [];
+    let processed = 0;
+    let skipped = 0;
+    let remaining = 0;
+
+    for (const file of files) {
+      if (!file.name.endsWith(".glb")) continue;
+
+      const [meta] = await file.getMetadata();
+      const custom = meta.metadata || {};
+      if (custom.dracoCompressed === "true") {
+        skipped++;
+        continue;
+      }
+
+      if (processed >= limit) {
+        remaining++;
+        continue;
+      }
+
+      const objectLike = {
+        name: file.name,
+        bucket: bucket.name,
+        metadata: custom, // carries firebaseStorageDownloadTokens for preservation
+      };
+      const compressed = await _compressAndReupload(objectLike, file.name);
+      results.push({ file: file.name, compressed });
+      processed++;
+    }
+
+    console.log(
+      `compressAllModels: processed=${processed} skipped=${skipped} remaining=${remaining}`
+    );
+    res.json({ processed, skipped, remaining, results });
+  });
+
+/**
  * Download a freshly-uploaded .glb, apply Draco mesh compression, and
  * re-upload it in place if the result is meaningfully smaller.
  *
