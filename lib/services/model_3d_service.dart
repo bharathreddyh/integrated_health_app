@@ -3,6 +3,7 @@
 // and returns a short-lived signed URL. Direct Storage access is blocked.
 
 import 'package:flutter/material.dart';
+import '../main.dart' show firebaseReady;
 
 import 'dart:async';
 import 'dart:convert' as json;
@@ -688,20 +689,26 @@ class Model3DService {
     return await _downloadViaSdk(asset, onProgress: onProgress);
   }
 
-  /// Ensure an anonymous Firebase session exists. Retries once with a longer
-  /// timeout for real devices with slow network.
+  /// Ensure an anonymous Firebase session exists. Waits for Firebase to finish
+  /// initializing first (it runs in background on startup), then retries
+  /// sign-in twice with generous timeouts for slow device networks.
   Future<void> _ensureAuth() async {
+    // Wait for Firebase.initializeApp() — it runs in background and may not
+    // have completed yet when a download is triggered shortly after launch.
+    await firebaseReady.future
+        .timeout(const Duration(seconds: 30), onTimeout: () {});
+
     if (FirebaseAuth.instance.currentUser != null) return;
-    for (var attempt = 0; attempt < 2; attempt++) {
+    for (var attempt = 0; attempt < 3; attempt++) {
       try {
         await FirebaseAuth.instance.signInAnonymously()
             .timeout(const Duration(seconds: 25));
         if (FirebaseAuth.instance.currentUser != null) return;
       } catch (e) {
-        if (attempt == 1) {
+        if (attempt == 2) {
           throw Exception('Could not authenticate (network issue). Please retry.');
         }
-        await Future.delayed(const Duration(seconds: 2));
+        await Future.delayed(const Duration(seconds: 3));
       }
     }
     if (FirebaseAuth.instance.currentUser == null) {

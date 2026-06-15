@@ -29,7 +29,14 @@ import 'config/model_3d_config.dart';
 
 
 
+import 'dart:async';
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+/// Completes once Firebase.initializeApp() finishes (or fails).
+/// Code that needs Firebase (e.g. Auth, Storage) should await this first.
+final Completer<void> firebaseReady = Completer<void>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -48,9 +55,10 @@ Future<void> _initInBackground() async {
   try {
     await Firebase.initializeApp();
     print('Firebase initialized');
+    firebaseReady.complete();
   } catch (e) {
     print('Firebase initialization failed: $e');
-    // App can still work offline without Firebase
+    firebaseReady.completeError(e);
   }
 
   // Sign in anonymously for Firebase Storage access
