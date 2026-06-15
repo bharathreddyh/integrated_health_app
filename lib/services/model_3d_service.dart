@@ -725,16 +725,20 @@ class Model3DService {
         request.headers['Range'] = 'bytes=$existingBytes-';
       }
       // Attach an App Check token so this raw HTTP request satisfies the
-      // Storage rule (request.app != null). Without it the request would 403
-      // and fall back to the (slower) SDK path. Best-effort: if App Check is
-      // unavailable the 403 fallback still handles it.
+      // Storage rule if App Check is ever enforced. Best-effort only: it is
+      // wrapped in a short timeout because getToken() can hang indefinitely on
+      // a device where Play Integrity isn't registered — which would leave the
+      // download stuck at 0% forever. Public storage rules mean the token is
+      // not required, so a null/timed-out token is fine.
       try {
-        final appCheckToken = await FirebaseAppCheck.instance.getToken();
+        final appCheckToken = await FirebaseAppCheck.instance
+            .getToken()
+            .timeout(const Duration(seconds: 5));
         if (appCheckToken != null && appCheckToken.isNotEmpty) {
           request.headers['X-Firebase-AppCheck'] = appCheckToken;
         }
       } catch (_) {
-        // No token — request may 403 and fall through to the SDK path.
+        // No token (or timed out) — public rules let the request through anyway.
       }
       final response = await client.send(request)
           .timeout(const Duration(seconds: 30));
