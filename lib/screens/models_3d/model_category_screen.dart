@@ -542,6 +542,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
 
   /// Cached remote catalog asset IDs for availability checks.
   Set<String>? _remoteCatalogIds;
+  bool _catalogLoading = true;
 
   Future<void> _loadRemoteCatalog() async {
     final remoteModels = await ModelCatalogService.instance.fetchRemoteCatalog();
@@ -551,6 +552,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
           ...remoteModels.map((m) => m.id),
           ...remoteModels.map((m) => m.modelFileName),
         };
+        _catalogLoading = false;
       });
     }
   }
@@ -577,12 +579,14 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
     final selectionIndex = _selectedForCompare.indexOf(model) + 1;
     final isComparison = model.isComparisonModel;
     final isFav = FavoritesService.instance.isFavorite(model.id);
-    final isAvailable = _hasUploadedAsset(model);
+    // While the remote catalog is still loading, treat availability as unknown
+    // (don't flash "Coming Soon" prematurely).
+    final isAvailable = _catalogLoading ? null : _hasUploadedAsset(model);
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: isAvailable ? () {
+        onTap: isAvailable == true ? () {
           if (_compareMode) {
             _toggleModelSelection(model);
           } else {
@@ -599,7 +603,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
         },
         borderRadius: BorderRadius.circular(12),
         child: Opacity(
-          opacity: isAvailable ? 1.0 : 0.45,
+          opacity: isAvailable == false ? 0.45 : 1.0,
           child: Container(
           decoration: BoxDecoration(
             color: const Color(0xFF1E293B),
@@ -737,14 +741,24 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                 ),
               ),
               const SizedBox(height: 4),
-              // Type Badge - show "Coming Soon" for unavailable models
+              // Type Badge — spinner while catalog loads, "Coming Soon" if unavailable
+              if (isAvailable == null)
+                const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 1.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white54),
+                  ),
+                )
+              else
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8,
                   vertical: 2,
                 ),
                 decoration: BoxDecoration(
-                  color: !isAvailable
+                  color: isAvailable == false
                       ? Colors.grey.withOpacity(0.15)
                       : isComparison
                           ? Colors.cyan.withOpacity(0.15)
@@ -754,7 +768,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  !isAvailable
+                  isAvailable == false
                       ? 'Coming Soon'
                       : isComparison
                           ? '${model.beforeLabel ?? 'Before'}/${model.afterLabel ?? 'After'}'
@@ -764,7 +778,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: !isAvailable
+                    color: isAvailable == false
                         ? Colors.grey
                         : isComparison
                             ? Colors.cyan.shade400
