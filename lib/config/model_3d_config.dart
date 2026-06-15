@@ -283,7 +283,7 @@ class Model3DConfig {
           id: 'endometrioid_cyst',
           name: 'Endometrioid Cyst',
           description: 'Chocolate cyst from endometriosis',
-          modelFileName: 'uterus', // TODO: Replace with 'endometrioid_cyst' when uploaded
+          modelFileName: 'endometrioid_cyst',
           tags: ['pathology', 'cyst', 'ovary', 'endometriosis'],
           subcategory: 'Ovary',
         ),
