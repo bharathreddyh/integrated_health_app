@@ -2,9 +2,12 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     match /models/{allPaths=**} {
-      // Only Firebase-authenticated users can read (anonymous auth included).
-      // This blocks all browser/curl access without the app's Firebase session.
-      allow read: if request.auth != null;
+      // Public read — no Firebase Auth required. The app's download token URLs
+      // are already embedded in the APK, so these models are not secret; this
+      // removes the sign-in round-trip that failed on slow device networks.
+      // Writes remain fully locked (uploads go through the Firebase console /
+      // admin only).
+      allow read: if true;
       allow write: if false;
     }
     // Block everything else by default

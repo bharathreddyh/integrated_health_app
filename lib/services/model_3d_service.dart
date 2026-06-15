@@ -689,30 +689,21 @@ class Model3DService {
     return await _downloadViaSdk(asset, onProgress: onProgress);
   }
 
-  /// Ensure an anonymous Firebase session exists. Waits for Firebase to finish
-  /// initializing first (it runs in background on startup), then retries
-  /// sign-in twice with generous timeouts for slow device networks.
+  /// Best-effort anonymous Firebase sign-in. Models are publicly readable
+  /// (see storage.rules), so downloads do NOT require auth — this never throws.
+  /// It simply attempts a sign-in if one happens to be useful, and gives up
+  /// silently on failure so a flaky network can never block a download.
   Future<void> _ensureAuth() async {
-    // Wait for Firebase.initializeApp() — it runs in background and may not
-    // have completed yet when a download is triggered shortly after launch.
+    // Wait briefly for Firebase.initializeApp() (runs in background on launch).
     await firebaseReady.future
-        .timeout(const Duration(seconds: 30), onTimeout: () {});
+        .timeout(const Duration(seconds: 15), onTimeout: () {});
 
     if (FirebaseAuth.instance.currentUser != null) return;
-    for (var attempt = 0; attempt < 3; attempt++) {
-      try {
-        await FirebaseAuth.instance.signInAnonymously()
-            .timeout(const Duration(seconds: 25));
-        if (FirebaseAuth.instance.currentUser != null) return;
-      } catch (e) {
-        if (attempt == 2) {
-          throw Exception('Could not authenticate (network issue). Please retry.');
-        }
-        await Future.delayed(const Duration(seconds: 3));
-      }
-    }
-    if (FirebaseAuth.instance.currentUser == null) {
-      throw Exception('Could not authenticate (network issue). Please retry.');
+    try {
+      await FirebaseAuth.instance.signInAnonymously()
+          .timeout(const Duration(seconds: 15));
+    } catch (_) {
+      // Ignored — public storage rules mean downloads work without auth.
     }
   }
 
