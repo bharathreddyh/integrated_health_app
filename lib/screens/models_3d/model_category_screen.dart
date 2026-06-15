@@ -544,7 +544,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
   Set<String>? _remoteCatalogIds;
 
   Future<void> _loadRemoteCatalog() async {
-    final remoteModels = await ModelCatalogService.instance.getAllRemoteModels();
+    final remoteModels = await ModelCatalogService.instance.fetchRemoteCatalog();
     if (mounted) {
       setState(() {
         _remoteCatalogIds = {
