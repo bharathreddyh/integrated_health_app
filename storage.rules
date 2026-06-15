@@ -2,10 +2,9 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     match /models/{allPaths=**} {
-      // Require a valid App Check token — i.e. the request must come from the
-      // genuine app binary (Play Integrity). No user sign-in needed, but
-      // browsers / curl / scrapers are blocked. Writes stay fully locked.
-      allow read: if request.app != null;
+      // Public read — models are not sensitive and need to work on all devices
+      // without App Check (Play Integrity) setup. Writes are fully locked.
+      allow read: if true;
       allow write: if false;
     }
     // Block everything else by default
