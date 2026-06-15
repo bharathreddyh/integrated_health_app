@@ -109,6 +109,12 @@ const SUBCATEGORY_MAP = {
   "ovary": "Ovary",
 };
 
+// Models that must NOT be Draco-compressed — gltf-pipeline breaks their
+// geometry structure, causing "can't access property extensions" in model-viewer.
+const COMPRESSION_SKIP_LIST = new Set([
+  "models/gynaec/ovary/ovary_dermoid_Cyst_2.glb",
+]);
+
 exports.onModelUploaded = functions
   .runWith({ memory: "2GB", timeoutSeconds: 540 })
   .storage.object()
@@ -126,8 +132,9 @@ exports.onModelUploaded = functions
     // and go straight to cataloguing (using the final, smaller size).
     const alreadyCompressed =
       object.metadata && object.metadata.dracoCompressed === "true";
+    const skipCompression = COMPRESSION_SKIP_LIST.has(filePath);
 
-    if (!alreadyCompressed) {
+    if (!alreadyCompressed && !skipCompression) {
       const didCompress = await _compressAndReupload(object, filePath);
       if (didCompress) {
         // The re-upload re-triggers this function with dracoCompressed=true,
