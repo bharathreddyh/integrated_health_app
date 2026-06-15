@@ -109,8 +109,20 @@ const SUBCATEGORY_MAP = {
   "ovary": "Ovary",
 };
 
-// Models that must NOT be Draco-compressed — gltf-pipeline breaks their
-// geometry structure, causing "can't access property extensions" in model-viewer.
+// Master switch for automatic Draco compression on upload.
+//
+// All existing models were already bulk-compressed once, so auto-compression
+// is no longer needed for the catalog — and it has actively broken some models
+// (gltf-pipeline mangles certain geometry, causing "can't access property
+// extensions" in model-viewer). With this OFF, NOTHING uploaded gets
+// compressed, which removes the deploy-before-upload timing race entirely:
+// you can re-upload a file any number of times and it stays exactly as-is.
+//
+// Set back to true only if you want new uploads auto-compressed again.
+const AUTO_COMPRESS_ENABLED = false;
+
+// Models that must NOT be Draco-compressed even when AUTO_COMPRESS_ENABLED is
+// true — gltf-pipeline breaks their geometry structure.
 const COMPRESSION_SKIP_LIST = new Set([
   "models/gynaec/ovary/ovary_dermoid_Cyst_2.glb",
 ]);
@@ -132,7 +144,8 @@ exports.onModelUploaded = functions
     // and go straight to cataloguing (using the final, smaller size).
     const alreadyCompressed =
       object.metadata && object.metadata.dracoCompressed === "true";
-    const skipCompression = COMPRESSION_SKIP_LIST.has(filePath);
+    const skipCompression =
+      !AUTO_COMPRESS_ENABLED || COMPRESSION_SKIP_LIST.has(filePath);
 
     if (!alreadyCompressed && !skipCompression) {
       const didCompress = await _compressAndReupload(object, filePath);
