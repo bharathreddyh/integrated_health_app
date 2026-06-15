@@ -2,12 +2,10 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     match /models/{allPaths=**} {
-      // Public read — no Firebase Auth required. The app's download token URLs
-      // are already embedded in the APK, so these models are not secret; this
-      // removes the sign-in round-trip that failed on slow device networks.
-      // Writes remain fully locked (uploads go through the Firebase console /
-      // admin only).
-      allow read: if true;
+      // Require a valid App Check token — i.e. the request must come from the
+      // genuine app binary (Play Integrity). No user sign-in needed, but
+      // browsers / curl / scrapers are blocked. Writes stay fully locked.
+      allow read: if request.app != null;
       allow write: if false;
     }
     // Block everything else by default

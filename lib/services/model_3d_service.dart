@@ -13,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 /// Thrown internally when an HTTP download gets a 401/403 so the caller can
@@ -722,6 +723,18 @@ class Model3DService {
       final request = http.Request('GET', Uri.parse(asset.url));
       if (existingBytes > 0) {
         request.headers['Range'] = 'bytes=$existingBytes-';
+      }
+      // Attach an App Check token so this raw HTTP request satisfies the
+      // Storage rule (request.app != null). Without it the request would 403
+      // and fall back to the (slower) SDK path. Best-effort: if App Check is
+      // unavailable the 403 fallback still handles it.
+      try {
+        final appCheckToken = await FirebaseAppCheck.instance.getToken();
+        if (appCheckToken != null && appCheckToken.isNotEmpty) {
+          request.headers['X-Firebase-AppCheck'] = appCheckToken;
+        }
+      } catch (_) {
+        // No token — request may 403 and fall through to the SDK path.
       }
       final response = await client.send(request)
           .timeout(const Duration(seconds: 30));

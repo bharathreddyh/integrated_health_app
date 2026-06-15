@@ -1,9 +1,11 @@
 // lib/main.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/home/nurse_home_screen.dart';
@@ -55,6 +57,22 @@ Future<void> _initInBackground() async {
   try {
     await Firebase.initializeApp();
     print('Firebase initialized');
+
+    // App Check: attests requests come from the genuine app binary (via
+    // Play Integrity on Android) so Storage rules can require request.app
+    // without forcing a user sign-in. Release builds use Play Integrity;
+    // debug builds use the debug provider (prints a token to register in the
+    // Firebase console). Failure here must not block downloads.
+    try {
+      await FirebaseAppCheck.instance.activate(
+        androidProvider:
+            kReleaseMode ? AndroidProvider.playIntegrity : AndroidProvider.debug,
+      );
+      print('App Check activated');
+    } catch (e) {
+      print('App Check activation failed: $e');
+    }
+
     firebaseReady.complete();
   } catch (e) {
     print('Firebase initialization failed: $e');
