@@ -86,13 +86,13 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
       return;
     }
 
-    setState(() {
+    if (mounted) setState(() {
       _isDownloading = true;
       _downloadFinished = false;
     });
 
     for (final systemId in systemsToDownload) {
-      setState(() => _currentlyDownloading = systemId);
+      if (mounted) setState(() => _currentlyDownloading = systemId);
 
       try {
         await _service.downloadSystem(
@@ -118,7 +118,7 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
       }
     }
 
-    setState(() {
+    if (mounted) setState(() {
       _isDownloading = false;
       _currentlyDownloading = null;
       _downloadFinished = true;
@@ -245,7 +245,7 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
       }
     }
 
-    setState(() {
+    if (mounted) setState(() {
       _isDownloading = false;
       _currentlyDownloading = null;
     });
