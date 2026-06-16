@@ -453,6 +453,39 @@ class Model3DService {
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fectopic%2Fnormal_pregnancy.glb?alt=media&token=9efddfd3-d0b6-49d4-8dbb-f3daac1633eb',
           sizeBytes: 25 * 1024 * 1024,
         ),
+        // Placenta Previa
+        AssetInfo(
+          id: 'previa_stage1',
+          name: 'Placenta Previa Type I',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fplacenta_previa%2Fprevia_stage1.glb?alt=media&token=bd12473c-121f-4862-b7ab-6abe4757b112',
+          sizeBytes: 15 * 1024 * 1024,
+        ),
+        AssetInfo(
+          id: 'previa_stage2',
+          name: 'Placenta Previa Type II',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fplacenta_previa%2Fprevia_stage2.glb?alt=media&token=4d22e02c-acd1-4f3c-a7d3-07a14006e30d',
+          sizeBytes: 15 * 1024 * 1024,
+        ),
+        AssetInfo(
+          id: 'previa_stage3',
+          name: 'Placenta Previa Type III',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fplacenta_previa%2Fprevia_stage3.glb?alt=media&token=c6525281-dff8-475f-bc5b-d06ff6b7e27a',
+          sizeBytes: 15 * 1024 * 1024,
+        ),
+        AssetInfo(
+          id: 'previa_stage4',
+          name: 'Placenta Previa Type IV',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fplacenta_previa%2Fprevia_stage4.glb?alt=media&token=3ec4f5e3-3248-48d7-81b9-55f61022e984',
+          sizeBytes: 15 * 1024 * 1024,
+        ),
         AssetInfo(
           id: 'tubal_ectopic',
           name: '3D Tubal Ectopic',
