@@ -264,6 +264,33 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
     widget.onComplete();
   }
 
+  Future<bool> _onWillPop() async {
+    if (!_isDownloading) return true;
+    final leave = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Download in progress'),
+        content: const Text(
+          'The download will continue in the background. '
+          'Come back to this screen to check progress. '
+          'Partially downloaded files are preserved so the next attempt resumes where it left off.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Stay'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Leave'),
+          ),
+        ],
+      ),
+    );
+    return leave ?? false;
+  }
+
   int get _selectedCount =>
       _selectedSystems.values.where((v) => v).length;
 
@@ -290,7 +317,20 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
   Widget build(BuildContext context) {
     final availableSystems = Model3DService.availableSystems;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final canLeave = await _onWillPop();
+        if (canLeave && mounted) {
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          } else {
+            _goBack();
+          }
+        }
+      },
+      child: Scaffold(
       appBar: widget.isFirstLaunch
           ? null
           : AppBar(
@@ -649,6 +689,7 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
           ],
         ),
       ),
+      ), // PopScope
     );
   }
 }
