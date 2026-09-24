@@ -34,12 +34,9 @@ import 'config/model_3d_config.dart';
 
 
 import 'dart:async';
+import 'services/firebase_ready.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
-/// Completes once Firebase.initializeApp() finishes (or fails).
-/// Code that needs Firebase (e.g. Auth, Storage) should await this first.
-final Completer<void> firebaseReady = Completer<void>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

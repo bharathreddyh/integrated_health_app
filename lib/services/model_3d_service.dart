@@ -3,7 +3,7 @@
 // and returns a short-lived signed URL. Direct Storage access is blocked.
 
 import 'package:flutter/material.dart';
-import '../main.dart' show firebaseReady;
+import 'firebase_ready.dart';
 
 import 'dart:async';
 import 'dart:convert' as json;
