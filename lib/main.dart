@@ -1,6 +1,7 @@
 // lib/main.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -44,6 +45,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   print('App starting...');
+
+  // Lock the whole app to landscape orientation.
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ]);
 
   // Render immediately on first frame — Firebase and all network ops run in background.
   runApp(const ThreeDClinicApp());
