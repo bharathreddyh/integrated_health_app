@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "683766033823",
+    "project_id": "integrated-health-app-285e9",
+    "storage_bucket": "integrated-health-app-285e9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:683766033823:android:9d932b750e0a12cc9761aa",
+        "android_client_info": {
+          "package_name": "com.example.integrated_health_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBh1BMhkGaV8zpysHzqO1MGhrHCxHXAOXI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
