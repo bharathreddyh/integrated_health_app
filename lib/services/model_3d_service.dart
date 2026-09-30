@@ -503,6 +503,14 @@ class Model3DService {
           sizeBytes: 25 * 1024 * 1024,
         ),
         AssetInfo(
+          id: 'tubal_ectopic_ruptured',
+          name: '3D Ruptured Tubal Ectopic',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fectopic%2Ftubal_ectopic_ruptured.glb?alt=media&token=93ee53d5-a23e-4b7f-aae1-b996a0d8a3c7',
+          sizeBytes: 25 * 1024 * 1024,
+        ),
+        AssetInfo(
           id: 'ectopic_cervical',
           name: '3D Cervical Ectopic',
           systemId: 'obstetric',
