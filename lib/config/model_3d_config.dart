@@ -556,6 +556,14 @@ class Model3DConfig {
           subcategory: 'Ectopic Pregnancy',
         ),
         Model3DItem(
+          id: 'ectopic_tubal_ruptured',
+          name: 'Ruptured Tubal Ectopic',
+          description: 'Rupture of a tubal ectopic pregnancy with intraperitoneal haemorrhage — a gynaecological emergency',
+          modelFileName: 'tubal_ectopic_ruptured',
+          tags: ['pathology', 'ectopic', 'tubal', 'ruptured', 'pregnancy', 'emergency'],
+          subcategory: 'Ectopic Pregnancy',
+        ),
+        Model3DItem(
           id: 'ectopic_ovarian',
           name: 'Ovarian Ectopic',
           description: 'Ectopic pregnancy implanted on the ovary — rare, ~3% of ectopics',
