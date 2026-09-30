@@ -252,10 +252,10 @@ class Model3DConfig {
           subcategory: 'Mullerian Anomaly',
         ),
         Model3DItem(
-          id: 'mullerian_pregnancy',
+          id: 'pregnancy_bicornuate',
           name: 'Pregnancy in Mullerian Anomaly',
-          description: 'Pregnancy in an anomalous uterus (e.g. bicornuate/septate)',
-          modelFileName: 'mullerian_pregnancy',
+          description: 'Pregnancy in an anomalous uterus (bicornuate)',
+          modelFileName: 'pregnancy_bicornuate',
           tags: ['anomaly', 'uterus', 'mullerian', 'pregnancy'],
           subcategory: 'Mullerian Anomaly',
         ),

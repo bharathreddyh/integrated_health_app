@@ -108,6 +108,14 @@ class Model3DService {
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
+          id: 'pregnancy_bicornuate',
+          name: 'Pregnancy in Mullerian Anomaly',
+          systemId: 'gynaecology',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgynaec%2Fpregnancy_mullerian%2Fpregnancy_bicornuate.glb?alt=media&token=c33905f2-a16e-4c8b-a425-6ae8550b8e87',
+          sizeBytes: 15 * 1024 * 1024, // ~15 MB
+        ),
+        AssetInfo(
           id: 'fibroid_cervical',
           name: '3D Cervical Fibroid',
           systemId: 'gynaecology',
