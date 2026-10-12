@@ -564,14 +564,6 @@ class Model3DConfig {
           subcategory: 'Ectopic Pregnancy',
         ),
         Model3DItem(
-          id: 'ectopic_ovarian',
-          name: 'Ovarian Ectopic',
-          description: 'Ectopic pregnancy implanted on the ovary — rare, ~3% of ectopics',
-          modelFileName: 'ectopic_ovarian',
-          tags: ['pathology', 'ectopic', 'ovarian', 'pregnancy'],
-          subcategory: 'Ectopic Pregnancy',
-        ),
-        Model3DItem(
           id: 'ectopic_cervical',
           name: 'Cervical Ectopic',
           description: 'Ectopic pregnancy implanted in the cervical canal — risk of severe haemorrhage',
