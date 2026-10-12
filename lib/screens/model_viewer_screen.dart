@@ -1849,18 +1849,25 @@ class _ModelPickerSheetState extends State<_ModelPickerSheet> {
   }
 
   List<Model3DCategory> get _filteredCategories {
-    if (_searchQuery.isEmpty) {
-      return Model3DConfig.categories;
+    final query = _searchQuery.toLowerCase();
+
+    // Models that can't be used in a 2-way compare: comparison (before/after)
+    // models and video models already render their own multi-panel view, and
+    // pairing them into ModelCompareScreen crashes the WebView/GPU. Also hide
+    // the model currently being viewed.
+    bool selectable(Model3DItem model) {
+      if (model.isComparisonModel || model.videoFileName != null) return false;
+      if (model.modelFileName == widget.currentModel.modelFileName) return false;
+      if (query.isEmpty) return true;
+      return model.name.toLowerCase().contains(query) ||
+          model.description.toLowerCase().contains(query) ||
+          model.tags.any((tag) => tag.toLowerCase().contains(query));
     }
 
-    final query = _searchQuery.toLowerCase();
     return Model3DConfig.categories
         .map((category) {
-          final filteredModels = category.models.where((model) {
-            return model.name.toLowerCase().contains(query) ||
-                model.description.toLowerCase().contains(query) ||
-                model.tags.any((tag) => tag.toLowerCase().contains(query));
-          }).toList();
+          final filteredModels =
+              category.models.where(selectable).toList();
 
           if (filteredModels.isEmpty) return null;
 
