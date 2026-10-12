@@ -511,6 +511,15 @@ class Model3DService {
           sizeBytes: 25 * 1024 * 1024,
         ),
         AssetInfo(
+          id: 'tubal_ectopic_rupture',
+          name: 'Tubal Ectopic Rupture Video',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fectopic%2Ftubal_ectopic_rupture.mp4?alt=media&token=a8d24428-135a-48f0-a7f9-f010be60694a',
+          sizeBytes: 15 * 1024 * 1024,
+          fileExtension: 'mp4',
+        ),
+        AssetInfo(
           id: 'ectopic_cervical',
           name: '3D Cervical Ectopic',
           systemId: 'obstetric',

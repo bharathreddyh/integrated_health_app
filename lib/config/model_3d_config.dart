@@ -554,6 +554,7 @@ class Model3DConfig {
           modelFileName: 'tubal_ectopic',
           tags: ['pathology', 'ectopic', 'tubal', 'pregnancy'],
           subcategory: 'Ectopic Pregnancy',
+          videoFileName: 'tubal_ectopic_rupture',
         ),
         Model3DItem(
           id: 'ectopic_tubal_ruptured',
