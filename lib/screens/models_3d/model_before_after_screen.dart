@@ -343,11 +343,6 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
       controller
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
         ..setBackgroundColor(const Color(0xFF0A1628))
-        ..setNavigationDelegate(NavigationDelegate(
-          onPageFinished: (_) {
-            controller.runJavaScript("document.querySelector('video')?.play();");
-          },
-        ))
         ..loadRequest(Uri.parse('http://127.0.0.1:$port/'));
 
       if (mounted) {
@@ -382,11 +377,11 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
 <body>
   <video
     src="http://127.0.0.1:$port/video.mp4"
-    autoplay
     loop
     muted
     playsinline
-    controls>
+    controls
+    preload="metadata">
   </video>
 </body>
 </html>
