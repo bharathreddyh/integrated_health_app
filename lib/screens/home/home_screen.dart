@@ -31,6 +31,39 @@ class _HomeScreenState extends State<HomeScreen> {
     _checkForNewModels();
   }
 
+  /// Time-of-day greeting, no name.
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  /// A rotating medical "Did you know?" fact that changes each day.
+  static const List<String> _facts = [
+    'The uterus can expand to over 500 times its normal size during pregnancy.',
+    'A tubal ectopic pregnancy accounts for about 95% of all ectopic pregnancies.',
+    'The placenta is the only organ the body grows and then discards.',
+    'Fetal heartbeats can be detected on ultrasound as early as 6 weeks.',
+    'The ovaries release roughly 400–500 eggs over a woman\'s reproductive lifetime.',
+    'Amniotic fluid is almost completely replaced every 3 hours near term.',
+    'Monozygotic (identical) twins occur in about 3–4 of every 1,000 births.',
+    'The cervix softens and changes colour (Goodell\'s and Chadwick\'s signs) in early pregnancy.',
+    'A full-term placenta weighs about one-sixth of the baby\'s weight.',
+    'Braxton Hicks contractions can begin as early as the second trimester.',
+    'The fallopian tubes move the egg using tiny hair-like cilia, not muscle alone.',
+    'Fibroids are the most common benign tumours of the female reproductive tract.',
+    'A dermoid cyst can contain hair, teeth, and skin tissue.',
+    'The fetal kidneys start producing urine around week 9 of gestation.',
+    'PCOS affects an estimated 1 in 10 women of reproductive age.',
+  ];
+
+  String _dailyFact() {
+    final dayOfYear =
+        DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
+    return _facts[dayOfYear % _facts.length];
+  }
+
   Future<void> _checkForNewModels() async {
     try {
       final catalog = ModelCatalogService.instance;
@@ -162,7 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 // Welcome Section
                 Text(
-                  'Welcome back,',
+                  _greeting(),
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.grey.shade500,
@@ -170,19 +203,65 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Dr. ${user.name.split(' ').first}',
+                  DateFormat('EEEE, MMMM d, yyyy').format(DateTime.now()),
                   style: const TextStyle(
-                    fontSize: 36,
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  DateFormat('EEEE, MMMM d, yyyy').format(DateTime.now()),
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade500,
+                const SizedBox(height: 20),
+                // Daily "Did you know?" medical fact
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E293B),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFF334155)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF8B5CF6).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.lightbulb_outline,
+                          color: Color(0xFFA78BFA),
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Did you know?',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFA78BFA),
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              _dailyFact(),
+                              style: TextStyle(
+                                fontSize: 14,
+                                height: 1.4,
+                                color: Colors.grey.shade300,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
