@@ -71,7 +71,26 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
     });
   }
 
+  /// Comparison models (before/after) and video models already render their
+  /// own multi-panel view, so they can't be put into a 2-way compare — doing
+  /// so creates a 3-panel situation that crashes the WebView/GPU. Returns true
+  /// if the model is a plain single model that's safe to compare.
+  bool _canCompare(Model3DItem model) {
+    return !model.isComparisonModel && model.videoFileName == null;
+  }
+
   void _toggleModelSelection(Model3DItem model) {
+    if (!_canCompare(model)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'This model already has a side-by-side view and can\'t be used in a comparison.',
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
     setState(() {
       if (_selectedForCompare.contains(model)) {
         _selectedForCompare.remove(model);
@@ -595,6 +614,17 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
         } : null,
         onLongPress: () {
           if (!_compareMode && widget.category.modelCount >= 2) {
+            if (!_canCompare(model)) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'This model already has a side-by-side view and can\'t be used in a comparison.',
+                  ),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+              return;
+            }
             setState(() {
               _compareMode = true;
               _selectedForCompare.add(model);
