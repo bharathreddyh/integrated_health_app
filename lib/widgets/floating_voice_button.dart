@@ -295,7 +295,7 @@ class FloatingVoiceButtonState extends State<FloatingVoiceButton> {
   Color _getButtonColor(VoiceState state) {
     switch (state) {
       case VoiceState.idle:
-        return const Color(0xFF3B82F6);
+        return const Color(0xFF4FA3FF);
       case VoiceState.listening:
         return Colors.red;
       case VoiceState.processing:

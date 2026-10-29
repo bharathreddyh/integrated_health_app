@@ -9,13 +9,13 @@ class AppColors {
   AppColors._();
 
   // Surfaces
-  static const Color background = Color(0xFF0F172A); // app background
-  static const Color surface = Color(0xFF1E293B); // cards / sheets
+  static const Color background = Color(0xFF0A1024); // app background
+  static const Color surface = Color(0xFF141E38); // cards / sheets
   static const Color surfaceAlt = Color(0xFF0D1F3C); // app bars / headers
-  static const Color border = Color(0xFF334155);
+  static const Color border = Color(0xFF22325C);
 
   // Accents
-  static const Color primary = Color(0xFF3B82F6); // primary blue
+  static const Color primary = Color(0xFF4FA3FF); // primary blue
   static const Color accentPurple = Color(0xFF8B5CF6); // 3D models
   static const Color accentPink = Color(0xFFEC4899); // gynaecology
   static const Color accentCyan = Color(0xFF4FC3F7); // splash / highlights
@@ -44,6 +44,35 @@ class AppRadius {
   static const BorderRadius mdAll = BorderRadius.all(Radius.circular(md));
   static const BorderRadius lgAll = BorderRadius.all(Radius.circular(lg));
   static const BorderRadius xlAll = BorderRadius.all(Radius.circular(xl));
+}
+
+/// App-wide shaded background gradient (deep navy). Painted once behind the
+/// whole app so every screen sits on a soft navy gradient instead of a flat
+/// fill. Screens keep transparent scaffolds so this shows through.
+const RadialGradient kAppBackgroundGradient = RadialGradient(
+  center: Alignment(0.0, -0.75),
+  radius: 1.5,
+  colors: [
+    Color(0xFF13274F), // lifted navy near the top
+    Color(0xFF0D1B3A),
+    Color(0xFF0A1024), // deep base
+  ],
+  stops: [0.0, 0.5, 1.0],
+);
+
+/// Paints the shaded navy background behind its [child]. Used in MaterialApp's
+/// builder to give the whole app one consistent gradient ground.
+class AppBackground extends StatelessWidget {
+  final Widget child;
+  const AppBackground({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(gradient: kAppBackgroundGradient),
+      child: child,
+    );
+  }
 }
 
 /// Standard spacing scale.
@@ -79,7 +108,7 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       colorScheme: scheme,
-      scaffoldBackgroundColor: AppColors.background,
+      scaffoldBackgroundColor: Colors.transparent,
       canvasColor: AppColors.background,
       visualDensity: VisualDensity.adaptivePlatformDensity,
       fontFamily: null, // keep platform default

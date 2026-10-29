@@ -351,7 +351,7 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
                     builder: (context) {
                       final accent = _allDownloaded
                           ? const Color(0xFF22C55E)
-                          : const Color(0xFF3B82F6);
+                          : const Color(0xFF4FA3FF);
                       return Container(
                         width: 88,
                         height: 88,
@@ -700,7 +700,7 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
                                 ? null
                                 : _startDownload,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF3B82F6),
+                              backgroundColor: const Color(0xFF4FA3FF),
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                             ),

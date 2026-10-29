@@ -205,7 +205,7 @@ class PDFGenerationService {
                   style: pw.TextStyle(
                     fontSize: 14,
                     fontWeight: pw.FontWeight.bold,
-                    color: PdfColor.fromInt(0xFF1E293B),
+                    color: PdfColor.fromInt(0xFF141E38),
                   ),
                 ),
                 pw.SizedBox(height: 8),
@@ -231,7 +231,7 @@ class PDFGenerationService {
                   style: pw.TextStyle(
                     fontSize: 14,
                     fontWeight: pw.FontWeight.bold,
-                    color: PdfColor.fromInt(0xFF1E293B),
+                    color: PdfColor.fromInt(0xFF141E38),
                   ),
                 ),
                 pw.SizedBox(height: 8),
@@ -245,7 +245,7 @@ class PDFGenerationService {
                   style: pw.TextStyle(
                     fontSize: 14,
                     fontWeight: pw.FontWeight.bold,
-                    color: PdfColor.fromInt(0xFF1E293B),
+                    color: PdfColor.fromInt(0xFF141E38),
                   ),
                 ),
                 pw.SizedBox(height: 8),
@@ -260,7 +260,7 @@ class PDFGenerationService {
                   style: pw.TextStyle(
                     fontSize: 14,
                     fontWeight: pw.FontWeight.bold,
-                    color: PdfColor.fromInt(0xFF1E293B),
+                    color: PdfColor.fromInt(0xFF141E38),
                   ),
                 ),
                 pw.SizedBox(height: 8),
@@ -285,7 +285,7 @@ class PDFGenerationService {
                   style: pw.TextStyle(
                     fontSize: 14,
                     fontWeight: pw.FontWeight.bold,
-                    color: PdfColor.fromInt(0xFF1E293B),
+                    color: PdfColor.fromInt(0xFF141E38),
                   ),
                 ),
                 pw.SizedBox(height: 8),
@@ -419,7 +419,7 @@ class PDFGenerationService {
       decoration: pw.BoxDecoration(
         gradient: pw.LinearGradient(
           colors: [
-            PdfColor.fromInt(0xFF3B82F6),
+            PdfColor.fromInt(0xFF4FA3FF),
             PdfColor.fromInt(0xFF1E40AF),
           ],
         ),
@@ -471,7 +471,7 @@ class PDFGenerationService {
       padding: const pw.EdgeInsets.only(bottom: 8),
       decoration: pw.BoxDecoration(
         border: pw.Border(
-          bottom: pw.BorderSide(color: PdfColor.fromInt(0xFF3B82F6), width: 2),
+          bottom: pw.BorderSide(color: PdfColor.fromInt(0xFF4FA3FF), width: 2),
         ),
       ),
       child: pw.Text(
@@ -479,7 +479,7 @@ class PDFGenerationService {
         style: pw.TextStyle(
           fontSize: 16,
           fontWeight: pw.FontWeight.bold,
-          color: PdfColor.fromInt(0xFF1E293B),
+          color: PdfColor.fromInt(0xFF141E38),
         ),
       ),
     );

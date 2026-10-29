@@ -224,7 +224,7 @@ class _PatientVoiceEntryScreenState extends State<PatientVoiceEntryScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Voice Entry - ${widget.patient.name}'),
-        backgroundColor: const Color(0xFF3B82F6),
+        backgroundColor: const Color(0xFF4FA3FF),
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -285,7 +285,7 @@ class _PatientVoiceEntryScreenState extends State<PatientVoiceEntryScreen> {
       builder: (context) => AlertDialog(
         title: const Row(
           children: [
-            Icon(Icons.help_outline, color: Color(0xFF3B82F6)),
+            Icon(Icons.help_outline, color: Color(0xFF4FA3FF)),
             SizedBox(width: 8),
             Text('Voice Commands Help'),
           ],

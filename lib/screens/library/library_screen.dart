@@ -18,7 +18,7 @@ class _LibraryScreenState extends State<LibraryScreen> with TickerProviderStateM
 
   static const _systemColors = <String, Color>{
     'thyroid': Color(0xFFF59E0B),
-    'kidney': Color(0xFF3B82F6),
+    'kidney': Color(0xFF4FA3FF),
     'cardiac': Color(0xFFEF4444),
     'pulmonary': Color(0xFF10B981),
     'neuro': Color(0xFF8B5CF6),
@@ -242,7 +242,7 @@ class _LibraryScreenState extends State<LibraryScreen> with TickerProviderStateM
                           ),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                            color: const Color(0xFF1E293B),
+                            color: const Color(0xFF141E38),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [

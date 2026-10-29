@@ -132,7 +132,7 @@ class MedicalSystemsConfig {
     name: 'Renal System',
     description: 'Kidneys, Filtration, Electrolytes',
     icon: Icons.water_drop,
-    color: Color(0xFF3B82F6), // Blue
+    color: Color(0xFF4FA3FF), // Blue
     categories: [
       DiseaseCategory(
         id: 'ckd',

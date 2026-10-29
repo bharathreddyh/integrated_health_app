@@ -278,7 +278,7 @@ class _MedicalSystemsScreenState extends State<MedicalSystemsScreen> {
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
+                        color: Color(0xFF141E38),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -428,7 +428,7 @@ class _MedicalSystemsScreenState extends State<MedicalSystemsScreen> {
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+                  color: Color(0xFF141E38),
                 ),
               ),
               const SizedBox(height: 4),

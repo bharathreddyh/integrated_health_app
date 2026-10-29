@@ -91,7 +91,7 @@ class _SystemCard extends StatelessWidget {
 
   static const _systemColors = <String, List<Color>>{
     'thyroid': [Color(0xFFF59E0B), Color(0xFFD97706)],
-    'kidney': [Color(0xFF3B82F6), Color(0xFF2563EB)],
+    'kidney': [Color(0xFF4FA3FF), Color(0xFF2563EB)],
     'cardiac': [Color(0xFFEF4444), Color(0xFFDC2626)],
     'pulmonary': [Color(0xFF10B981), Color(0xFF059669)],
     'neuro': [Color(0xFF8B5CF6), Color(0xFF7C3AED)],

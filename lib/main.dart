@@ -148,7 +148,7 @@ class ThreeDClinicApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
 
         builder: (context, child) {
-          return child!;
+          return AppBackground(child: child!);
         },
 
         home: const AuthWrapper(),

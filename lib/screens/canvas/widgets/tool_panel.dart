@@ -511,7 +511,7 @@ class _ToolPanelState extends State<ToolPanel> {
                                     divisions: 46,
                                     label: widget.markers[widget.selectedMarkerIndex!].size.round().toString(),
                                     onChanged: widget.onMarkerSizeChanged,
-                                    activeColor: const Color(0xFF3B82F6),
+                                    activeColor: const Color(0xFF4FA3FF),
                                   ),
                                 ),
                                 SizedBox(

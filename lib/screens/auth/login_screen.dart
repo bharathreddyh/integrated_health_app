@@ -165,7 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: Icon(
                                 Icons.local_hospital,
                                 size: logoSize * 0.5,
-                                color: const Color(0xFF3B82F6),
+                                color: const Color(0xFF4FA3FF),
                               ),
                             ),
                             SizedBox(height: spacing),
@@ -325,7 +325,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ElevatedButton(
                                       onPressed: _isLoading ? null : _handleLogin,
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFF3B82F6),
+                                        backgroundColor: const Color(0xFF4FA3FF),
                                         foregroundColor: Colors.white,
                                         padding: EdgeInsets.symmetric(
                                           vertical: isSmallScreen ? 14 : 16,

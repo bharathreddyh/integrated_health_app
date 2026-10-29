@@ -112,7 +112,7 @@ class MultiImagePDFService {
       decoration: pw.BoxDecoration(
         gradient: pw.LinearGradient(
           colors: [
-            PdfColor.fromInt(0xFF3B82F6),
+            PdfColor.fromInt(0xFF4FA3FF),
             PdfColor.fromInt(0xFF1E40AF),
           ],
         ),
@@ -197,7 +197,7 @@ class MultiImagePDFService {
               style: pw.TextStyle(
                 fontSize: 14,
                 fontWeight: pw.FontWeight.bold,
-                color: PdfColor.fromInt(0xFF1E293B),
+                color: PdfColor.fromInt(0xFF141E38),
               ),
             ),
             pw.Spacer(),

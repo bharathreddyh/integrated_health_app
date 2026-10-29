@@ -229,7 +229,7 @@ class _PatientFilterWidgetState extends State<PatientFilterWidget> {
       },
       dense: true,
       contentPadding: EdgeInsets.zero,
-      activeColor: const Color(0xFF3B82F6),
+      activeColor: const Color(0xFF4FA3FF),
     );
   }
 

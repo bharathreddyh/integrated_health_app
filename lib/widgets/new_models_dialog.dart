@@ -216,7 +216,7 @@ class _NewModelsDialogState extends State<NewModelsDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF1E293B),
+      backgroundColor: const Color(0xFF141E38),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         width: 420,
@@ -322,7 +322,7 @@ class _NewModelsDialogState extends State<NewModelsDialog> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFF0F172A),
+            color: const Color(0xFF0A1024),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -505,7 +505,7 @@ class _NewModelsDialogState extends State<NewModelsDialog> {
           child: LinearProgressIndicator(
             value: overallProgress,
             minHeight: 8,
-            backgroundColor: const Color(0xFF334155),
+            backgroundColor: const Color(0xFF22325C),
             valueColor: const AlwaysStoppedAnimation(Color(0xFF8B5CF6)),
           ),
         ),
@@ -599,10 +599,10 @@ class _BackgroundDownloadBannerState extends State<BackgroundDownloadBanner>
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: _completedRecently ? const Color(0xFF064E3B) : const Color(0xFF1E293B),
+        color: _completedRecently ? const Color(0xFF064E3B) : const Color(0xFF141E38),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: _completedRecently ? const Color(0xFF10B981) : const Color(0xFF334155),
+          color: _completedRecently ? const Color(0xFF10B981) : const Color(0xFF22325C),
         ),
       ),
       child: _completedRecently ? _buildCompleted(p) : _buildProgress(p),
@@ -647,7 +647,7 @@ class _BackgroundDownloadBannerState extends State<BackgroundDownloadBanner>
           child: LinearProgressIndicator(
             value: p.overallProgress,
             minHeight: 4,
-            backgroundColor: const Color(0xFF334155),
+            backgroundColor: const Color(0xFF22325C),
             valueColor: const AlwaysStoppedAnimation(Color(0xFF8B5CF6)),
           ),
         ),
@@ -844,7 +844,7 @@ class _UpdatedModelsDialogState extends State<UpdatedModelsDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF1E293B),
+      backgroundColor: const Color(0xFF141E38),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         width: 420,
@@ -867,10 +867,10 @@ class _UpdatedModelsDialogState extends State<UpdatedModelsDialog> {
           width: 64,
           height: 64,
           decoration: BoxDecoration(
-            color: const Color(0xFF3B82F6).withOpacity(0.2),
+            color: const Color(0xFF4FA3FF).withOpacity(0.2),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: const Icon(Icons.update_rounded, color: Color(0xFF3B82F6), size: 32),
+          child: const Icon(Icons.update_rounded, color: Color(0xFF4FA3FF), size: 32),
         ),
         const SizedBox(height: 20),
 
@@ -900,7 +900,7 @@ class _UpdatedModelsDialogState extends State<UpdatedModelsDialog> {
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Row(
                   children: [
-                    const Icon(Icons.sync_rounded, size: 16, color: Color(0xFF3B82F6)),
+                    const Icon(Icons.sync_rounded, size: 16, color: Color(0xFF4FA3FF)),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
@@ -947,7 +947,7 @@ class _UpdatedModelsDialogState extends State<UpdatedModelsDialog> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3B82F6),
+              backgroundColor: const Color(0xFF4FA3FF),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
@@ -969,8 +969,8 @@ class _UpdatedModelsDialogState extends State<UpdatedModelsDialog> {
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             ),
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF3B82F6),
-              side: const BorderSide(color: Color(0xFF3B82F6), width: 1),
+              foregroundColor: const Color(0xFF4FA3FF),
+              side: const BorderSide(color: Color(0xFF4FA3FF), width: 1),
               padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -1003,7 +1003,7 @@ class _UpdatedModelsDialogState extends State<UpdatedModelsDialog> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.downloading_rounded, color: Color(0xFF3B82F6), size: 48),
+        const Icon(Icons.downloading_rounded, color: Color(0xFF4FA3FF), size: 48),
         const SizedBox(height: 20),
         const Text(
           'Updating Models...',
@@ -1021,8 +1021,8 @@ class _UpdatedModelsDialogState extends State<UpdatedModelsDialog> {
           child: LinearProgressIndicator(
             value: overallProgress,
             minHeight: 8,
-            backgroundColor: const Color(0xFF334155),
-            valueColor: const AlwaysStoppedAnimation(Color(0xFF3B82F6)),
+            backgroundColor: const Color(0xFF22325C),
+            valueColor: const AlwaysStoppedAnimation(Color(0xFF4FA3FF)),
           ),
         ),
         const SizedBox(height: 12),

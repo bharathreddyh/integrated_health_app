@@ -83,7 +83,7 @@ class VoiceFeedbackOverlay extends StatelessWidget {
 
   Color _getBackgroundColor() {
     if (waitingForClick) return const Color(0xFF10B981); // Green
-    if (isListening) return const Color(0xFF3B82F6); // Blue
+    if (isListening) return const Color(0xFF4FA3FF); // Blue
     if (message.contains('not recognized') || message.contains('does not exist')) {
       return const Color(0xFFEF4444); // Red
     }

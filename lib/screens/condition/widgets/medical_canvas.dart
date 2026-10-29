@@ -157,7 +157,7 @@ class _MedicalCanvasState extends State<MedicalCanvas> {
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF1E293B),
+              color: Color(0xFF141E38),
             ),
           ),
           const SizedBox(height: 8),

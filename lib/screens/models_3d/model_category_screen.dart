@@ -150,7 +150,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
     final isObstetric = widget.category.id == 'obstetric';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: Colors.transparent,
       floatingActionButton: _compareMode && _selectedForCompare.length == 2
           ? FloatingActionButton.extended(
               onPressed: _launchComparison,
@@ -181,7 +181,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                         onPressed: () => Navigator.pop(context),
                         icon: const Icon(Icons.arrow_back, color: Colors.white),
                         style: IconButton.styleFrom(
-                          backgroundColor: const Color(0xFF1E293B),
+                          backgroundColor: const Color(0xFF141E38),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -232,7 +232,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                           style: IconButton.styleFrom(
                             backgroundColor: _compareMode
                                 ? Colors.orange.withOpacity(0.15)
-                                : const Color(0xFF1E293B),
+                                : const Color(0xFF141E38),
                           ),
                           tooltip: _compareMode ? 'Exit compare' : 'Compare models',
                         ),
@@ -291,9 +291,9 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                   // Search Bar
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1E293B),
+                      color: const Color(0xFF141E38),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFF334155)),
+                      border: Border.all(color: const Color(0xFF22325C)),
                     ),
                     child: TextField(
                       controller: _searchController,
@@ -375,12 +375,12 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
             decoration: BoxDecoration(
               color: isSelected
                   ? widget.category.color
-                  : const Color(0xFF1E293B),
+                  : const Color(0xFF141E38),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isSelected
                     ? widget.category.color
-                    : const Color(0xFF334155),
+                    : const Color(0xFF22325C),
               ),
             ),
             child: Row(
@@ -631,7 +631,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
             });
           }
         },
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         child: Opacity(
           opacity: isAvailable == false ? 0.45 : 1.0,
           child: Container(
@@ -640,23 +640,30 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                const Color(0xFF1E293B),
+                const Color(0xFF162138),
                 Color.alphaBlend(
-                    widget.category.color.withOpacity(0.06),
-                    const Color(0xFF1E293B)),
+                    widget.category.color.withOpacity(0.08),
+                    const Color(0xFF111A30)),
               ],
             ),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isSelected
                   ? Colors.orange
                   : isComparison
                       ? Colors.cyan.withOpacity(0.5)
-                      : const Color(0xFF334155),
+                      : Colors.white.withOpacity(0.06),
               width: isSelected ? 2 : 1,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.35),
+                blurRadius: 18,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(14),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -767,7 +774,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(2),
                           decoration: const BoxDecoration(
-                            color: Color(0xFF0F172A),
+                            color: Color(0xFF0A1024),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -807,8 +814,8 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
               else
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 2,
+                  horizontal: 11,
+                  vertical: 4,
                 ),
                 decoration: BoxDecoration(
                   color: isAvailable == false
@@ -818,7 +825,7 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                           : isPathology
                               ? Colors.red.withOpacity(0.15)
                               : Colors.green.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   isAvailable == false

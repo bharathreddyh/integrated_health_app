@@ -164,7 +164,7 @@ class _ModelThumbnailWidgetState extends State<ModelThumbnailWidget>
 
       final controller = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(const Color(0xFF1E293B))
+        ..setBackgroundColor(const Color(0xFF141E38))
         ..setNavigationDelegate(
           NavigationDelegate(
             onPageFinished: (_) {
@@ -273,7 +273,7 @@ class _ModelThumbnailWidgetState extends State<ModelThumbnailWidget>
         width: widget.size,
         height: widget.size,
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: const Color(0xFF141E38),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Stack(
@@ -330,7 +330,7 @@ class _ModelThumbnailWidgetState extends State<ModelThumbnailWidget>
         width: widget.size,
         height: widget.size,
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: const Color(0xFF141E38),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Stack(

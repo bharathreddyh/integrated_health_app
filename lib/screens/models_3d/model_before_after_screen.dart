@@ -548,7 +548,7 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: const Color(0xFF141E38),
         title: const Text('Clear All Drawings?', style: TextStyle(color: Colors.white)),
         actions: [
           TextButton(
@@ -599,7 +599,7 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
       final name = await showDialog<String>(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1E293B),
+          backgroundColor: const Color(0xFF141E38),
           title: const Text('Save Screenshot', style: TextStyle(color: Colors.white)),
           content: TextField(
             controller: nameController,
@@ -718,7 +718,7 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
                   // Divider
                   Container(
                     width: 2,
-                    color: const Color(0xFF334155),
+                    color: const Color(0xFF22325C),
                   ),
                   // After Model (or Video in video mode)
                   Expanded(
@@ -1087,7 +1087,7 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
     final widths = [2.0, 3.0, 5.0, 8.0];
 
     return Container(
-      color: const Color(0xFF1E293B),
+      color: const Color(0xFF141E38),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: SafeArea(
         top: false,
@@ -1251,7 +1251,7 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
             width: 120,
             child: LinearProgressIndicator(
               value: progress > 0 ? progress : null,
-              backgroundColor: const Color(0xFF334155),
+              backgroundColor: const Color(0xFF22325C),
               valueColor: AlwaysStoppedAnimation(color),
             ),
           ),
@@ -1297,9 +1297,9 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
-        color: Color(0xFF1E293B),
+        color: Color(0xFF141E38),
         border: Border(
-          top: BorderSide(color: Color(0xFF334155)),
+          top: BorderSide(color: Color(0xFF22325C)),
         ),
       ),
       child: Column(

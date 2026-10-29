@@ -94,7 +94,7 @@ class _AIDiagnosisScreenState extends State<AIDiagnosisScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('AI Diagnosis Assistant'),
-        backgroundColor: const Color(0xFF3B82F6),
+        backgroundColor: const Color(0xFF4FA3FF),
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -160,7 +160,7 @@ class _AIDiagnosisScreenState extends State<AIDiagnosisScreen> {
                           : const Icon(Icons.psychology),
                       label: Text(_isLoading ? 'Analyzing...' : 'Get AI Suggestions'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF3B82F6),
+                        backgroundColor: const Color(0xFF4FA3FF),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         textStyle: const TextStyle(
@@ -229,7 +229,7 @@ class _AIDiagnosisScreenState extends State<AIDiagnosisScreen> {
               children: [
                 CircleAvatar(
                   radius: 30,
-                  backgroundColor: const Color(0xFF3B82F6),
+                  backgroundColor: const Color(0xFF4FA3FF),
                   child: Text(
                     widget.patient.name.substring(0, 1).toUpperCase(),
                     style: const TextStyle(

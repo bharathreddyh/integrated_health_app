@@ -32,7 +32,7 @@ class _Models3DScreenState extends State<Models3DScreen> {
         : <Model3DItem>[];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -50,7 +50,7 @@ class _Models3DScreenState extends State<Models3DScreen> {
                           onPressed: () => Navigator.pop(context),
                           icon: const Icon(Icons.arrow_back, color: Colors.white),
                           style: IconButton.styleFrom(
-                            backgroundColor: const Color(0xFF1E293B),
+                            backgroundColor: const Color(0xFF141E38),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -100,12 +100,12 @@ class _Models3DScreenState extends State<Models3DScreen> {
                     // Search Bar
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E293B),
+                        color: const Color(0xFF141E38),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: _isSearching
                               ? const Color(0xFF8B5CF6)
-                              : const Color(0xFF334155),
+                              : const Color(0xFF22325C),
                         ),
                       ),
                       child: TextField(
@@ -242,9 +242,9 @@ class _Models3DScreenState extends State<Models3DScreen> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
+              color: const Color(0xFF141E38),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF334155)),
+              border: Border.all(color: const Color(0xFF22325C)),
             ),
             child: Row(
               children: [
@@ -352,7 +352,7 @@ class _Models3DScreenState extends State<Models3DScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: isActive ? () => _openCategoryScreen(category) : null,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
         child: Opacity(
           opacity: isActive ? 1.0 : 0.5,
           child: Container(
@@ -361,25 +361,29 @@ class _Models3DScreenState extends State<Models3DScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  const Color(0xFF1E293B),
+                  const Color(0xFF162138),
                   Color.alphaBlend(
-                      category.color.withOpacity(0.06),
-                      const Color(0xFF1E293B)),
+                      category.color.withOpacity(0.08),
+                      const Color(0xFF111A30)),
                 ],
               ),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF334155)),
-              boxShadow: isActive
-                  ? [
-                      BoxShadow(
-                        color: category.color.withOpacity(0.10),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                      ),
-                    ]
-                  : null,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withOpacity(0.06)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.35),
+                  blurRadius: 18,
+                  offset: const Offset(0, 10),
+                ),
+                if (isActive)
+                  BoxShadow(
+                    color: category.color.withOpacity(0.14),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+              ],
             ),
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

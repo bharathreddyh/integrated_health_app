@@ -53,7 +53,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     final favorites = _getFavoriteModels();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Column(
           children: [
@@ -66,7 +66,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.arrow_back, color: Colors.white),
                     style: IconButton.styleFrom(
-                      backgroundColor: const Color(0xFF1E293B),
+                      backgroundColor: const Color(0xFF141E38),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -185,9 +185,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         borderRadius: BorderRadius.circular(12),
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
+            color: const Color(0xFF141E38),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF334155)),
+            border: Border.all(color: const Color(0xFF22325C)),
           ),
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -218,7 +218,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(2),
                         decoration: const BoxDecoration(
-                          color: Color(0xFF0F172A),
+                          color: Color(0xFF0A1024),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(

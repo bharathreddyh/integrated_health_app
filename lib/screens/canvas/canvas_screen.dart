@@ -919,7 +919,7 @@ class _CanvasScreenState extends State<CanvasScreen> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: _voiceService.isListening
                                       ? Colors.grey
-                                      : const Color(0xFF3B82F6),
+                                      : const Color(0xFF4FA3FF),
                                   foregroundColor: Colors.white,
                                   padding:
                                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

@@ -141,7 +141,7 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF3B82F6),
+                backgroundColor: const Color(0xFF4FA3FF),
                 foregroundColor: Colors.white,
               ),
               child: const Text('Run Anyway'),
@@ -198,7 +198,7 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3B82F6),
+              backgroundColor: const Color(0xFF4FA3FF),
               foregroundColor: Colors.white,
             ),
             child: const Text('Re-download'),
@@ -250,7 +250,7 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF1E293B),
+        foregroundColor: const Color(0xFF141E38),
         leading: widget.isFirstLaunch
             ? null
             : IconButton(
@@ -389,7 +389,7 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
                                 : 'Download Selected ($_selectedFormattedSize)',
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF3B82F6),
+                        backgroundColor: const Color(0xFF4FA3FF),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -406,7 +406,7 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
                       onPressed: _finish,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.grey.shade200,
-                        foregroundColor: const Color(0xFF1E293B),
+                        foregroundColor: const Color(0xFF141E38),
                         padding: const EdgeInsets.symmetric(
                           vertical: 16,
                           horizontal: 24,

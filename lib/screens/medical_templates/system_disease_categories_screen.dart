@@ -294,7 +294,7 @@ class _SystemDiseaseCategoriesScreenState
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF1E293B),
+                            color: Color(0xFF141E38),
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -399,7 +399,7 @@ class _SystemDiseaseCategoriesScreenState
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
-                        color: const Color(0xFF1E293B),
+                        color: const Color(0xFF141E38),
                       ),
                     ),
                     trailing: Icon(

@@ -552,7 +552,7 @@ class Model3DService {
       systemId: 'renal',
       name: 'Renal System',
       description: '3D models: Kidney, Nephron',
-      colorValue: 0xFF3B82F6,
+      colorValue: 0xFF4FA3FF,
       icon: Icons.water_drop,
       assets: [
         // Add assets here when available

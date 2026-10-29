@@ -202,7 +202,7 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
 
       final controller = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(const Color(0xFF1E293B))
+        ..setBackgroundColor(const Color(0xFF141E38))
         ..loadRequest(Uri.parse('http://127.0.0.1:$port/'));
 
       if (mounted) {
@@ -326,7 +326,7 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
                   // Divider
                   Container(
                     width: 2,
-                    color: const Color(0xFF334155),
+                    color: const Color(0xFF22325C),
                   ),
                   // Right Model
                   Expanded(
@@ -363,7 +363,7 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
     return Stack(
       children: [
         // Background
-        Container(color: const Color(0xFF1E293B)),
+        Container(color: const Color(0xFF141E38)),
         // Model Viewer
         if (state == _LoadState.ready && controller != null)
           WebViewWidget(
@@ -450,7 +450,7 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
             width: 120,
             child: LinearProgressIndicator(
               value: progress > 0 ? progress : null,
-              backgroundColor: const Color(0xFF334155),
+              backgroundColor: const Color(0xFF22325C),
               valueColor: const AlwaysStoppedAnimation(Color(0xFF8B5CF6)),
             ),
           ),
@@ -496,9 +496,9 @@ class _ModelCompareScreenState extends State<ModelCompareScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
-        color: Color(0xFF1E293B),
+        color: Color(0xFF141E38),
         border: Border(
-          top: BorderSide(color: Color(0xFF334155)),
+          top: BorderSide(color: Color(0xFF22325C)),
         ),
       ),
       child: Row(

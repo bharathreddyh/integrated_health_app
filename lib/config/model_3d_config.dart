@@ -698,7 +698,7 @@ class Model3DConfig {
       name: 'Respiratory',
       description: 'Lungs and airway anatomy',
       icon: '💨',
-      color: Color(0xFF3B82F6),
+      color: Color(0xFF4FA3FF),
       models: [
         Model3DItem(
           id: 'lungs_normal',

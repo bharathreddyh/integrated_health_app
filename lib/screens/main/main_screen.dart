@@ -17,7 +17,7 @@ class MainScreen extends StatelessWidget {
         subtitle: 'Kidneys, Bladder, Ureters',
         description: 'Interactive kidney diagrams for patient education',
         icon: Icons.water_drop,
-        color: Color(0xFF3B82F6),
+        color: Color(0xFF4FA3FF),
         implemented: true,
       ),
       const OrganSystem(

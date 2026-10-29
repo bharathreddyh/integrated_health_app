@@ -91,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -110,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
+                          colors: [Color(0xFF4FA3FF), Color(0xFF8B5CF6)],
                         ),
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -135,14 +135,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E293B),
+                        color: const Color(0xFF141E38),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: [
                           CircleAvatar(
                             radius: 18,
-                            backgroundColor: const Color(0xFF3B82F6),
+                            backgroundColor: const Color(0xFF4FA3FF),
                             child: Text(
                               user.name[0].toUpperCase(),
                               style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -165,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(width: 12),
                           PopupMenuButton<String>(
                             icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade400),
-                            color: const Color(0xFF1E293B),
+                            color: const Color(0xFF141E38),
                             onSelected: (value) {
                               if (value == 'logout') {
                                 UserService.logout();
@@ -216,9 +216,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B),
+                    color: const Color(0xFF141E38),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFF334155)),
+                    border: Border.all(color: const Color(0xFF22325C)),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,7 +307,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           icon: Icons.photo_library_rounded,
                           title: 'Library',
                           subtitle: 'View saved annotations and exported images',
-                          color: const Color(0xFF3B82F6),
+                          color: const Color(0xFF4FA3FF),
                           onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(builder: (_) => const LibraryScreen()),
@@ -372,7 +372,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     final stats = snapshot.data ?? {'today': 0, 'week': 0, 'total': 0};
                     return Row(
                       children: [
-                        Expanded(child: _buildStatCard('Today', '${stats['today']}', 'visits', const Color(0xFF3B82F6))),
+                        Expanded(child: _buildStatCard('Today', '${stats['today']}', 'visits', const Color(0xFF4FA3FF))),
                         const SizedBox(width: 16),
                         Expanded(child: _buildStatCard('This Week', '${stats['week']}', 'consultations', const Color(0xFF10B981))),
                         const SizedBox(width: 16),
@@ -413,13 +413,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  const Color(0xFF1E293B),
+                  const Color(0xFF141E38),
                   Color.alphaBlend(
-                      color.withOpacity(0.07), const Color(0xFF1E293B)),
+                      color.withOpacity(0.07), const Color(0xFF141E38)),
                 ],
               ),
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFF334155), width: 1),
+              border: Border.all(color: const Color(0xFF22325C), width: 1),
               boxShadow: [
                 BoxShadow(
                   color: color.withOpacity(0.12),
@@ -526,9 +526,9 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
+            color: const Color(0xFF141E38),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFF334155), width: 1),
+            border: Border.all(color: const Color(0xFF22325C), width: 1),
           ),
           child: Row(
             children: [
@@ -576,9 +576,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: const Color(0xFF141E38),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF334155), width: 1),
+        border: Border.all(color: const Color(0xFF22325C), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
