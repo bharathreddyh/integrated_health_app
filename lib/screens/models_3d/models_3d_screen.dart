@@ -357,9 +357,27 @@ class _Models3DScreenState extends State<Models3DScreen> {
           opacity: isActive ? 1.0 : 0.5,
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF1E293B),
+                  Color.alphaBlend(
+                      category.color.withOpacity(0.06),
+                      const Color(0xFF1E293B)),
+                ],
+              ),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFF334155)),
+              boxShadow: isActive
+                  ? [
+                      BoxShadow(
+                        color: category.color.withOpacity(0.10),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ]
+                  : null,
             ),
             padding: const EdgeInsets.all(12),
             child: Column(
@@ -369,8 +387,15 @@ class _Models3DScreenState extends State<Models3DScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: category.color.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        category.color.withOpacity(0.28),
+                        category.color.withOpacity(0.12),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   child: Text(
                     category.icon,
