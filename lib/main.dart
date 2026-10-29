@@ -8,6 +8,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'firebase_options.dart';
+import 'theme/app_theme.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/home/nurse_home_screen.dart';
@@ -141,10 +142,9 @@ class ThreeDClinicApp extends StatelessWidget {
       child: MaterialApp(
         title: '3D Clinic',
         navigatorKey: navigatorKey,  // ADD THIS LINE
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          visualDensity: VisualDensity.adaptivePlatformDensity,
-        ),
+        theme: AppTheme.dark,
+        darkTheme: AppTheme.dark,
+        themeMode: ThemeMode.dark,
         debugShowCheckedModeBanner: false,
 
         builder: (context, child) {
