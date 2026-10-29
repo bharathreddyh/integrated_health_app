@@ -544,9 +544,9 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
               physics: const NeverScrollableScrollPhysics(),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 4,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                childAspectRatio: 0.9,
+                mainAxisSpacing: 14,
+                crossAxisSpacing: 14,
+                childAspectRatio: 1.15,
               ),
               itemCount: models.length,
               itemBuilder: (context, modelIndex) {
@@ -636,14 +636,12 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
           opacity: isAvailable == false ? 0.45 : 1.0,
           child: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
+            gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                const Color(0xFF162138),
-                Color.alphaBlend(
-                    widget.category.color.withOpacity(0.08),
-                    const Color(0xFF111A30)),
+                Color(0xFF1C2A4A), // lifted navy (top-left)
+                Color(0xFF0F1830), // deep navy (bottom-right)
               ],
             ),
             borderRadius: BorderRadius.circular(20),
@@ -652,20 +650,21 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                   ? Colors.orange
                   : isComparison
                       ? Colors.cyan.withOpacity(0.5)
-                      : Colors.white.withOpacity(0.06),
+                      : Colors.white.withOpacity(0.07),
               width: isSelected ? 2 : 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.35),
-                blurRadius: 18,
-                offset: const Offset(0, 10),
+                color: Colors.black.withOpacity(0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 12),
               ),
             ],
           ),
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(16),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // 3D icon with selection/comparison indicator and favorite
               Stack(
@@ -787,22 +786,25 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                     ),
                 ],
               ),
-              const SizedBox(height: 8),
-              // Model Name
-              Text(
-                model.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 4),
-              // Type Badge — spinner while catalog loads, "Coming Soon" if unavailable
-              if (isAvailable == null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Model Name
+                  Text(
+                    model.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.start,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Type Badge — spinner while catalog loads, "Coming Soon" if unavailable
+                  if (isAvailable == null)
                 const SizedBox(
                   width: 14,
                   height: 14,
@@ -847,6 +849,8 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
                                 : Colors.green.shade400,
                   ),
                 ),
+              ),
+                ],
               ),
             ],
           ),
