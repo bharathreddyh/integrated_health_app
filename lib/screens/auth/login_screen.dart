@@ -109,10 +109,15 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF3B82F6), Color(0xFF1E40AF)],
+          gradient: RadialGradient(
+            center: Alignment(0, -0.4),
+            radius: 1.3,
+            colors: [
+              Color(0xFF1a3a6e),
+              Color(0xFF0d1f3c),
+              Color(0xFF050d1a),
+            ],
+            stops: [0.0, 0.55, 1.0],
           ),
         ),
         child: SafeArea(
@@ -141,13 +146,19 @@ class _LoginScreenState extends State<LoginScreen> {
                               width: logoSize,
                               height: logoSize,
                               decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
+                                gradient: const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [Colors.white, Color(0xFFE8F1FF)],
+                                ),
+                                borderRadius: BorderRadius.circular(22),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 10),
+                                    color: const Color(0xFF4FC3F7)
+                                        .withOpacity(0.35),
+                                    blurRadius: 32,
+                                    spreadRadius: 2,
+                                    offset: const Offset(0, 8),
                                   ),
                                 ],
                               ),

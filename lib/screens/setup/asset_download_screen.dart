@@ -347,10 +347,41 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  Icon(
-                    _allDownloaded ? Icons.check_circle : Icons.download_rounded,
-                    size: 64,
-                    color: _allDownloaded ? Colors.green : const Color(0xFF3B82F6),
+                  Builder(
+                    builder: (context) {
+                      final accent = _allDownloaded
+                          ? const Color(0xFF22C55E)
+                          : const Color(0xFF3B82F6);
+                      return Container(
+                        width: 88,
+                        height: 88,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              accent.withOpacity(0.28),
+                              accent.withOpacity(0.10),
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: accent.withOpacity(0.25),
+                              blurRadius: 24,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          _allDownloaded
+                              ? Icons.check_circle
+                              : Icons.download_rounded,
+                          size: 44,
+                          color: accent,
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -451,9 +482,25 @@ class _AssetDownloadScreenState extends State<AssetDownloadScreen> {
                                     width: 48,
                                     height: 48,
                                     decoration: BoxDecoration(
-                                      color: Color(system.colorValue)
-                                          .withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(12),
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          Color(system.colorValue)
+                                              .withOpacity(0.28),
+                                          Color(system.colorValue)
+                                              .withOpacity(0.12),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(14),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Color(system.colorValue)
+                                              .withOpacity(0.18),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
                                     ),
                                     child: Icon(
                                       system.icon,
