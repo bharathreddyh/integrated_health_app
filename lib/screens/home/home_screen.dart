@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/user_service.dart';
 import '../../services/database_helper.dart';
 import '../../models/patient.dart';
@@ -25,9 +26,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  String _fact = _facts[0];
+
   @override
   void initState() {
     super.initState();
+    _loadNextFact();
     _checkForNewModels();
   }
 
@@ -39,7 +43,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return 'Good evening';
   }
 
-  /// A rotating medical "Did you know?" fact that changes each day.
+  /// A rotating medical "Did you know?" fact. Advances to the next fact in
+  /// order every time the home screen opens, wrapping around at the end.
   static const List<String> _facts = [
     'The uterus can expand to over 500 times its normal size during pregnancy.',
     'A tubal ectopic pregnancy accounts for about 95% of all ectopic pregnancies.',
@@ -58,10 +63,16 @@ class _HomeScreenState extends State<HomeScreen> {
     'PCOS affects an estimated 1 in 10 women of reproductive age.',
   ];
 
-  String _dailyFact() {
-    final dayOfYear =
-        DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
-    return _facts[dayOfYear % _facts.length];
+  Future<void> _loadNextFact() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final index = (prefs.getInt('home_fact_index') ?? 0) % _facts.length;
+      if (mounted) setState(() => _fact = _facts[index]);
+      // Advance for the next time the screen opens.
+      await prefs.setInt('home_fact_index', (index + 1) % _facts.length);
+    } catch (_) {
+      // SharedPreferences unavailable — keep the default first fact.
+    }
   }
 
   Future<void> _checkForNewModels() async {
@@ -251,7 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              _dailyFact(),
+                              _fact,
                               style: TextStyle(
                                 fontSize: 14,
                                 height: 1.4,
