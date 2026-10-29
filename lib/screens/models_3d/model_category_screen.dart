@@ -165,7 +165,30 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
               ),
             )
           : null,
-      body: SafeArea(
+      body: Stack(
+        children: [
+          // Ambient accent glow behind the content (tinted to the category)
+          Positioned(
+            top: -140,
+            left: -80,
+            right: -80,
+            child: IgnorePointer(
+              child: Container(
+                height: 380,
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: const Alignment(0, -0.2),
+                    radius: 0.85,
+                    colors: [
+                      widget.category.color.withOpacity(0.28),
+                      widget.category.color.withOpacity(0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SafeArea(
         child: Column(
           children: [
             // Header
@@ -357,6 +380,8 @@ class _ModelCategoryScreenState extends State<ModelCategoryScreen> {
             ),
           ],
         ),
+      ),
+        ],
       ),
     );
   }

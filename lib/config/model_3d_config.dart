@@ -390,7 +390,7 @@ class Model3DConfig {
       name: 'Obstetric',
       description: 'Pregnancy and placental normal and abnormal models',
       icon: '🤰',
-      color: Color(0xFFE879F9),
+      color: Color(0xFF4FA3FF),
       models: [
         // Fetal Lie
 
