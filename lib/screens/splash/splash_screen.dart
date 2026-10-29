@@ -19,16 +19,29 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _pulseController;
   late AnimationController _fadeController;
   late AnimationController _textController;
+  late AnimationController _introController;
 
   late Animation<double> _cubeRotation;
   late Animation<double> _pulseAnimation;
   late Animation<double> _fadeAnimation;
   late Animation<double> _textSlideAnimation;
   late Animation<double> _textFadeAnimation;
+  late Animation<double> _introFade;
+  late Animation<double> _introScale;
 
   @override
   void initState() {
     super.initState();
+
+    // Gentle entrance for the whole emblem (fade + scale up from 0.85).
+    _introController = AnimationController(
+      duration: const Duration(milliseconds: 900),
+      vsync: this,
+    );
+    _introFade = CurvedAnimation(parent: _introController, curve: Curves.easeOut);
+    _introScale = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(parent: _introController, curve: Curves.easeOutCubic),
+    );
 
     // 3D Cube rotation animation
     _cubeController = AnimationController(
@@ -73,6 +86,9 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _startAnimations() async {
+    // Gentle emblem entrance
+    _introController.forward();
+
     // Start cube rotation
     _cubeController.forward();
 
@@ -97,6 +113,7 @@ class _SplashScreenState extends State<SplashScreen>
     _pulseController.dispose();
     _fadeController.dispose();
     _textController.dispose();
+    _introController.dispose();
     super.dispose();
   }
 
@@ -108,6 +125,7 @@ class _SplashScreenState extends State<SplashScreen>
         _pulseAnimation,
         _fadeAnimation,
         _textSlideAnimation,
+        _introController,
       ]),
       builder: (context, child) {
         return Opacity(
@@ -132,9 +150,11 @@ class _SplashScreenState extends State<SplashScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Animated 3D Medical Icon
-                    Transform.scale(
-                      scale: _pulseAnimation.value,
-                      child: Container(
+                    Opacity(
+                      opacity: _introFade.value,
+                      child: Transform.scale(
+                        scale: _pulseAnimation.value * _introScale.value,
+                        child: Container(
                         width: 150,
                         height: 150,
                         decoration: BoxDecoration(
@@ -162,6 +182,7 @@ class _SplashScreenState extends State<SplashScreen>
                           ),
                         ),
                       ),
+                    ),
                     ),
 
                     const SizedBox(height: 50),
@@ -191,13 +212,14 @@ class _SplashScreenState extends State<SplashScreen>
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 10),
                             Text(
-                              '3D Anatomical Models',
+                              'ANATOMICAL 3D MODELS',
                               style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white.withOpacity(0.7),
-                                letterSpacing: 2,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white.withOpacity(0.55),
+                                letterSpacing: 4,
                               ),
                             ),
                           ],
@@ -210,12 +232,16 @@ class _SplashScreenState extends State<SplashScreen>
                     // Loading indicator
                     Opacity(
                       opacity: _textFadeAnimation.value,
-                      child: SizedBox(
-                        width: 200,
-                        child: LinearProgressIndicator(
-                          backgroundColor: Colors.white.withOpacity(0.1),
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            const Color(0xFF4FC3F7).withOpacity(0.8),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: SizedBox(
+                          width: 160,
+                          height: 3,
+                          child: LinearProgressIndicator(
+                            backgroundColor: Colors.white.withOpacity(0.08),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              const Color(0xFF4FC3F7).withOpacity(0.9),
+                            ),
                           ),
                         ),
                       ),
