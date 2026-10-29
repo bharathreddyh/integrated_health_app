@@ -102,7 +102,7 @@ const SUBCATEGORY_MAP = {
   "twins": "Twin Pregnancy",
   "ectopic_pregnancy": "Ectopic Pregnancy",
   "placental_pathology": "Placental Pathology",
-  "Fetus_cord_loop": "Loop of Cord",
+  "Fetus_cord_loop": "Nuchal Cord",
   "endometrium": "Endometrium",
   "mullerian": "Mullerian Anomaly",
   "fibroids": "Fibroids",

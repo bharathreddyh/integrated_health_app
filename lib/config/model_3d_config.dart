@@ -630,14 +630,14 @@ class Model3DConfig {
           tags: ['pathology', 'placenta', 'battledore', 'cord insertion'],
           subcategory: 'Placental Pathology',
         ),
-        // Loop of Cord
+        // Nuchal Cord
         Model3DItem(
           id: 'fetal_cord_loop',
-          name: 'Loop of Cord',
-          description: 'Umbilical cord loop around the fetus',
+          name: 'Nuchal Cord',
+          description: 'Umbilical cord looped around the fetal neck',
           modelFileName: 'fetal_cord_loop_',
-          tags: ['pathology', 'cord', 'fetus', 'umbilical'],
-          subcategory: 'Loop of Cord',
+          tags: ['pathology', 'cord', 'fetus', 'umbilical', 'nuchal'],
+          subcategory: 'Nuchal Cord',
         ),
       ],
     ),

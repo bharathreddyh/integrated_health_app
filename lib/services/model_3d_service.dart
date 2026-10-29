@@ -407,7 +407,7 @@ class Model3DService {
         ),
         AssetInfo(
           id: 'fetal_cord_loop',
-          name: '3D Loop of Cord',
+          name: '3D Nuchal Cord',
           systemId: 'obstetric',
           url:
               'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2FFetus_cord_loop%2Ffetal_cord_loop_.glb?alt=media&token=b6d2d533-9cdd-4943-9f70-21f7ab1ae78a',
