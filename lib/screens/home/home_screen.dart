@@ -160,20 +160,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Dr. ${user.name}',
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
-                              ),
-                              Text(
-                                user.specialty ?? 'Doctor',
-                                style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(width: 12),
                           PopupMenuButton<String>(
                             icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade400),
                             color: const Color(0xFF141E38),
