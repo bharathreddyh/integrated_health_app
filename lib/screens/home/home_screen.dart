@@ -344,55 +344,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 ),
 
-                const SizedBox(height: 48),
-
-                // Medical Templates Section
-                _buildSectionHeader('Medical Templates', Icons.healing_rounded),
-                const SizedBox(height: 16),
-                _buildTemplateCard(
-                  icon: Icons.assignment_rounded,
-                  title: 'Disease Assessment',
-                  subtitle: 'Track conditions with structured templates',
-                  color: const Color(0xFF9333EA),
-                  onTap: () async {
-                    final result = await showDialog<Map<String, dynamic>>(
-                      context: context,
-                      builder: (context) => const MedicalTemplatePatientSelectionDialog(),
-                    );
-                    if (result != null && mounted) {
-                      final patient = result['patient'] as Patient?;
-                      final isQuickMode = result['quickMode'] as bool? ?? false;
-                      if (patient != null) {
-                        Navigator.pushNamed(context, '/medical-systems', arguments: {
-                          'patient': patient,
-                          'isQuickMode': isQuickMode,
-                        });
-                      }
-                    }
-                  },
-                ),
-
-                const SizedBox(height: 48),
-
-                // Quick Stats
-                _buildSectionHeader('Activity', Icons.analytics_rounded),
-                const SizedBox(height: 16),
-                FutureBuilder<Map<String, int>>(
-                  future: _getMyStats(),
-                  builder: (context, snapshot) {
-                    final stats = snapshot.data ?? {'today': 0, 'week': 0, 'total': 0};
-                    return Row(
-                      children: [
-                        Expanded(child: _buildStatCard('Today', '${stats['today']}', 'visits', const Color(0xFF4FA3FF))),
-                        const SizedBox(width: 16),
-                        Expanded(child: _buildStatCard('This Week', '${stats['week']}', 'consultations', const Color(0xFF10B981))),
-                        const SizedBox(width: 16),
-                        Expanded(child: _buildStatCard('Total', '${stats['total']}', 'records', const Color(0xFF8B5CF6))),
-                      ],
-                    );
-                  },
-                ),
-
                 const SizedBox(height: 32),
               ],
             ),
