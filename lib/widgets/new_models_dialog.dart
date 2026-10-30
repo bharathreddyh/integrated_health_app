@@ -218,14 +218,19 @@ class _NewModelsDialogState extends State<NewModelsDialog> {
     return Dialog(
       backgroundColor: const Color(0xFF141E38),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        width: 420,
-        padding: const EdgeInsets.all(24),
-        child: _phase == 'completed'
-            ? _buildCompleted()
-            : _phase == 'downloading'
-                ? _buildDownloadProgress()
-                : _buildPrompt(),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 420,
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: _phase == 'completed'
+              ? _buildCompleted()
+              : _phase == 'downloading'
+                  ? _buildDownloadProgress()
+                  : _buildPrompt(),
+        ),
       ),
     );
   }
@@ -846,14 +851,19 @@ class _UpdatedModelsDialogState extends State<UpdatedModelsDialog> {
     return Dialog(
       backgroundColor: const Color(0xFF141E38),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        width: 420,
-        padding: const EdgeInsets.all(24),
-        child: _phase == 'completed'
-            ? _buildCompleted()
-            : _phase == 'downloading'
-                ? _buildProgress()
-                : _buildPrompt(),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 420,
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: _phase == 'completed'
+              ? _buildCompleted()
+              : _phase == 'downloading'
+                  ? _buildProgress()
+                  : _buildPrompt(),
+        ),
       ),
     );
   }
