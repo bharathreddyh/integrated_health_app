@@ -344,7 +344,7 @@ class Model3DService {
           name: '3D Ovulation (View 1)',
           systemId: 'gynaecology',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgynaec%2Fovary%2FOvary_ovulation_1.glb?alt=media&token=a7178edb-a189-4a8a-a028-db5a29c9df41',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgynaec%2Fovary%2FOvary_ovulation_1.glb?alt=media&token=61f11f4b-9eb9-4f9d-aa31-bd9cc5e950ed',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
@@ -352,7 +352,7 @@ class Model3DService {
           name: '3D Ovulation (View 2)',
           systemId: 'gynaecology',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgynaec%2Fovary%2FOvary_ovulation_2.glb?alt=media&token=afffe19e-a2c3-4f32-882a-af92a75825ec',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgynaec%2Fovary%2FOvary_ovulation_2.glb?alt=media&token=7b29e22c-704d-4834-bb34-e7e719fd925f',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
       ],
