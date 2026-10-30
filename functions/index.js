@@ -109,23 +109,20 @@ const SUBCATEGORY_MAP = {
   "ovary": "Ovary",
 };
 
-// Master switch for automatic Draco compression on upload.
+// Master switch for automatic compression on upload.
 //
-// All existing models were already bulk-compressed once, so auto-compression
-// is no longer needed for the catalog — and it has actively broken some models
-// (gltf-pipeline mangles certain geometry, causing "can't access property
-// extensions" in model-viewer). With this OFF, NOTHING uploaded gets
-// compressed, which removes the deploy-before-upload timing race entirely:
-// you can re-upload a file any number of times and it stays exactly as-is.
-//
-// Set back to true only if you want new uploads auto-compressed again.
-const AUTO_COMPRESS_ENABLED = false;
+// Compression uses meshopt (gltfpack) rather than Draco. Draco (gltf-pipeline)
+// corrupted some models — "can't access property extensions" / stuck on
+// "Loading..." in model-viewer. Meshopt compresses just as well, is supported
+// natively by model-viewer (EXT_meshopt_compression), and does NOT break these
+// models, so auto-compression is safe to leave ON: every upload is shrunk
+// automatically.
+const AUTO_COMPRESS_ENABLED = true;
 
-// Models that must NOT be Draco-compressed even when AUTO_COMPRESS_ENABLED is
-// true — gltf-pipeline breaks their geometry structure.
-const COMPRESSION_SKIP_LIST = new Set([
-  "models/gynaec/ovary/ovary_dermoid_Cyst_2.glb",
-]);
+// Models that must NOT be auto-compressed. Meshopt is safe for everything we've
+// seen, so this is normally empty; add a path here only if a specific model
+// must be served exactly as uploaded.
+const COMPRESSION_SKIP_LIST = new Set([]);
 
 exports.onModelUploaded = functions
   .runWith({ memory: "2GB", timeoutSeconds: 540 })
@@ -140,10 +137,12 @@ exports.onModelUploaded = functions
       return null;
     }
 
-    // If this upload is our own Draco-compressed re-upload, skip compression
+    // If this upload is our own compressed re-upload, skip compression
     // and go straight to cataloguing (using the final, smaller size).
     const alreadyCompressed =
-      object.metadata && object.metadata.dracoCompressed === "true";
+      object.metadata &&
+      (object.metadata.meshoptCompressed === "true" ||
+        object.metadata.dracoCompressed === "true");
     const skipCompression =
       !AUTO_COMPRESS_ENABLED || COMPRESSION_SKIP_LIST.has(filePath);
 
@@ -231,22 +230,25 @@ exports.onModelUploaded = functions
   });
 
 /**
- * Download a freshly-uploaded .glb, apply Draco mesh compression, and
- * re-upload it in place if the result is meaningfully smaller.
+ * Download a freshly-uploaded .glb, apply meshopt compression via gltfpack,
+ * and re-upload it in place if the result is meaningfully smaller.
  *
  * Returns true if a compressed version was uploaded (which re-triggers this
  * function), false if compression was skipped, failed, or not beneficial.
  *
+ * meshopt (gltfpack) is used instead of Draco: it compresses just as well, is
+ * supported natively by model-viewer (EXT_meshopt_compression), and does not
+ * corrupt geometry the way Draco did. gltfpack is a zero-dependency WASM module
+ * (no `sharp`, no native binaries), so it deploys cleanly.
+ *
  * The original Firebase download token is preserved so any URLs with an
  * embedded ?token=... (e.g. those hardcoded in the app) keep working. A
- * `dracoCompressed: "true"` custom-metadata flag marks the file so the
+ * `meshoptCompressed: "true"` custom-metadata flag marks the file so the
  * re-upload doesn't trigger an endless compress loop.
  */
 async function _compressAndReupload(object, filePath) {
-  // gltf-pipeline does Draco geometry compression via draco3d (WebAssembly).
-  // It has no native/platform-specific binaries (unlike gltf-transform, which
-  // pulls in `sharp`), so the lock file works on Firebase's Linux builders.
-  const gltfPipeline = require("gltf-pipeline");
+  // gltfpack is ESM-only; load it from this CommonJS module via dynamic import.
+  const { pack } = await import("gltfpack");
 
   const bucket = admin.storage().bucket(object.bucket);
   const file = bucket.file(filePath);
@@ -255,14 +257,30 @@ async function _compressAndReupload(object, filePath) {
     const [inputBuffer] = await file.download();
     const originalSize = inputBuffer.length;
 
-    const result = await gltfPipeline.processGlb(inputBuffer, {
-      dracoOptions: { compressionLevel: 10 },
-    });
-    const outputBuffer = result.glb;
+    // In-memory virtual filesystem for gltfpack.
+    const files = { "input.glb": new Uint8Array(inputBuffer) };
+    const iface = {
+      read: (path) => files[path],
+      write: (path, data) => {
+        files[path] = data;
+      },
+    };
+
+    // -cc = meshopt compression (EXT_meshopt_compression), plus gltfpack's
+    // default mesh optimization/quantization. -kn/-km keep named nodes and
+    // materials so the app's per-part logic keeps working.
+    await pack(["-i", "input.glb", "-o", "output.glb", "-cc", "-kn", "-km"], iface);
+
+    const outBytes = files["output.glb"];
+    if (!outBytes || outBytes.length === 0) {
+      console.error(`gltfpack produced no output for ${filePath}`);
+      return false;
+    }
+    const outputBuffer = Buffer.from(outBytes);
     const compressedSize = outputBuffer.length;
     const pct = (100 * (1 - compressedSize / originalSize)).toFixed(1);
     console.log(
-      `Draco ${filePath}: ${originalSize} → ${compressedSize} bytes (${pct}% smaller)`
+      `meshopt ${filePath}: ${originalSize} → ${compressedSize} bytes (${pct}% smaller)`
     );
 
     // Skip the re-upload if it barely helped (<5% savings) — not worth the
@@ -280,17 +298,17 @@ async function _compressAndReupload(object, filePath) {
       metadata: {
         contentType: "model/gltf-binary",
         metadata: {
-          dracoCompressed: "true",
+          meshoptCompressed: "true",
           ...(originalToken
             ? { firebaseStorageDownloadTokens: originalToken }
             : {}),
         },
       },
     });
-    console.log(`Re-uploaded Draco-compressed model: ${filePath}`);
+    console.log(`Re-uploaded meshopt-compressed model: ${filePath}`);
     return true;
   } catch (e) {
-    console.error(`Draco compression failed for ${filePath}:`, e);
+    console.error(`meshopt compression failed for ${filePath}:`, e);
     return false;
   }
 }
