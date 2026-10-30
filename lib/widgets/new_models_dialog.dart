@@ -101,17 +101,35 @@ class BackgroundDownloadProgress {
 class NewModelsDialog extends StatefulWidget {
   final List<RemoteModelEntry> newModels;
 
-  const NewModelsDialog({super.key, required this.newModels});
+  /// When true, the dialog opens straight into the "downloading" view and
+  /// observes the already-running BackgroundDownloadManager (used when the
+  /// user maximizes a minimized download).
+  final bool observeOngoing;
+
+  const NewModelsDialog({
+    super.key,
+    required this.newModels,
+    this.observeOngoing = false,
+  });
 
   /// Show the dialog. Returns:
   /// - 'downloaded' if user waited for full download
-  /// - 'background' if user chose background download
+  /// - 'background' if user chose background download / minimized
   /// - 'later' / null if dismissed
   static Future<String?> show(BuildContext context, List<RemoteModelEntry> newModels) async {
     return showDialog<String>(
       context: context,
       barrierDismissible: false,
       builder: (_) => NewModelsDialog(newModels: newModels),
+    );
+  }
+
+  /// Re-open (maximize) the dialog over an in-progress background download.
+  static Future<String?> showOngoing(BuildContext context, List<RemoteModelEntry> models) {
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => NewModelsDialog(newModels: models, observeOngoing: true),
     );
   }
 
@@ -125,6 +143,22 @@ class _NewModelsDialogState extends State<NewModelsDialog> {
   int _downloadedCount = 0;
   double _currentProgress = 0.0;
   String _currentModelName = '';
+  StreamSubscription<BackgroundDownloadProgress>? _sub;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.observeOngoing) {
+      _phase = 'downloading';
+      _observe();
+    }
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
 
   String get _totalSize {
     final bytes = widget.newModels.fold<int>(0, (sum, m) => sum + m.sizeBytes);
@@ -132,42 +166,38 @@ class _NewModelsDialogState extends State<NewModelsDialog> {
     return '${mb.toStringAsFixed(1)} MB';
   }
 
+  /// Subscribe to the background manager's progress so the dialog can mirror an
+  /// ongoing download (whether we started it or are re-observing it).
+  void _observe() {
+    _sub?.cancel();
+    _sub = BackgroundDownloadManager.instance.progressStream.listen((p) {
+      if (!mounted) return;
+      setState(() {
+        _currentModelName = p.modelName;
+        _currentProgress = p.fileProgress;
+        _downloadedCount = p.currentIndex;
+        if (p.isComplete) _phase = 'completed';
+      });
+    });
+  }
+
   Future<void> _downloadAll() async {
     setState(() {
       _phase = 'downloading';
       _downloadedCount = 0;
     });
-
-    final service = Model3DService.instance;
-    final catalog = ModelCatalogService.instance;
-
-    for (int i = 0; i < widget.newModels.length; i++) {
-      final model = widget.newModels[i];
-      setState(() {
-        _currentModelName = model.name;
-        _currentProgress = 0.0;
-      });
-
-      try {
-        await service.downloadAsset(
-          model.toAssetInfo(),
-          onProgress: (p) {
-            setState(() => _currentProgress = p);
-          },
-        );
-      } catch (e) {
-        print('Failed to download ${model.name}: $e');
-      }
-
-      setState(() => _downloadedCount = i + 1);
+    // Run through the background manager so the download survives minimizing.
+    if (!BackgroundDownloadManager.instance.isDownloading) {
+      BackgroundDownloadManager.instance.downloadModels(widget.newModels);
     }
+    _observe();
+  }
 
-    await catalog.markModelsAsKnown(widget.newModels);
-    await catalog.saveDownloadedVersions(widget.newModels);
-
-    if (mounted) {
-      setState(() => _phase = 'completed');
-    }
+  /// Minimize: keep the download running in the background manager and close the
+  /// dialog. The home screen's BackgroundDownloadBanner shows live progress and
+  /// can maximize this dialog again.
+  void _minimize() {
+    Navigator.pop(context, 'background');
   }
 
   void _downloadInBackground() {
@@ -486,6 +516,23 @@ class _NewModelsDialogState extends State<NewModelsDialog> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Minimize button (keep downloading in the background)
+        Align(
+          alignment: Alignment.topRight,
+          child: Tooltip(
+            message: 'Minimize',
+            child: IconButton(
+              onPressed: _minimize,
+              icon: const Icon(Icons.remove, color: Colors.white70),
+              style: IconButton.styleFrom(
+                backgroundColor: const Color(0xFF0A1024),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ),
+        ),
         const Icon(Icons.downloading_rounded, color: Color(0xFF8B5CF6), size: 48),
         const SizedBox(height: 20),
         const Text(
@@ -518,6 +565,13 @@ class _NewModelsDialogState extends State<NewModelsDialog> {
         Text(
           '$_downloadedCount / ${widget.newModels.length} models',
           style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+        ),
+        const SizedBox(height: 16),
+        TextButton.icon(
+          onPressed: _minimize,
+          icon: const Icon(Icons.close_fullscreen_rounded, size: 16),
+          label: const Text('Minimize & keep using the app'),
+          style: TextButton.styleFrom(foregroundColor: Colors.grey.shade400),
         ),
       ],
     );
@@ -592,6 +646,13 @@ class _BackgroundDownloadBannerState extends State<BackgroundDownloadBanner>
     setState(() { _visible = false; _completedRecently = false; });
   }
 
+  /// Maximize: reopen the full download dialog over the ongoing download.
+  void _maximize() {
+    final models = BackgroundDownloadManager.instance.downloadedModels;
+    if (models.isEmpty) return;
+    NewModelsDialog.showOngoing(context, models);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_visible) return const SizedBox.shrink();
@@ -643,6 +704,12 @@ class _BackgroundDownloadBannerState extends State<BackgroundDownloadBanner>
             Text(
               '${p.currentIndex}/${p.totalCount}',
               style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+            ),
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: _maximize,
+              child: Icon(Icons.open_in_full_rounded,
+                  size: 16, color: Colors.grey.shade400),
             ),
           ],
         ),
