@@ -460,6 +460,7 @@ class Model3DConfig {
           modelFileName: 'obs_oligohydramnios',
           tags: ['pathology', 'amniotic', 'fluid', 'oligohydramnios'],
           subcategory: 'Amniotic Fluid',
+          videoFileName: 'oligohydramnios_animation',
         ),
 
         // Placenta Previa

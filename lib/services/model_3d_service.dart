@@ -439,6 +439,15 @@ class Model3DService {
           sizeBytes: 25 * 1024 * 1024, // ~25 MB
         ),
         AssetInfo(
+          id: 'oligohydramnios_animation',
+          name: 'Oligohydramnios Animation',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fhydramnios%2Foligohydramnios_animation.mp4?alt=media&token=b299f6e5-65b5-4c3c-a370-cb5db4ff9a52',
+          sizeBytes: 15 * 1024 * 1024,
+          fileExtension: 'mp4',
+        ),
+        AssetInfo(
           id: 'obs_twins_dcda',
           name: '3D DCDA Twins',
           systemId: 'obstetric',
