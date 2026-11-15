@@ -422,6 +422,15 @@ class Model3DService {
           sizeBytes: 25 * 1024 * 1024, // ~25 MB
         ),
         AssetInfo(
+          id: 'polyhydramnios_animation',
+          name: 'Polyhydramnios Animation',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fhydramnios%2Fpolyhydramnios_animation.mp4?alt=media&token=ba7d1f0a-7928-420e-86c6-99e90d630102',
+          sizeBytes: 15 * 1024 * 1024,
+          fileExtension: 'mp4',
+        ),
+        AssetInfo(
           id: 'obs_oligohydramnios',
           name: '3D Oligohydramnios',
           systemId: 'obstetric',

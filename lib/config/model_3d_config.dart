@@ -451,6 +451,7 @@ class Model3DConfig {
           modelFileName: 'obs_polyhydramnios',
           tags: ['pathology', 'amniotic', 'fluid', 'polyhydramnios'],
           subcategory: 'Amniotic Fluid',
+          videoFileName: 'polyhydramnios_animation',
         ),
         Model3DItem(
           id: 'obs_oligohydramnios',
