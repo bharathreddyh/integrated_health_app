@@ -418,7 +418,7 @@ class Model3DService {
           name: '3D Polyhydramnios',
           systemId: 'obstetric',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fhydramnios%2Fpolyhydramnios.glb?alt=media&token=8df75a0b-5360-4422-a823-ed5d6868575c',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fhydramnios%2Fpolyhydramnios.glb?alt=media&token=b5dfd3ea-ff85-4eeb-b871-44e84b1f737e',
           sizeBytes: 25 * 1024 * 1024, // ~25 MB
         ),
         AssetInfo(
