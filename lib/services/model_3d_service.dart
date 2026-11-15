@@ -365,19 +365,19 @@ class Model3DService {
       icon: Icons.pregnant_woman,
       assets: [
         AssetInfo(
-          id: 'fetal_cephalic',
+          id: 'fetus_present_cephalic',
           name: '3D Cephalic Presentation',
           systemId: 'obstetric',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Ffetus_present_cephalic.glb?alt=media&token=2bba4a07-77d9-4818-8cca-e53420c67211',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Fcephalic.glb?alt=media&token=5e815f23-b5b7-4ad4-b892-de0d1f41f4f9',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
-          id: 'fetal_breech',
+          id: 'fetus_present_breech',
           name: '3D Breech Presentation',
           systemId: 'obstetric',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Ffetus_present_breech.glb?alt=media&token=cef8e5d0-fab6-41fa-b282-63880ccff3f2',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Fbreech.glb?alt=media&token=da3028b0-70d0-46e9-b852-c0c746629971',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
@@ -415,11 +415,11 @@ class Model3DService {
           fileExtension: 'mp4',
         ),
         AssetInfo(
-          id: 'fetal_oblique',
+          id: 'fetus_present_oblique',
           name: '3D Oblique Lie',
           systemId: 'obstetric',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Ffetus_present_oblique.glb?alt=media&token=6b0594af-e0b9-4d43-a3a7-84167617ad1a',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Foblique.glb?alt=media&token=58d6dc27-2d1f-4739-bd90-897780656f7f',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
