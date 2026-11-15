@@ -411,10 +411,10 @@ class Model3DConfig {
           id: 'fetal_transverse',
           name: 'Transverse Lie',
           description: 'Fetal long axis perpendicular to the maternal long axis — shoulder presenting',
-          modelFileName: 'fetus_present_Transverse',
+          modelFileName: 'transverse_lie',
           tags: ['pathology', 'fetus', 'lie', 'malposition'],
           subcategory: 'Fetal Lie',
-          videoFileName: 'fetus_present_transverse_2',
+          videoFileName: 'transverse_lie_animation',
         ),
         Model3DItem(
           id: 'fetal_oblique',

@@ -398,6 +398,23 @@ class Model3DService {
           fileExtension: 'mp4',
         ),
         AssetInfo(
+          id: 'transverse_lie',
+          name: '3D Transverse Lie',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fhydramnios%2Ftransverse_lie.glb?alt=media&token=524847b4-1899-4517-88b1-a010f6e9d23c',
+          sizeBytes: 15 * 1024 * 1024,
+        ),
+        AssetInfo(
+          id: 'transverse_lie_animation',
+          name: 'Transverse Lie Animation',
+          systemId: 'obstetric',
+          url:
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fhydramnios%2Ftransverse_lie_animation.mp4?alt=media&token=4bab8722-268e-4f60-8216-5365544661dd',
+          sizeBytes: 15 * 1024 * 1024,
+          fileExtension: 'mp4',
+        ),
+        AssetInfo(
           id: 'fetal_oblique',
           name: '3D Oblique Lie',
           systemId: 'obstetric',
@@ -418,7 +435,7 @@ class Model3DService {
           name: '3D Polyhydramnios',
           systemId: 'obstetric',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fhydramnios%2Fpolyhydramnios.glb?alt=media&token=b5dfd3ea-ff85-4eeb-b871-44e84b1f737e',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fhydramnios%2Fpolyhydramnios.glb?alt=media&token=64b291b3-1562-4689-86e8-7b5c186caa9c',
           sizeBytes: 25 * 1024 * 1024, // ~25 MB
         ),
         AssetInfo(
@@ -426,7 +443,7 @@ class Model3DService {
           name: 'Polyhydramnios Animation',
           systemId: 'obstetric',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fhydramnios%2Fpolyhydramnios_animation.mp4?alt=media&token=ba7d1f0a-7928-420e-86c6-99e90d630102',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fhydramnios%2Fpolyhydramnios_animation.mp4?alt=media&token=b0af872b-9b87-4bdd-8090-14b867d91cd0',
           sizeBytes: 15 * 1024 * 1024,
           fileExtension: 'mp4',
         ),
@@ -435,7 +452,7 @@ class Model3DService {
           name: '3D Oligohydramnios',
           systemId: 'obstetric',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fhydramnios%2Foligohydramnios.glb?alt=media&token=2b3b481a-7094-4de3-ad3e-95f5ac9c826f',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fhydramnios%2Foligohydramnios.glb?alt=media&token=f22bcede-6e79-454f-9496-5c80275d27a1',
           sizeBytes: 25 * 1024 * 1024, // ~25 MB
         ),
         AssetInfo(
@@ -443,7 +460,7 @@ class Model3DService {
           name: 'Oligohydramnios Animation',
           systemId: 'obstetric',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fhydramnios%2Foligohydramnios_animation.mp4?alt=media&token=b299f6e5-65b5-4c3c-a370-cb5db4ff9a52',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fhydramnios%2Foligohydramnios_animation.mp4?alt=media&token=8f8da6b0-396b-477a-9694-bf56e590085e',
           sizeBytes: 15 * 1024 * 1024,
           fileExtension: 'mp4',
         ),
