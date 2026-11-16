@@ -377,7 +377,7 @@ class Model3DService {
           name: '3D Breech Presentation',
           systemId: 'obstetric',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Fbreech.glb?alt=media&token=da3028b0-70d0-46e9-b852-c0c746629971',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Fbreech.glb?alt=media&token=86ece8db-b91f-4636-a691-acab43d2f4db',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
