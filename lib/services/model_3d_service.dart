@@ -502,7 +502,7 @@ class Model3DService {
           name: 'Placenta Previa Type I',
           systemId: 'obstetric',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fplacenta_previa%2Fprevia_stage1.glb?alt=media&token=bd12473c-121f-4862-b7ab-6abe4757b112',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fplacenta_previa%2Fprevia_type1.glb?alt=media&token=390148f9-93a9-41c6-be65-eeed6c315ff8',
           sizeBytes: 15 * 1024 * 1024,
         ),
         AssetInfo(
@@ -518,7 +518,7 @@ class Model3DService {
           name: 'Placenta Previa Type III',
           systemId: 'obstetric',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fplacenta_previa%2Fprevia_stage3.glb?alt=media&token=c6525281-dff8-475f-bc5b-d06ff6b7e27a',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fplacenta_previa%2Fprevia_stage3.glb?alt=media&token=602937ba-4116-427a-8d36-0335a2e546ea',
           sizeBytes: 15 * 1024 * 1024,
         ),
         AssetInfo(
@@ -526,7 +526,7 @@ class Model3DService {
           name: 'Placenta Previa Type IV',
           systemId: 'obstetric',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fplacenta_previa%2Fprevia_stage4.glb?alt=media&token=3ec4f5e3-3248-48d7-81b9-55f61022e984',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Fplacenta_previa%2Fprevia_stage4.glb?alt=media&token=ec8c1517-f462-4114-8a2a-2785a9f42497',
           sizeBytes: 15 * 1024 * 1024,
         ),
         AssetInfo(
