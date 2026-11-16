@@ -369,7 +369,7 @@ class Model3DService {
           name: '3D Cephalic Presentation',
           systemId: 'obstetric',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Fcephalic.glb?alt=media&token=5e815f23-b5b7-4ad4-b892-de0d1f41f4f9',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Fcephalic.glb?alt=media&token=49007655-8683-485d-9384-7dcb84d1eee9',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
@@ -419,7 +419,7 @@ class Model3DService {
           name: '3D Oblique Lie',
           systemId: 'obstetric',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Foblique.glb?alt=media&token=58d6dc27-2d1f-4739-bd90-897780656f7f',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fobs%2Ffetus_presentation%2Foblique.glb?alt=media&token=4bbe5dc2-4d2a-49a5-b017-1aa0dcba05d5',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
