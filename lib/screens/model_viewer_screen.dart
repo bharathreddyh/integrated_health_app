@@ -280,7 +280,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
         await request.response.close();
       } else if (request.uri.path == '/') {
         request.response.headers.set('Content-Type', 'text/html');
-        request.response.write(_buildHtml(port));
+        request.response.write(_buildHtml(port, hasLocalJs: modelViewerJsPath != null));
         await request.response.close();
       } else {
         request.response.statusCode = 404;
@@ -716,7 +716,13 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     );
   }
 
-  String _buildHtml(int port) {
+  String _buildHtml(int port, {bool hasLocalJs = true}) {
+    // Load model-viewer from the local cache when available, otherwise fall
+    // back to the CDN. Without this fallback the viewer goes blank whenever the
+    // cached model-viewer.min.js is missing (e.g. after clearing app data).
+    final jsUrl = hasLocalJs
+        ? 'http://127.0.0.1:$port/model-viewer.min.js'
+        : 'https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js';
     // Generate hotspot HTML from ALL annotations (config + custom)
     final annotations = _allAnnotations;
     final hotspotsHtml = annotations.map((annotation) {
@@ -736,7 +742,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <script type="module" src="http://127.0.0.1:$port/model-viewer.min.js"></script>
+  <script type="module" src="$jsUrl"></script>
   <style>
     * { margin: 0; padding: 0; }
     html, body {
