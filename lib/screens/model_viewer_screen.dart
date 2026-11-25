@@ -912,6 +912,22 @@ $hotspotsHtml
       setupModelLabels();
     });
 
+    // Surface decode/render errors on screen (e.g. an unsupported compression)
+    modelViewer.addEventListener('error', function(event) {
+      var msg = 'unknown error';
+      try {
+        if (event && event.detail && event.detail.sourceError && event.detail.sourceError.message) {
+          msg = event.detail.sourceError.message;
+        } else if (event && event.detail && event.detail.type) {
+          msg = event.detail.type;
+        }
+      } catch (e) {}
+      var el = document.getElementById('loading');
+      el.style.display = 'block';
+      el.textContent = 'Could not display model: ' + msg;
+      try { if (window.AnnotationBridge) AnnotationBridge.postMessage('MODEL_ERROR:' + msg); } catch (e) {}
+    });
+
     // Determine label position based on marker's SCREEN position (not model normals)
     function positionLabels() {
       var hotspots = document.querySelectorAll('.hotspot');
