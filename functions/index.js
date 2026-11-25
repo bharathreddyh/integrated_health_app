@@ -119,10 +119,13 @@ const SUBCATEGORY_MAP = {
 // automatically.
 const AUTO_COMPRESS_ENABLED = true;
 
-// Models that must NOT be auto-compressed. Meshopt is safe for everything we've
-// seen, so this is normally empty; add a path here only if a specific model
-// must be served exactly as uploaded.
-const COMPRESSION_SKIP_LIST = new Set([]);
+// Models that must NOT be auto-compressed. Meshopt is safe for almost
+// everything, but it reorganizes some models' scene graphs in a way model-viewer
+// can't open ("Cannot read properties of undefined (reading 'scene')"), so those
+// are served exactly as uploaded.
+const COMPRESSION_SKIP_LIST = new Set([
+  "models/gynaec/uterus/uterus_endo_normal.glb",
+]);
 
 exports.onModelUploaded = functions
   .runWith({ memory: "2GB", timeoutSeconds: 540 })
