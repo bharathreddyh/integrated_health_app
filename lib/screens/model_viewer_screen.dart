@@ -897,6 +897,21 @@ $hotspotsHtml
       setTimeout(positionLabels, 500);
     });
 
+    // Diagnostic: surface a decode/render error instead of hanging on "Loading".
+    modelViewer.addEventListener('error', function(event) {
+      var msg = 'unknown';
+      try {
+        if (event && event.detail && event.detail.sourceError && event.detail.sourceError.message) {
+          msg = event.detail.sourceError.message;
+        } else if (event && event.detail && event.detail.type) {
+          msg = event.detail.type;
+        }
+      } catch (e) {}
+      var el = document.getElementById('loading');
+      el.style.display = 'block';
+      el.textContent = 'Could not display model: ' + msg;
+    });
+
     // Determine label position based on marker's SCREEN position (not model normals)
     function positionLabels() {
       var hotspots = document.querySelectorAll('.hotspot');
