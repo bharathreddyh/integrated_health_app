@@ -59,10 +59,6 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
   // Annotation visibility toggle
   bool _showAnnotations = true;
 
-  // True once the loaded GLB is found to carry baked-in label materials
-  // (EN_Label / EN_LabelBg) — makes the hide/show toggle available for it.
-  bool _hasModelLabels = false;
-
   // Annotation edit mode
   bool _annotationEditMode = false;
 
@@ -280,7 +276,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
         await request.response.close();
       } else if (request.uri.path == '/') {
         request.response.headers.set('Content-Type', 'text/html');
-        request.response.write(_buildHtml(port, hasLocalJs: modelViewerJsPath != null));
+        request.response.write(_buildHtml(port));
         await request.response.close();
       } else {
         request.response.statusCode = 404;
@@ -295,15 +291,6 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
         'AnnotationBridge',
         onMessageReceived: (message) {
           _handleAnnotationTap(message.message);
-        },
-      )
-      ..addJavaScriptChannel(
-        'LabelBridge',
-        onMessageReceived: (message) {
-          // The loaded model carries baked-in label materials — show the toggle.
-          if (message.message == 'present' && mounted) {
-            setState(() => _hasModelLabels = true);
-          }
         },
       )
       ..loadRequest(Uri.parse('http://127.0.0.1:$port/'));
@@ -392,9 +379,8 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     setState(() {
       _showAnnotations = !_showAnnotations;
     });
-    // Toggle both the HTML hotspots and any baked-in GLB label materials.
+    // Toggle annotations in WebView via JavaScript
     _webController?.runJavaScript('toggleAnnotations($_showAnnotations);');
-    _webController?.runJavaScript('toggleModelLabels($_showAnnotations);');
   }
 
   void _toggleAnnotationEditMode() {
@@ -716,13 +702,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     );
   }
 
-  String _buildHtml(int port, {bool hasLocalJs = true}) {
-    // Load model-viewer from the local cache when available, otherwise fall
-    // back to the CDN. Without this fallback the viewer goes blank whenever the
-    // cached model-viewer.min.js is missing (e.g. after clearing app data).
-    final jsUrl = hasLocalJs
-        ? 'http://127.0.0.1:$port/model-viewer.min.js'
-        : 'https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js';
+  String _buildHtml(int port) {
     // Generate hotspot HTML from ALL annotations (config + custom)
     final annotations = _allAnnotations;
     final hotspotsHtml = annotations.map((annotation) {
@@ -742,7 +722,7 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <script type="module" src="$jsUrl"></script>
+  <script type="module" src="http://127.0.0.1:$port/model-viewer.min.js"></script>
   <style>
     * { margin: 0; padding: 0; }
     html, body {
@@ -915,23 +895,6 @@ $hotspotsHtml
       // Position labels after a delay to ensure hotspots are rendered
       setTimeout(positionLabels, 100);
       setTimeout(positionLabels, 500);
-      setupModelLabels();
-    });
-
-    // Surface decode/render errors on screen (e.g. an unsupported compression)
-    modelViewer.addEventListener('error', function(event) {
-      var msg = 'unknown error';
-      try {
-        if (event && event.detail && event.detail.sourceError && event.detail.sourceError.message) {
-          msg = event.detail.sourceError.message;
-        } else if (event && event.detail && event.detail.type) {
-          msg = event.detail.type;
-        }
-      } catch (e) {}
-      var el = document.getElementById('loading');
-      el.style.display = 'block';
-      el.textContent = 'Could not display model: ' + msg;
-      try { if (window.AnnotationBridge) AnnotationBridge.postMessage('MODEL_ERROR:' + msg); } catch (e) {}
     });
 
     // Determine label position based on marker's SCREEN position (not model normals)
@@ -1022,48 +985,6 @@ $hotspotsHtml
       });
     }
 
-    // ── Baked-in GLB labels (EN_Label / EN_LabelBg materials) ──
-    // Some models carry their annotation labels as geometry in the GLB, all
-    // sharing two materials. We fade those materials to transparent to hide
-    // every label at once (model-viewer has no node-visibility API).
-    var LABEL_MATERIALS = ['EN_Label', 'EN_LabelBg'];
-    var _labelOrigAlpha = {};
-
-    function setupModelLabels() {
-      try {
-        if (!modelViewer.model) return;
-        var found = false;
-        LABEL_MATERIALS.forEach(function(name) {
-          var m = modelViewer.model.getMaterialByName(name);
-          if (m) {
-            found = true;
-            var f = m.pbrMetallicRoughness.baseColorFactor;
-            _labelOrigAlpha[name] = (f && f.length === 4) ? f[3] : 1.0;
-          }
-        });
-        if (found && window.LabelBridge) {
-          LabelBridge.postMessage('present');
-        }
-      } catch (e) {}
-    }
-
-    function toggleModelLabels(visible) {
-      try {
-        if (!modelViewer.model) return;
-        LABEL_MATERIALS.forEach(function(name) {
-          var m = modelViewer.model.getMaterialByName(name);
-          if (!m) return;
-          // Exporter drops BLEND when alpha is 1, so force it before fading.
-          m.setAlphaMode('BLEND');
-          var f = m.pbrMetallicRoughness.baseColorFactor.slice();
-          var orig = _labelOrigAlpha[name];
-          if (orig === undefined) orig = (name === 'EN_LabelBg') ? 0.7 : 1.0;
-          f[3] = visible ? orig : 0;
-          m.pbrMetallicRoughness.setBaseColorFactor(f);
-        });
-      } catch (e) {}
-    }
-
     // Function to toggle edit mode
     function setEditMode(enabled) {
       editMode = enabled;
@@ -1131,8 +1052,8 @@ $hotspotsHtml
               ),
             ],
             if (!_drawMode && !_annotationEditMode) ...[
-              // Annotation toggle (if there are hotspots OR baked-in labels)
-              if (_allAnnotations.isNotEmpty || _hasModelLabels)
+              // Annotation toggle (only if there are any annotations)
+              if (_allAnnotations.isNotEmpty)
                 IconButton(
                   icon: Icon(
                     _showAnnotations ? Icons.label : Icons.label_off_outlined,
