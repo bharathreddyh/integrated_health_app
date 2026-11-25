@@ -192,7 +192,7 @@ class Model3DService {
           name: '3D Normal Endometrium',
           systemId: 'gynaecology',
           url:
-              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgynaec%2Futerus%2Futerus_endo_normal.glb?alt=media&token=73144a30-2d77-4617-b70b-e2297c2b7ec7',
+              'https://firebasestorage.googleapis.com/v0/b/integrated-health-app-285e9.firebasestorage.app/o/models%2Fgynaec%2Futerus%2Futerus_endo_normal.glb?alt=media&token=168c8339-58cc-47ab-9be6-479dcd0f0552',
           sizeBytes: 15 * 1024 * 1024, // ~15 MB
         ),
         AssetInfo(
