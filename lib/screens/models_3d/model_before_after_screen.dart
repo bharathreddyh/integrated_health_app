@@ -391,7 +391,7 @@ class _ModelBeforeAfterScreenState extends State<ModelBeforeAfterScreen> {
   String _buildHtml(int port, String title, {bool hasLocalJs = true}) {
     final jsUrl = hasLocalJs
         ? 'http://127.0.0.1:$port/model-viewer.min.js'
-        : 'https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js';
+        : Model3DService.modelViewerJsUrl;
     return '''
 <!DOCTYPE html>
 <html>

@@ -692,19 +692,29 @@ class Model3DService {
 
   // ─── Cache queries ─────────────────────────────────────────────────
 
-  /// URL for the model-viewer web component JS library.
-  static const _modelViewerJsUrl =
-      'https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js';
+  /// Pinned model-viewer version. Bumping this (and the cache filename below)
+  /// forces the app to download the new library instead of reusing an old
+  /// cached copy — fixing models that a current viewer renders but an old
+  /// cached model-viewer chokes on (e.g. "Cannot read properties of undefined
+  /// (reading 'scene')" on a glTF without an explicit default scene).
+  static const modelViewerVersion = '4.1.0';
+
+  /// URL for the model-viewer web component JS library (version-pinned).
+  static const modelViewerJsUrl =
+      'https://unpkg.com/@google/model-viewer@$modelViewerVersion/dist/model-viewer.min.js';
+
+  static const _modelViewerJsFileName =
+      'model-viewer-$modelViewerVersion.min.js';
 
   /// Get the cached path for model-viewer.min.js, downloading if needed.
   /// Returns the local file path for serving via local HTTP server.
   Future<String> getModelViewerJsPath() async {
     final dir = await _cacheDir;
-    final file = File('${dir.path}/model-viewer.min.js');
+    final file = File('${dir.path}/$_modelViewerJsFileName');
     if (await file.exists()) return file.path;
 
     // Download and cache
-    final response = await http.get(Uri.parse(_modelViewerJsUrl))
+    final response = await http.get(Uri.parse(modelViewerJsUrl))
         .timeout(const Duration(seconds: 20));
     if (response.statusCode == 200) {
       await file.writeAsBytes(response.bodyBytes);
@@ -716,7 +726,7 @@ class Model3DService {
   /// Check if the model-viewer JS is already cached locally.
   Future<bool> isModelViewerJsCached() async {
     final dir = await _cacheDir;
-    final file = File('${dir.path}/model-viewer.min.js');
+    final file = File('${dir.path}/$_modelViewerJsFileName');
     return file.exists();
   }
 
