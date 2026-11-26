@@ -59,6 +59,10 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
   // Annotation visibility toggle
   bool _showAnnotations = true;
 
+  // True once the loaded GLB is found to carry baked-in label materials
+  // (EN_Label / EN_LabelBg) — makes the hide/show toggle available for it.
+  bool _hasModelLabels = false;
+
   // Annotation edit mode
   bool _annotationEditMode = false;
 
@@ -293,6 +297,15 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
           _handleAnnotationTap(message.message);
         },
       )
+      ..addJavaScriptChannel(
+        'LabelBridge',
+        onMessageReceived: (message) {
+          // The loaded model carries baked-in label materials — show the toggle.
+          if (message.message == 'present' && mounted) {
+            setState(() => _hasModelLabels = true);
+          }
+        },
+      )
       ..loadRequest(Uri.parse('http://127.0.0.1:$port/'));
 
     if (mounted) {
@@ -379,8 +392,9 @@ class _ModelViewerScreenState extends State<ModelViewerScreen> {
     setState(() {
       _showAnnotations = !_showAnnotations;
     });
-    // Toggle annotations in WebView via JavaScript
+    // Toggle both the HTML hotspots and any baked-in GLB label materials.
     _webController?.runJavaScript('toggleAnnotations($_showAnnotations);');
+    _webController?.runJavaScript('toggleModelLabels($_showAnnotations);');
   }
 
   void _toggleAnnotationEditMode() {
@@ -901,6 +915,8 @@ $hotspotsHtml
       // Position labels after a delay to ensure hotspots are rendered
       setTimeout(positionLabels, 100);
       setTimeout(positionLabels, 500);
+      // Detect baked-in label materials after the model is fully ready.
+      setTimeout(setupModelLabels, 300);
     });
 
     // Diagnostic: surface a decode/render error instead of hanging on "Loading".
@@ -1006,6 +1022,49 @@ $hotspotsHtml
       });
     }
 
+    // ── Baked-in GLB labels (EN_Label / EN_LabelBg materials) ──
+    // Some models carry their annotation labels as geometry sharing two
+    // materials. We fade those materials to transparent to hide every label at
+    // once (model-viewer has no node-visibility API). Fully guarded so it can
+    // never interfere with rendering.
+    var LABEL_MATERIALS = ['EN_Label', 'EN_LabelBg'];
+    var _labelOrigAlpha = {};
+
+    function setupModelLabels() {
+      try {
+        if (!modelViewer || !modelViewer.model) return;
+        var found = false;
+        LABEL_MATERIALS.forEach(function(name) {
+          var m = modelViewer.model.getMaterialByName(name);
+          if (m && m.pbrMetallicRoughness) {
+            found = true;
+            var f = m.pbrMetallicRoughness.baseColorFactor;
+            _labelOrigAlpha[name] = (f && f.length === 4) ? f[3] : 1.0;
+          }
+        });
+        if (found && window.LabelBridge) {
+          LabelBridge.postMessage('present');
+        }
+      } catch (e) {}
+    }
+
+    function toggleModelLabels(visible) {
+      try {
+        if (!modelViewer || !modelViewer.model) return;
+        LABEL_MATERIALS.forEach(function(name) {
+          var m = modelViewer.model.getMaterialByName(name);
+          if (!m || !m.pbrMetallicRoughness) return;
+          // Exporter drops BLEND when alpha is 1, so force it before fading.
+          if (m.setAlphaMode) m.setAlphaMode('BLEND');
+          var f = m.pbrMetallicRoughness.baseColorFactor.slice();
+          var orig = _labelOrigAlpha[name];
+          if (orig === undefined) orig = (name === 'EN_LabelBg') ? 0.7 : 1.0;
+          f[3] = visible ? orig : 0;
+          m.pbrMetallicRoughness.setBaseColorFactor(f);
+        });
+      } catch (e) {}
+    }
+
     // Function to toggle edit mode
     function setEditMode(enabled) {
       editMode = enabled;
@@ -1073,8 +1132,8 @@ $hotspotsHtml
               ),
             ],
             if (!_drawMode && !_annotationEditMode) ...[
-              // Annotation toggle (only if there are any annotations)
-              if (_allAnnotations.isNotEmpty)
+              // Annotation toggle (if there are hotspots OR baked-in labels)
+              if (_allAnnotations.isNotEmpty || _hasModelLabels)
                 IconButton(
                   icon: Icon(
                     _showAnnotations ? Icons.label : Icons.label_off_outlined,
