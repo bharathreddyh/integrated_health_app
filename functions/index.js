@@ -111,18 +111,17 @@ const SUBCATEGORY_MAP = {
 
 // Master switch for automatic compression on upload.
 //
-// Compression uses meshopt (gltfpack) rather than Draco. Draco (gltf-pipeline)
-// corrupted some models — "can't access property extensions" / stuck on
-// "Loading..." in model-viewer. Meshopt compresses just as well, is supported
-// natively by model-viewer (EXT_meshopt_compression), and does NOT break these
-// models, so auto-compression is safe to leave ON: every upload is shrunk
-// automatically.
-const AUTO_COMPRESS_ENABLED = true;
+// Turned OFF: the models now carry baked-in annotation labels (a Labels node
+// with EN_Label / EN_LabelBg materials), and meshopt (gltfpack) reorganizes
+// that scene graph in a way model-viewer can't open — "Cannot read properties
+// of undefined (reading 'scene')". Since every model has labels, auto-compress
+// would break them all, so compression is disabled and models are served
+// exactly as uploaded. Compress on export (e.g. Blender mesh quantization)
+// instead if smaller files are needed.
+const AUTO_COMPRESS_ENABLED = false;
 
-// Models that must NOT be auto-compressed. Meshopt is safe for almost
-// everything, but it reorganizes some models' scene graphs in a way model-viewer
-// can't open ("Cannot read properties of undefined (reading 'scene')"), so those
-// are served exactly as uploaded.
+// (Unused while AUTO_COMPRESS_ENABLED is false.) Models that must never be
+// auto-compressed even if compression is re-enabled.
 const COMPRESSION_SKIP_LIST = new Set([
   "models/gynaec/uterus/uterus_endo_normal.glb",
 ]);
